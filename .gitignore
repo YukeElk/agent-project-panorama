@@ -1,0 +1,11 @@
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+*.backup-*.html
+.*.panorama.lock
+.*.staged
+.*.tmp
+
+.DS_Store
+Thumbs.db

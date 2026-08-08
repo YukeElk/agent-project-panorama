@@ -1,0 +1,3091 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent-project-panorama/panorama.schema.v0.1.json",
+  "title": "Agent Project Panorama Data Schema",
+  "description": "Core data model embedded in a single-file Agent Project Panorama HTML.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "meta",
+    "project",
+    "intent",
+    "requirements",
+    "architecture",
+    "stages",
+    "workItems",
+    "releases",
+    "deployments",
+    "resources",
+    "decisions",
+    "risks",
+    "acceptanceCriteria",
+    "gates",
+    "references",
+    "reviews",
+    "changes",
+    "updateBatches",
+    "guidance",
+    "extensions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1"
+    },
+    "meta": {
+      "$ref": "#/$defs/meta"
+    },
+    "project": {
+      "$ref": "#/$defs/project"
+    },
+    "intent": {
+      "$ref": "#/$defs/intent"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/requirement"
+      }
+    },
+    "architecture": {
+      "$ref": "#/$defs/architecture"
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stage"
+      }
+    },
+    "workItems": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/workItem"
+      }
+    },
+    "releases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/release"
+      }
+    },
+    "deployments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/deployment"
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/risk"
+      }
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/acceptanceCriterion"
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gate"
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/review"
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/change"
+      }
+    },
+    "updateBatches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/updateBatch"
+      }
+    },
+    "guidance": {
+      "$ref": "#/$defs/guidance"
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "entityId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9._:-]{1,127}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "idList": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entityId"
+      },
+      "uniqueItems": true
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "project",
+            "intent",
+            "requirement",
+            "architecture_version",
+            "baseline",
+            "layer",
+            "module",
+            "connection",
+            "transition",
+            "stage",
+            "work_item",
+            "release",
+            "deployment",
+            "resource",
+            "decision",
+            "risk",
+            "acceptance",
+            "gate",
+            "reference",
+            "review",
+            "change",
+            "update_batch"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "entityRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entityRef"
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateVersion",
+        "revision",
+        "createdAt",
+        "updatedAt",
+        "sourceMode"
+      ],
+      "properties": {
+        "templateVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "lastValidatedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "latestUpdateBatchId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceMode": {
+          "type": "string",
+          "enum": [
+            "conversation",
+            "manual",
+            "workspace_scan",
+            "mixed"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "summary",
+        "lifecycle",
+        "currentStageId",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": [
+            "idea",
+            "active",
+            "paused",
+            "completed",
+            "archived"
+          ]
+        },
+        "currentStageId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "currentReleaseId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner": {
+          "type": "string"
+        },
+        "tags": {
+          "$ref": "#/$defs/stringList"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objective",
+        "coreScenarios",
+        "currentFocus",
+        "inScope",
+        "outOfScope",
+        "constraints",
+        "successDefinition",
+        "updatedAt"
+      ],
+      "properties": {
+        "objective": {
+          "type": "string"
+        },
+        "coreScenarios": {
+          "$ref": "#/$defs/stringList"
+        },
+        "currentFocus": {
+          "type": "string"
+        },
+        "inScope": {
+          "$ref": "#/$defs/stringList"
+        },
+        "outOfScope": {
+          "$ref": "#/$defs/stringList"
+        },
+        "constraints": {
+          "$ref": "#/$defs/stringList"
+        },
+        "successDefinition": {
+          "$ref": "#/$defs/stringList"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "title",
+        "summary",
+        "priority",
+        "definitionStatus",
+        "fulfillmentStatus",
+        "targetReleaseIds",
+        "moduleIds",
+        "acceptanceCriteriaIds",
+        "sourceReferenceIds",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "business_scenario",
+            "functional"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string",
+          "enum": [
+            "P0",
+            "P1",
+            "P2",
+            "P3",
+            "unset"
+          ]
+        },
+        "definitionStatus": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "clarifying",
+            "proposed",
+            "confirmed",
+            "deferred",
+            "rejected",
+            "superseded"
+          ]
+        },
+        "fulfillmentStatus": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "partially_covered",
+            "implemented",
+            "verified",
+            "delivered",
+            "not_applicable"
+          ]
+        },
+        "targetReleaseIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "moduleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "acceptanceCriteriaIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "sourceReferenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "notes": {
+          "type": "string"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "type",
+        "version",
+        "rationale",
+        "referenceIds",
+        "divergence",
+        "adoptedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "open_source",
+            "paper",
+            "reference_architecture",
+            "internal"
+          ]
+        },
+        "version": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "divergence": {
+          "type": "string",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        },
+        "upgradeStrategy": {
+          "type": "string"
+        },
+        "adoptedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "order",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "summary": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "technologyChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "role"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "type": "string"
+        },
+        "decisionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "current",
+            "target",
+            "experimental",
+            "deprecated"
+          ]
+        }
+      }
+    },
+    "moduleDesign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "responsibilities",
+        "nonResponsibilities",
+        "technologies",
+        "stateOwnership",
+        "dataHandled",
+        "interfaceSummary",
+        "deploymentRole",
+        "referenceIds"
+      ],
+      "properties": {
+        "responsibilities": {
+          "$ref": "#/$defs/stringList"
+        },
+        "nonResponsibilities": {
+          "$ref": "#/$defs/stringList"
+        },
+        "technologies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/technologyChoice"
+          }
+        },
+        "stateOwnership": {
+          "type": "string"
+        },
+        "dataHandled": {
+          "$ref": "#/$defs/stringList"
+        },
+        "interfaceSummary": {
+          "$ref": "#/$defs/stringList"
+        },
+        "deploymentRole": {
+          "type": "string"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "moduleSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "changeType",
+        "rationale",
+        "changedAreas",
+        "upgradeImpact"
+      ],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "enum": [
+            "custom",
+            "oss",
+            "reference_architecture",
+            "paper",
+            "external_service"
+          ]
+        },
+        "baselineId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changeType": {
+          "type": "string",
+          "enum": [
+            "retained",
+            "modified",
+            "added",
+            "removed",
+            "not_applicable"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "changedAreas": {
+          "$ref": "#/$defs/stringList"
+        },
+        "upgradeImpact": {
+          "type": "string",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "moduleStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "designMaturity",
+        "implementationMaturity",
+        "verificationStatus",
+        "runtimeStatus"
+      ],
+      "properties": {
+        "designMaturity": {
+          "type": "string",
+          "enum": [
+            "unknown",
+            "draft",
+            "experimental",
+            "review_ready",
+            "confirmed",
+            "rework",
+            "deprecated"
+          ]
+        },
+        "implementationMaturity": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "prototype",
+            "functional",
+            "stable",
+            "deprecated"
+          ]
+        },
+        "verificationStatus": {
+          "type": "string",
+          "enum": [
+            "not_defined",
+            "pending",
+            "partial",
+            "passed",
+            "failed",
+            "waived"
+          ]
+        },
+        "runtimeStatus": {
+          "type": "string",
+          "enum": [
+            "not_deployed",
+            "development",
+            "test",
+            "staging",
+            "production",
+            "retired"
+          ]
+        }
+      }
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "layerId",
+        "architectureScope",
+        "category",
+        "purpose",
+        "rationale",
+        "requirementIds",
+        "source",
+        "currentDesign",
+        "targetDesign",
+        "status",
+        "codePath",
+        "decisionIds",
+        "riskIds",
+        "acceptanceCriteriaIds",
+        "gateIds",
+        "workItemIds",
+        "reviewIds",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "layerId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "core",
+            "supporting",
+            "integration",
+            "data",
+            "infrastructure",
+            "external"
+          ]
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "requirementIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "source": {
+          "$ref": "#/$defs/moduleSource"
+        },
+        "currentDesign": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/moduleDesign"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetDesign": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/moduleDesign"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/moduleStatus"
+        },
+        "codePath": {
+          "type": "string"
+        },
+        "decisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "riskIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "acceptanceCriteriaIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "gateIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "workItemIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "reviewIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "architectureScope": {
+          "type": "string",
+          "enum": [
+            "current",
+            "target",
+            "both",
+            "historical"
+          ]
+        },
+        "targetLayerId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "fromModuleId",
+        "toModuleId",
+        "architectureScope",
+        "lifecycle",
+        "flowDirection",
+        "protocol",
+        "communicationMode",
+        "dataSummary",
+        "contractReferenceIds",
+        "authSummary",
+        "reliabilitySummary",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "fromModuleId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "toModuleId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "architectureScope": {
+          "type": "string",
+          "enum": [
+            "current",
+            "target",
+            "both"
+          ]
+        },
+        "lifecycle": {
+          "type": "string",
+          "enum": [
+            "active",
+            "planned",
+            "deprecating",
+            "removed"
+          ]
+        },
+        "flowDirection": {
+          "type": "string",
+          "enum": [
+            "one_way",
+            "bidirectional"
+          ]
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "communicationMode": {
+          "type": "string",
+          "enum": [
+            "sync",
+            "async",
+            "event",
+            "stream",
+            "batch",
+            "direct"
+          ]
+        },
+        "dataSummary": {
+          "type": "string"
+        },
+        "contractReferenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "authSummary": {
+          "type": "string"
+        },
+        "reliabilitySummary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "transitionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "architectureDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "addedModuleIds",
+        "modifiedModuleIds",
+        "removedModuleIds",
+        "addedConnectionIds",
+        "modifiedConnectionIds",
+        "removedConnectionIds"
+      ],
+      "properties": {
+        "addedModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "modifiedModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "removedModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "addedConnectionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "modifiedConnectionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "removedConnectionIds": {
+          "$ref": "#/$defs/idList"
+        }
+      }
+    },
+    "architectureVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "status",
+        "createdAt",
+        "summary",
+        "rationale",
+        "baselineIds",
+        "delta",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "label": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "draft",
+            "review_pending",
+            "accepted",
+            "superseded",
+            "rejected"
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "acceptedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "baselineIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "delta": {
+          "$ref": "#/$defs/architectureDelta"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "subjectType",
+        "subjectId",
+        "fromVersionId",
+        "toVersionId",
+        "state",
+        "summary",
+        "reason",
+        "workItemIds",
+        "decisionIds",
+        "riskIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "subjectType": {
+          "type": "string",
+          "enum": [
+            "module",
+            "connection",
+            "data_flow",
+            "baseline",
+            "deployment"
+          ]
+        },
+        "subjectId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "fromVersionId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "toVersionId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "ready",
+            "in_progress",
+            "migrating",
+            "blocked",
+            "completed",
+            "cancelled"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "workItemIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "decisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "riskIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetDate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currentVersionId",
+        "targetVersionId",
+        "baselines",
+        "layers",
+        "versions",
+        "modules",
+        "connections",
+        "transitions"
+      ],
+      "properties": {
+        "currentVersionId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "targetVersionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "baselines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/baseline"
+          }
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer"
+          }
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/architectureVersion"
+          }
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/module"
+          }
+        },
+        "connections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/connection"
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transition"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "order",
+        "status",
+        "purpose",
+        "currentFocus",
+        "entryAcceptanceIds",
+        "exitAcceptanceIds",
+        "moduleIds",
+        "blockerDecisionIds",
+        "blockerRiskIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "current",
+            "blocked",
+            "completed",
+            "skipped"
+          ]
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "currentFocus": {
+          "type": "string"
+        },
+        "entryAcceptanceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "exitAcceptanceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "moduleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "blockerDecisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "blockerRiskIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "plannedStart": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plannedEnd": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualStart": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualEnd": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "workItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "type",
+        "status",
+        "stageId",
+        "moduleIds",
+        "requirementIds",
+        "purpose",
+        "problem",
+        "expectedImpact",
+        "actualImpact",
+        "decisionIds",
+        "riskIds",
+        "acceptanceCriteriaIds",
+        "referenceIds",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "implementation",
+            "experiment",
+            "fix",
+            "refactor",
+            "migration",
+            "validation",
+            "review",
+            "research",
+            "deployment",
+            "other"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "ready",
+            "in_progress",
+            "blocked",
+            "review",
+            "completed",
+            "cancelled"
+          ]
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moduleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "requirementIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "problem": {
+          "type": "string"
+        },
+        "expectedImpact": {
+          "type": "string"
+        },
+        "actualImpact": {
+          "type": "string"
+        },
+        "decisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "riskIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "acceptanceCriteriaIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "moduleIds": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "requirementIds": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "stageId": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "decisionOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "summary",
+        "benefits",
+        "drawbacks",
+        "impacts",
+        "risks",
+        "reversibility",
+        "estimatedCost"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "benefits": {
+          "$ref": "#/$defs/stringList"
+        },
+        "drawbacks": {
+          "$ref": "#/$defs/stringList"
+        },
+        "impacts": {
+          "$ref": "#/$defs/stringList"
+        },
+        "risks": {
+          "$ref": "#/$defs/stringList"
+        },
+        "reversibility": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unknown"
+          ]
+        },
+        "estimatedCost": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "question",
+        "status",
+        "impactLevel",
+        "trigger",
+        "context",
+        "relatedModuleIds",
+        "relatedRequirementIds",
+        "relatedReleaseIds",
+        "options",
+        "recommendedOptionId",
+        "selectedOptionId",
+        "selectionRationale",
+        "createdAt",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "question": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "review_pending",
+            "approved",
+            "rejected",
+            "deferred",
+            "superseded"
+          ]
+        },
+        "impactLevel": {
+          "type": "string",
+          "enum": [
+            "local",
+            "module",
+            "architecture",
+            "deployment",
+            "project"
+          ]
+        },
+        "trigger": {
+          "type": "string"
+        },
+        "context": {
+          "type": "string"
+        },
+        "relatedModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "relatedRequirementIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relatedReleaseIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/decisionOption"
+          },
+          "minItems": 1
+        },
+        "recommendedOptionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selectedOptionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selectionRationale": {
+          "type": "string"
+        },
+        "requiredBy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "decidedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "category",
+        "severity",
+        "status",
+        "description",
+        "impact",
+        "mitigation",
+        "relatedModuleIds",
+        "relatedRequirementIds",
+        "relatedReleaseIds",
+        "source",
+        "detectedAt",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "architecture",
+            "scope",
+            "implementation",
+            "verification",
+            "deployment",
+            "security",
+            "baseline",
+            "resource",
+            "transition",
+            "other"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "monitoring",
+            "mitigating",
+            "accepted",
+            "closed"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "impact": {
+          "type": "string"
+        },
+        "mitigation": {
+          "type": "string"
+        },
+        "relatedModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "relatedRequirementIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "stageId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relatedReleaseIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "rule",
+            "mixed"
+          ]
+        },
+        "detectedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "resolvedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "acceptanceCriterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "scopeType",
+        "scopeId",
+        "category",
+        "description",
+        "expectedEvidence",
+        "status",
+        "definedBy",
+        "verificationStatus",
+        "evidenceReferenceIds",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "scopeType": {
+          "type": "string",
+          "enum": [
+            "project",
+            "stage",
+            "module",
+            "requirement",
+            "release",
+            "deployment"
+          ]
+        },
+        "scopeId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "functional",
+            "performance",
+            "reliability",
+            "security",
+            "observability",
+            "usability",
+            "integration",
+            "architecture",
+            "other"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "expectedEvidence": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "review_pending",
+            "accepted",
+            "rejected",
+            "deprecated"
+          ]
+        },
+        "definedBy": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "joint"
+          ]
+        },
+        "verificationStatus": {
+          "type": "string",
+          "enum": [
+            "not_run",
+            "partial",
+            "passed",
+            "failed",
+            "waived"
+          ]
+        },
+        "evidenceReferenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "scopeType",
+        "scopeId",
+        "gateType",
+        "required",
+        "status",
+        "automation",
+        "summary",
+        "resultSummary",
+        "evidenceReferenceIds",
+        "acceptanceCriteriaIds",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "scopeType": {
+          "type": "string",
+          "enum": [
+            "project",
+            "stage",
+            "module",
+            "requirement",
+            "release",
+            "deployment"
+          ]
+        },
+        "scopeId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "gateType": {
+          "type": "string",
+          "enum": [
+            "architecture_review",
+            "build",
+            "lint",
+            "type_check",
+            "unit_test",
+            "integration_test",
+            "performance",
+            "security",
+            "agent_eval",
+            "deployment",
+            "manual_review",
+            "other"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_configured",
+            "ready",
+            "running",
+            "passed",
+            "failed",
+            "skipped",
+            "waived"
+          ]
+        },
+        "automation": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "ai",
+            "script",
+            "ci",
+            "mixed"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "lastRunAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resultSummary": {
+          "type": "string"
+        },
+        "evidenceReferenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "acceptanceCriteriaIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "title",
+        "locationType",
+        "location",
+        "status",
+        "sensitive",
+        "relatedEntities",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "design_spec",
+            "acceptance_spec",
+            "interface_contract",
+            "adr",
+            "test_report",
+            "runbook",
+            "oss_reference",
+            "credential_file",
+            "source_directory",
+            "deployment_config",
+            "research",
+            "other"
+          ]
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "locationType": {
+          "type": "string",
+          "enum": [
+            "relative_path",
+            "absolute_path",
+            "url",
+            "secret_store_ref",
+            "inline_note"
+          ]
+        },
+        "location": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "missing",
+            "outdated",
+            "unknown"
+          ]
+        },
+        "sensitive": {
+          "type": "boolean"
+        },
+        "relatedEntities": {
+          "$ref": "#/$defs/entityRefs"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "name",
+        "status",
+        "architectureVersionId",
+        "stageId",
+        "moduleIds",
+        "goals",
+        "createdAt",
+        "deploymentIds",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "version": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "development",
+            "candidate",
+            "deployed",
+            "retired"
+          ]
+        },
+        "architectureVersionId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "stageId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "moduleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "goals": {
+          "$ref": "#/$defs/stringList"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "releasedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "deploymentIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "embeddedCredentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sensitive",
+        "maskedByDefault",
+        "fields"
+      ],
+      "properties": {
+        "mode": {
+          "const": "embedded"
+        },
+        "sensitive": {
+          "const": true
+        },
+        "maskedByDefault": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "externalFileCredentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sensitive",
+        "path",
+        "keys"
+      ],
+      "properties": {
+        "mode": {
+          "const": "external_file"
+        },
+        "sensitive": {
+          "const": true
+        },
+        "path": {
+          "type": "string"
+        },
+        "keys": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "externalStoreCredentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sensitive",
+        "provider",
+        "reference",
+        "keys"
+      ],
+      "properties": {
+        "mode": {
+          "const": "external_store"
+        },
+        "sensitive": {
+          "const": true
+        },
+        "provider": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "keys": {
+          "$ref": "#/$defs/stringList"
+        }
+      }
+    },
+    "noCredentials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sensitive"
+      ],
+      "properties": {
+        "mode": {
+          "const": "none"
+        },
+        "sensitive": {
+          "const": false
+        }
+      }
+    },
+    "credentials": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/embeddedCredentials"
+        },
+        {
+          "$ref": "#/$defs/externalFileCredentials"
+        },
+        {
+          "$ref": "#/$defs/externalStoreCredentials"
+        },
+        {
+          "$ref": "#/$defs/noCredentials"
+        }
+      ]
+    },
+    "resourceAccess": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "host",
+        "port",
+        "database",
+        "instructions",
+        "credentials"
+      ],
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "database": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "credentials": {
+          "$ref": "#/$defs/credentials"
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "type",
+        "environment",
+        "status",
+        "provider",
+        "location",
+        "access",
+        "usedByModuleIds",
+        "usedByDeploymentIds",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "compute",
+            "container_host",
+            "database",
+            "cache",
+            "object_store",
+            "vector_store",
+            "queue",
+            "external_api",
+            "mcp_server",
+            "admin_console",
+            "user_account",
+            "network",
+            "other"
+          ]
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "local",
+            "development",
+            "test",
+            "staging",
+            "production",
+            "shared",
+            "unknown"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "reserved",
+            "active",
+            "degraded",
+            "inactive",
+            "retired",
+            "unknown"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "access": {
+          "$ref": "#/$defs/resourceAccess"
+        },
+        "usedByModuleIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "usedByDeploymentIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "moduleDeployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "moduleId",
+        "artifactVersion",
+        "status",
+        "resourceIds",
+        "endpoints"
+      ],
+      "properties": {
+        "moduleId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "artifactVersion": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "deploying",
+            "active",
+            "degraded",
+            "stopped",
+            "retired"
+          ]
+        },
+        "resourceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "endpoints": {
+          "$ref": "#/$defs/stringList"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "environment",
+        "status",
+        "releaseId",
+        "architectureVersionId",
+        "resourceIds",
+        "moduleDeployments",
+        "externalResourceIds",
+        "configReferenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "local",
+            "development",
+            "test",
+            "staging",
+            "production"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "planned",
+            "deploying",
+            "active",
+            "degraded",
+            "stopped",
+            "retired"
+          ]
+        },
+        "releaseId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "architectureVersionId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "deployedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resourceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "moduleDeployments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/moduleDeployment"
+          }
+        },
+        "externalResourceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "configReferenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "subjectRefs",
+        "status",
+        "impactLevel",
+        "requestedBy",
+        "requestedAt",
+        "reviewedBy",
+        "summary",
+        "comments",
+        "decisionIds",
+        "changeIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "panorama_update",
+            "requirement",
+            "architecture",
+            "module_design",
+            "acceptance",
+            "release",
+            "deployment",
+            "other"
+          ]
+        },
+        "subjectRefs": {
+          "$ref": "#/$defs/entityRefs"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "changes_requested",
+            "rejected",
+            "waived"
+          ]
+        },
+        "impactLevel": {
+          "type": "string",
+          "enum": [
+            "local",
+            "module",
+            "architecture",
+            "deployment",
+            "project"
+          ]
+        },
+        "requestedBy": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "system"
+          ]
+        },
+        "requestedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "reviewedBy": {
+          "type": "string"
+        },
+        "reviewedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "comments": {
+          "type": "string"
+        },
+        "decisionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "changeIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "occurredAt",
+        "category",
+        "impactLevel",
+        "summary",
+        "reason",
+        "source",
+        "entityRefs",
+        "beforeSummary",
+        "afterSummary",
+        "significant",
+        "referenceIds"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "occurredAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "intent",
+            "requirement",
+            "architecture",
+            "module",
+            "implementation",
+            "verification",
+            "stage",
+            "release",
+            "deployment",
+            "resource",
+            "decision",
+            "risk",
+            "reference",
+            "other"
+          ]
+        },
+        "impactLevel": {
+          "type": "string",
+          "enum": [
+            "local",
+            "module",
+            "architecture",
+            "deployment",
+            "project"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "human",
+            "ai",
+            "artifact",
+            "mixed"
+          ]
+        },
+        "entityRefs": {
+          "$ref": "#/$defs/entityRefs"
+        },
+        "beforeSummary": {
+          "type": "string"
+        },
+        "afterSummary": {
+          "type": "string"
+        },
+        "reviewId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "significant": {
+          "type": "boolean"
+        },
+        "architectureVersionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "referenceIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "attentionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "severity",
+        "title",
+        "summary",
+        "relatedEntities"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "review_required",
+            "blocking_decision",
+            "risk",
+            "architecture_gap",
+            "scope_drift",
+            "implementation_drift",
+            "verification_gap",
+            "baseline_drift",
+            "deployment_drift",
+            "transition_risk",
+            "resource_risk",
+            "stage_exit_gap",
+            "other"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "high",
+            "critical"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "relatedEntities": {
+          "$ref": "#/$defs/entityRefs"
+        }
+      }
+    },
+    "updateBatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revisionFrom",
+        "revisionTo",
+        "periodStart",
+        "periodEnd",
+        "createdAt",
+        "status",
+        "reviewId",
+        "changeIds",
+        "summaryItems",
+        "attentionItems",
+        "nextFocusOptionIds",
+        "projectStageBefore",
+        "projectStageAfter",
+        "changeLevel"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "revisionFrom": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "revisionTo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "periodStart": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "periodEnd": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "applied",
+            "rejected"
+          ]
+        },
+        "reviewId": {
+          "$ref": "#/$defs/entityId"
+        },
+        "changeIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "summaryItems": {
+          "$ref": "#/$defs/stringList"
+        },
+        "attentionItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attentionItem"
+          }
+        },
+        "nextFocusOptionIds": {
+          "$ref": "#/$defs/idList"
+        },
+        "projectStageBefore": {
+          "$ref": "#/$defs/entityId"
+        },
+        "projectStageAfter": {
+          "$ref": "#/$defs/entityId"
+        },
+        "changeLevel": {
+          "type": "string",
+          "enum": [
+            "local",
+            "module",
+            "architecture",
+            "deployment",
+            "project"
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "nextFocusOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "whyNow",
+        "recommendationReason",
+        "benefits",
+        "risks",
+        "impact",
+        "prerequisites",
+        "expectedOutcome",
+        "relatedEntities"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/entityId"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "whyNow": {
+          "type": "string"
+        },
+        "recommendationReason": {
+          "type": "string"
+        },
+        "benefits": {
+          "$ref": "#/$defs/stringList"
+        },
+        "risks": {
+          "$ref": "#/$defs/stringList"
+        },
+        "impact": {
+          "type": "string"
+        },
+        "prerequisites": {
+          "$ref": "#/$defs/stringList"
+        },
+        "expectedOutcome": {
+          "type": "string"
+        },
+        "relatedEntities": {
+          "$ref": "#/$defs/entityRefs"
+        }
+      }
+    },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generatedAt",
+        "status",
+        "currentFocusSummary",
+        "options",
+        "recommendedOptionId",
+        "selectedOptionId"
+      ],
+      "properties": {
+        "generatedAt": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "proposed",
+            "approved",
+            "superseded"
+          ]
+        },
+        "currentFocusSummary": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nextFocusOption"
+          },
+          "maxItems": 4
+        },
+        "recommendedOptionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selectedOptionId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/entityId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    }
+  }
+}

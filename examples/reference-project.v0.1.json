@@ -1,0 +1,3990 @@
+{
+  "schemaVersion": "0.1",
+  "meta": {
+    "templateVersion": "0.1.0",
+    "revision": 3,
+    "createdAt": "2026-07-20T09:00:00+08:00",
+    "updatedAt": "2026-08-08T10:00:00+08:00",
+    "lastValidatedAt": null,
+    "latestUpdateBatchId": "UPD-003",
+    "sourceMode": "mixed",
+    "notes": "Reference project used to validate the panorama information model.",
+    "extensions": {}
+  },
+  "project": {
+    "id": "PRJ-MARW",
+    "name": "Multi-Agent Research Workspace",
+    "summary": "验证多个业务 Agent 通过统一检索能力访问共享工作空间，并逐步形成可部署的 V1。",
+    "lifecycle": "active",
+    "currentStageId": "STG-MVP",
+    "currentReleaseId": "REL-V08",
+    "owner": "Project Owner",
+    "tags": [
+      "agent",
+      "multi-agent",
+      "retrieval",
+      "workspace"
+    ],
+    "createdAt": "2026-07-20T09:00:00+08:00",
+    "updatedAt": "2026-08-08T10:00:00+08:00",
+    "extensions": {}
+  },
+  "intent": {
+    "objective": "构建一个可被多个业务 Agent 共同使用的共享检索与工作空间能力，并先完成可试用的 V1。",
+    "coreScenarios": [
+      "多个业务 Agent 在同一项目工作空间内读取资料",
+      "业务 Agent 通过统一入口并发发起检索",
+      "开发版本和上线版本的架构、部署及资源关系可追踪"
+    ],
+    "currentFocus": "完成 Retrieval Agent 与 Shared Workspace 的集成及并发验收，避免在核心链路稳定前继续增加新模块。",
+    "inScope": [
+      "统一检索入口",
+      "共享工作空间",
+      "开发环境部署",
+      "基础验收与门禁"
+    ],
+    "outOfScope": [
+      "多租户 SaaS",
+      "复杂权限中心",
+      "生产级高可用集群",
+      "长期记忆优化"
+    ],
+    "constraints": [
+      "V1 优先落地试用",
+      "保持模块可替换性",
+      "架构级变化必须经过人工评审"
+    ],
+    "successDefinition": [
+      "两个以上业务 Agent 能通过统一入口检索同一工作空间",
+      "关键模块具有明确的设计、实现、验证和运行状态",
+      "开发版本部署资源和访问方式可被快速定位"
+    ],
+    "reviewId": "REV-INTENT-001",
+    "updatedAt": "2026-08-08T10:00:00+08:00",
+    "extensions": {}
+  },
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "type": "business_scenario",
+      "title": "多 Agent 共享项目工作空间",
+      "summary": "多个业务 Agent 能围绕同一项目资料与状态开展工作。",
+      "priority": "P0",
+      "definitionStatus": "confirmed",
+      "fulfillmentStatus": "implemented",
+      "targetReleaseIds": [
+        "REL-V08",
+        "REL-V10"
+      ],
+      "moduleIds": [
+        "MOD-BUSINESS-AGENT",
+        "MOD-WORKSPACE"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-REQ-001"
+      ],
+      "sourceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-REQ-001",
+      "notes": "",
+      "createdAt": "2026-07-20T09:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REQ-002",
+      "type": "functional",
+      "title": "统一检索入口",
+      "summary": "业务 Agent 不直接实现各自的检索逻辑，而是通过共享检索模块访问项目资料。",
+      "priority": "P0",
+      "definitionStatus": "confirmed",
+      "fulfillmentStatus": "implemented",
+      "targetReleaseIds": [
+        "REL-V08",
+        "REL-V10"
+      ],
+      "moduleIds": [
+        "MOD-RETRIEVAL"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-FUNC"
+      ],
+      "sourceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-REQ-002",
+      "notes": "",
+      "createdAt": "2026-07-20T09:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REQ-003",
+      "type": "functional",
+      "title": "并发检索",
+      "summary": "多个业务 Agent 能在合理的响应时间内并发调用检索能力。",
+      "priority": "P0",
+      "definitionStatus": "confirmed",
+      "fulfillmentStatus": "partially_covered",
+      "targetReleaseIds": [
+        "REL-V10"
+      ],
+      "moduleIds": [
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-CONC",
+        "ACC-WS-CONSISTENCY"
+      ],
+      "sourceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-REQ-003",
+      "notes": "",
+      "createdAt": "2026-07-28T18:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REQ-004",
+      "type": "functional",
+      "title": "工作空间资料可追踪",
+      "summary": "检索结果和工作产物能定位到对应项目、文件与元数据。",
+      "priority": "P1",
+      "definitionStatus": "confirmed",
+      "fulfillmentStatus": "partially_covered",
+      "targetReleaseIds": [
+        "REL-V10"
+      ],
+      "moduleIds": [
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-WS-METADATA"
+      ],
+      "sourceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-REQ-004",
+      "notes": "",
+      "createdAt": "2026-07-28T18:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REQ-005",
+      "type": "functional",
+      "title": "开发环境可访问",
+      "summary": "能够定位开发版本的服务、数据库、外部依赖和测试账号。",
+      "priority": "P1",
+      "definitionStatus": "confirmed",
+      "fulfillmentStatus": "verified",
+      "targetReleaseIds": [
+        "REL-V08"
+      ],
+      "moduleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-DEP-DEV"
+      ],
+      "sourceReferenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "reviewId": "REV-REQ-005",
+      "notes": "",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REQ-006",
+      "type": "functional",
+      "title": "长期记忆",
+      "summary": "Agent 能跨会话保存长期记忆。",
+      "priority": "P2",
+      "definitionStatus": "deferred",
+      "fulfillmentStatus": "not_started",
+      "targetReleaseIds": [],
+      "moduleIds": [],
+      "acceptanceCriteriaIds": [],
+      "sourceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-REQ-006",
+      "notes": "推迟到 V1 试用后评估。",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    }
+  ],
+  "architecture": {
+    "currentVersionId": "ARCH-V03",
+    "targetVersionId": "ARCH-V04",
+    "baselines": [
+      {
+        "id": "BASE-LANGGRAPH",
+        "name": "LangGraph StateGraph Baseline",
+        "type": "open_source",
+        "version": "project-pinned",
+        "commit": "",
+        "rationale": "复用有状态编排与工具调用能力，不自行实现基础图运行时。",
+        "referenceIds": [
+          "REF-LANGGRAPH"
+        ],
+        "divergence": "medium",
+        "upgradeStrategy": "保持编排运行时接口稳定；自定义能力通过独立模块扩展，避免侵入核心执行器。",
+        "adoptedAt": "2026-07-20T09:00:00+08:00",
+        "extensions": {}
+      }
+    ],
+    "layers": [
+      {
+        "id": "LAYER-INTERACTION",
+        "name": "Interaction",
+        "order": 10,
+        "summary": "用户和开发人员访问入口。",
+        "extensions": {}
+      },
+      {
+        "id": "LAYER-ORCHESTRATION",
+        "name": "Orchestration",
+        "order": 20,
+        "summary": "任务编排、路由与运行状态。",
+        "extensions": {}
+      },
+      {
+        "id": "LAYER-AGENT",
+        "name": "Agent",
+        "order": 30,
+        "summary": "业务 Agent 与共享能力 Agent。",
+        "extensions": {}
+      },
+      {
+        "id": "LAYER-SERVICE",
+        "name": "Service",
+        "order": 40,
+        "summary": "工作空间及元数据服务。",
+        "extensions": {}
+      },
+      {
+        "id": "LAYER-DATA",
+        "name": "Data",
+        "order": 50,
+        "summary": "向量、文件和结构化数据。",
+        "extensions": {}
+      }
+    ],
+    "versions": [
+      {
+        "id": "ARCH-V01",
+        "label": "0.1 Initial",
+        "status": "superseded",
+        "createdAt": "2026-07-20T09:00:00+08:00",
+        "acceptedAt": "2026-07-20T09:00:00+08:00",
+        "summary": "采用 LangGraph 编排，业务 Agent 直接访问向量存储。",
+        "rationale": "先验证最短可运行链路。",
+        "baselineIds": [
+          "BASE-LANGGRAPH"
+        ],
+        "delta": {
+          "addedModuleIds": [
+            "MOD-ORCHESTRATOR",
+            "MOD-BUSINESS-AGENT",
+            "MOD-DIRECT-VECTOR",
+            "MOD-VECTORSTORE"
+          ],
+          "modifiedModuleIds": [],
+          "removedModuleIds": [],
+          "addedConnectionIds": [
+            "CONN-ORCH-AGENT",
+            "CONN-AGENT-DIRECT"
+          ],
+          "modifiedConnectionIds": [],
+          "removedConnectionIds": []
+        },
+        "reviewId": "REV-ARCH-V01",
+        "referenceIds": [
+          "REF-ARCH"
+        ],
+        "extensions": {}
+      },
+      {
+        "id": "ARCH-V02",
+        "label": "0.2 Shared Retrieval",
+        "status": "superseded",
+        "createdAt": "2026-07-28T18:00:00+08:00",
+        "acceptedAt": "2026-07-28T18:00:00+08:00",
+        "summary": "新增 Retrieval Agent 和 Shared Workspace，保留直接访问作为兼容路径。",
+        "rationale": "将检索能力从业务 Agent 中抽离，同时控制迁移风险。",
+        "baselineIds": [
+          "BASE-LANGGRAPH"
+        ],
+        "delta": {
+          "addedModuleIds": [
+            "MOD-RETRIEVAL",
+            "MOD-WORKSPACE"
+          ],
+          "modifiedModuleIds": [
+            "MOD-BUSINESS-AGENT"
+          ],
+          "removedModuleIds": [],
+          "addedConnectionIds": [
+            "CONN-AGENT-RETRIEVAL",
+            "CONN-RETRIEVAL-WORKSPACE",
+            "CONN-WORKSPACE-VECTOR"
+          ],
+          "modifiedConnectionIds": [],
+          "removedConnectionIds": []
+        },
+        "reviewId": "REV-ARCH-V02",
+        "referenceIds": [
+          "REF-ARCH",
+          "REF-RETRIEVAL-DESIGN",
+          "REF-WORKSPACE-DESIGN"
+        ],
+        "extensions": {}
+      },
+      {
+        "id": "ARCH-V03",
+        "label": "0.3 MVP Current",
+        "status": "accepted",
+        "createdAt": "2026-08-03T20:00:00+08:00",
+        "acceptedAt": "2026-08-03T20:00:00+08:00",
+        "summary": "Retrieval Agent 已进入开发部署，Workspace 仍使用文件系统元数据。",
+        "rationale": "先完成核心检索链路，再验证是否需要独立元数据存储。",
+        "baselineIds": [
+          "BASE-LANGGRAPH"
+        ],
+        "delta": {
+          "addedModuleIds": [
+            "MOD-CONSOLE"
+          ],
+          "modifiedModuleIds": [
+            "MOD-RETRIEVAL",
+            "MOD-WORKSPACE"
+          ],
+          "removedModuleIds": [],
+          "addedConnectionIds": [
+            "CONN-CONSOLE-ORCH"
+          ],
+          "modifiedConnectionIds": [],
+          "removedConnectionIds": []
+        },
+        "reviewId": "REV-ARCH-V03",
+        "referenceIds": [
+          "REF-ARCH"
+        ],
+        "extensions": {}
+      },
+      {
+        "id": "ARCH-V04",
+        "label": "0.4 Target Metadata Split",
+        "status": "review_pending",
+        "createdAt": "2026-08-08T10:00:00+08:00",
+        "acceptedAt": null,
+        "summary": "引入独立 Metadata Store，停止业务 Agent 直接访问向量存储。",
+        "rationale": "改善多 Agent 并发状态索引和资料追踪，并收敛统一检索边界。",
+        "baselineIds": [
+          "BASE-LANGGRAPH"
+        ],
+        "delta": {
+          "addedModuleIds": [
+            "MOD-METADATA"
+          ],
+          "modifiedModuleIds": [
+            "MOD-WORKSPACE"
+          ],
+          "removedModuleIds": [
+            "MOD-DIRECT-VECTOR"
+          ],
+          "addedConnectionIds": [
+            "CONN-WORKSPACE-METADATA"
+          ],
+          "modifiedConnectionIds": [],
+          "removedConnectionIds": [
+            "CONN-AGENT-DIRECT"
+          ]
+        },
+        "reviewId": "REV-ARCH-V04",
+        "referenceIds": [
+          "REF-ARCH",
+          "REF-WORKSPACE-DESIGN"
+        ],
+        "extensions": {}
+      }
+    ],
+    "modules": [
+      {
+        "id": "MOD-CONSOLE",
+        "name": "Project Console",
+        "layerId": "LAYER-INTERACTION",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "supporting",
+        "purpose": "提供开发人员访问和观察项目运行状态的入口。",
+        "rationale": "V1 需要一个最小操作入口，但不建设完整管理后台。",
+        "requirementIds": [
+          "REQ-005"
+        ],
+        "source": {
+          "origin": "custom",
+          "baselineId": null,
+          "changeType": "added",
+          "rationale": "项目自定义入口。",
+          "changedAreas": [],
+          "upgradeImpact": "none"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "提交任务与查看运行状态"
+          ],
+          "nonResponsibilities": [
+            "复杂权限管理",
+            "项目配置中心"
+          ],
+          "technologies": [
+            {
+              "name": "Vanilla Web UI",
+              "role": "开发控制台",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "不持有核心业务状态",
+          "dataHandled": [
+            "用户指令",
+            "状态摘要"
+          ],
+          "interfaceSummary": [
+            "HTTPS 请求"
+          ],
+          "deploymentRole": "开发环境 Web 入口",
+          "referenceIds": [
+            "REF-ARCH"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "confirmed",
+          "implementationMaturity": "stable",
+          "verificationStatus": "passed",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/console/",
+        "decisionIds": [],
+        "riskIds": [],
+        "acceptanceCriteriaIds": [
+          "ACC-DEP-DEV"
+        ],
+        "gateIds": [
+          "GATE-DEP-DEV"
+        ],
+        "workItemIds": [
+          "WI-DEPLOY-V08"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V03"
+        ],
+        "createdAt": "2026-08-03T20:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-ORCHESTRATOR",
+        "name": "Orchestrator",
+        "layerId": "LAYER-ORCHESTRATION",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "core",
+        "purpose": "负责 Agent 任务编排、路由和执行状态推进。",
+        "rationale": "复用 LangGraph 的图运行时，避免自建编排基础设施。",
+        "requirementIds": [
+          "REQ-001"
+        ],
+        "source": {
+          "origin": "oss",
+          "baselineId": "BASE-LANGGRAPH",
+          "changeType": "modified",
+          "rationale": "保留 StateGraph 核心能力，增加项目上下文适配。",
+          "changedAreas": [
+            "State schema adapter",
+            "Project context injection"
+          ],
+          "upgradeImpact": "medium"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "任务编排",
+            "Agent 路由",
+            "运行状态推进"
+          ],
+          "nonResponsibilities": [
+            "业务检索",
+            "工作空间文件管理"
+          ],
+          "technologies": [
+            {
+              "name": "LangGraph",
+              "role": "图运行时",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "拥有单次运行状态",
+          "dataHandled": [
+            "任务状态",
+            "Agent 输出"
+          ],
+          "interfaceSummary": [
+            "Graph State",
+            "Tool invocation"
+          ],
+          "deploymentRole": "应用进程内核心运行时",
+          "referenceIds": [
+            "REF-ARCH",
+            "REF-LANGGRAPH"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "confirmed",
+          "implementationMaturity": "stable",
+          "verificationStatus": "passed",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/orchestrator/",
+        "decisionIds": [],
+        "riskIds": [
+          "RISK-BASELINE-DIVERGENCE"
+        ],
+        "acceptanceCriteriaIds": [
+          "ACC-STG-ARCH"
+        ],
+        "gateIds": [
+          "GATE-ARCH-V03"
+        ],
+        "workItemIds": [
+          "WI-DEPLOY-V08"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V03"
+        ],
+        "createdAt": "2026-07-20T09:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-BUSINESS-AGENT",
+        "name": "Business Agent",
+        "layerId": "LAYER-AGENT",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "core",
+        "purpose": "承载具体业务任务并调用共享能力。",
+        "rationale": "将业务推理与通用检索、工作空间能力分离。",
+        "requirementIds": [
+          "REQ-001",
+          "REQ-002"
+        ],
+        "source": {
+          "origin": "custom",
+          "baselineId": "BASE-LANGGRAPH",
+          "changeType": "added",
+          "rationale": "基于图节点实现业务角色。",
+          "changedAreas": [],
+          "upgradeImpact": "low"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "理解业务任务",
+            "调用检索与工具",
+            "生成业务产物"
+          ],
+          "nonResponsibilities": [
+            "直接管理向量数据库",
+            "维护共享文件索引"
+          ],
+          "technologies": [
+            {
+              "name": "Python",
+              "role": "Agent 实现",
+              "decisionId": null,
+              "status": "current"
+            },
+            {
+              "name": "LLM API",
+              "role": "推理",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "只拥有单次任务上下文",
+          "dataHandled": [
+            "任务上下文",
+            "检索结果",
+            "业务产物"
+          ],
+          "interfaceSummary": [
+            "Graph State",
+            "Retrieval API"
+          ],
+          "deploymentRole": "编排进程内 Agent 节点",
+          "referenceIds": [
+            "REF-ARCH"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "confirmed",
+          "implementationMaturity": "functional",
+          "verificationStatus": "partial",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/agents/business/",
+        "decisionIds": [],
+        "riskIds": [
+          "RISK-VERIFY-GAP"
+        ],
+        "acceptanceCriteriaIds": [
+          "ACC-REQ-001"
+        ],
+        "gateIds": [
+          "GATE-RET-INTEGRATION"
+        ],
+        "workItemIds": [
+          "WI-DIRECT-MIGRATE",
+          "WI-DEPLOY-V08"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V02"
+        ],
+        "createdAt": "2026-07-20T09:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-DIRECT-VECTOR",
+        "name": "Direct Vector Access",
+        "layerId": "LAYER-AGENT",
+        "architectureScope": "current",
+        "targetLayerId": null,
+        "category": "integration",
+        "purpose": "保留旧版业务 Agent 直接访问向量存储的兼容路径。",
+        "rationale": "在统一检索完成验收前降低迁移风险。",
+        "requirementIds": [
+          "REQ-002"
+        ],
+        "source": {
+          "origin": "custom",
+          "baselineId": null,
+          "changeType": "removed",
+          "rationale": "目标架构中由 Retrieval Agent 替代。",
+          "changedAreas": [
+            "Business Agent retrieval call"
+          ],
+          "upgradeImpact": "none"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "提供旧检索调用适配"
+          ],
+          "nonResponsibilities": [
+            "统一检索策略",
+            "跨 Agent 共享"
+          ],
+          "technologies": [
+            {
+              "name": "Vector DB SDK",
+              "role": "直接客户端",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "无",
+          "dataHandled": [
+            "查询",
+            "向量结果"
+          ],
+          "interfaceSummary": [
+            "Python SDK"
+          ],
+          "deploymentRole": "业务 Agent 内兼容适配",
+          "referenceIds": [
+            "REF-ARCH"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "deprecated",
+          "implementationMaturity": "functional",
+          "verificationStatus": "partial",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/agents/legacy_retrieval/",
+        "decisionIds": [],
+        "riskIds": [
+          "RISK-VERIFY-GAP"
+        ],
+        "acceptanceCriteriaIds": [],
+        "gateIds": [],
+        "workItemIds": [
+          "WI-DIRECT-MIGRATE"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V04"
+        ],
+        "createdAt": "2026-07-20T09:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-RETRIEVAL",
+        "name": "Retrieval Agent",
+        "layerId": "LAYER-AGENT",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "core",
+        "purpose": "为多个业务 Agent 提供统一、可验证的项目资料检索入口。",
+        "rationale": "避免每个业务 Agent 各自实现 RAG，并为并发、超时和来源返回建立稳定边界。",
+        "requirementIds": [
+          "REQ-002",
+          "REQ-003"
+        ],
+        "source": {
+          "origin": "oss",
+          "baselineId": "BASE-LANGGRAPH",
+          "changeType": "added",
+          "rationale": "参考 ToolNode 调用模式，但作为独立共享能力实现。",
+          "changedAreas": [
+            "Independent retrieval service",
+            "Workspace scope",
+            "Source attribution"
+          ],
+          "upgradeImpact": "low"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "接收统一检索请求",
+            "限定 Workspace 范围",
+            "返回来源与显式错误"
+          ],
+          "nonResponsibilities": [
+            "维护文档生命周期",
+            "拥有长期业务状态",
+            "Agent 编排"
+          ],
+          "technologies": [
+            {
+              "name": "Python",
+              "role": "核心实现",
+              "decisionId": null,
+              "status": "current"
+            },
+            {
+              "name": "FastAPI",
+              "role": "HTTP 边界",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "不持有核心状态",
+          "dataHandled": [
+            "RetrievalRequest",
+            "RetrievalResult",
+            "SourceReference"
+          ],
+          "interfaceSummary": [
+            "POST /retrieve"
+          ],
+          "deploymentRole": "独立开发服务",
+          "referenceIds": [
+            "REF-RETRIEVAL-DESIGN",
+            "REF-INTERFACE"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "confirmed",
+          "implementationMaturity": "functional",
+          "verificationStatus": "partial",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/retrieval/",
+        "decisionIds": [
+          "DEC-CACHE"
+        ],
+        "riskIds": [
+          "RISK-WORKSPACE-CONC",
+          "RISK-VERIFY-GAP"
+        ],
+        "acceptanceCriteriaIds": [
+          "ACC-RET-FUNC",
+          "ACC-RET-CONC"
+        ],
+        "gateIds": [
+          "GATE-RET-UNIT",
+          "GATE-RET-INTEGRATION",
+          "GATE-RET-PERF"
+        ],
+        "workItemIds": [
+          "WI-RETRIEVAL-IMPL",
+          "WI-RETRIEVAL-CONC",
+          "WI-DIRECT-MIGRATE",
+          "WI-DEPLOY-V08"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V02",
+          "REV-ACC-RET-CONC"
+        ],
+        "createdAt": "2026-07-28T18:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-WORKSPACE",
+        "name": "Shared Workspace",
+        "layerId": "LAYER-SERVICE",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "core",
+        "purpose": "管理项目资料边界、文件定位和共享工作状态。",
+        "rationale": "为多个 Agent 提供统一的项目上下文和资料作用域。",
+        "requirementIds": [
+          "REQ-001",
+          "REQ-003",
+          "REQ-004"
+        ],
+        "source": {
+          "origin": "custom",
+          "baselineId": null,
+          "changeType": "modified",
+          "rationale": "从文件系统原型演进为文件内容与结构化元数据分离。",
+          "changedAreas": [
+            "Metadata ownership",
+            "Concurrent state updates"
+          ],
+          "upgradeImpact": "none"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "限定项目文件范围",
+            "维护轻量 JSON 元数据",
+            "为 Retrieval 提供资料定位"
+          ],
+          "nonResponsibilities": [
+            "业务推理",
+            "统一检索策略",
+            "生产级权限中心"
+          ],
+          "technologies": [
+            {
+              "name": "Filesystem",
+              "role": "文件与原型元数据",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "拥有项目文件和轻量状态",
+          "dataHandled": [
+            "文件",
+            "项目路径",
+            "JSON 元数据"
+          ],
+          "interfaceSummary": [
+            "Workspace service interface"
+          ],
+          "deploymentRole": "开发服务内部模块",
+          "referenceIds": [
+            "REF-WORKSPACE-DESIGN",
+            "REF-CODE-WORKSPACE"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": {
+          "responsibilities": [
+            "限定项目文件范围",
+            "维护文件生命周期",
+            "通过 Metadata Store 管理结构化状态"
+          ],
+          "nonResponsibilities": [
+            "业务推理",
+            "检索排序",
+            "数据库运维"
+          ],
+          "technologies": [
+            {
+              "name": "Filesystem",
+              "role": "文件内容",
+              "decisionId": "DEC-WORKSPACE-METADATA",
+              "status": "current"
+            },
+            {
+              "name": "PostgreSQL",
+              "role": "结构化元数据",
+              "decisionId": "DEC-WORKSPACE-METADATA",
+              "status": "target"
+            }
+          ],
+          "stateOwnership": "拥有文件生命周期；结构化状态委托 Metadata Store",
+          "dataHandled": [
+            "文件",
+            "项目状态",
+            "版本元数据"
+          ],
+          "interfaceSummary": [
+            "Workspace service interface"
+          ],
+          "deploymentRole": "开发与生产共享服务",
+          "referenceIds": [
+            "REF-WORKSPACE-DESIGN"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "status": {
+          "designMaturity": "review_ready",
+          "implementationMaturity": "functional",
+          "verificationStatus": "pending",
+          "runtimeStatus": "development"
+        },
+        "codePath": "src/workspace/",
+        "decisionIds": [
+          "DEC-WORKSPACE-METADATA",
+          "DEC-CACHE"
+        ],
+        "riskIds": [
+          "RISK-WORKSPACE-CONC"
+        ],
+        "acceptanceCriteriaIds": [
+          "ACC-WS-CONSISTENCY"
+        ],
+        "gateIds": [
+          "GATE-WS-CONC"
+        ],
+        "workItemIds": [
+          "WI-RETRIEVAL-CONC",
+          "WI-WORKSPACE-METADATA",
+          "WI-DEPLOY-V08"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V04",
+          "REV-ACC-WS"
+        ],
+        "createdAt": "2026-07-28T18:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-METADATA",
+        "name": "Metadata Store",
+        "layerId": "LAYER-DATA",
+        "architectureScope": "target",
+        "targetLayerId": null,
+        "category": "data",
+        "purpose": "保存项目、文件、版本和状态的结构化元数据。",
+        "rationale": "将查询和并发状态从文件系统目录中分离，支撑资料追踪。",
+        "requirementIds": [
+          "REQ-003",
+          "REQ-004"
+        ],
+        "source": {
+          "origin": "custom",
+          "baselineId": null,
+          "changeType": "added",
+          "rationale": "目标架构新增模块。",
+          "changedAreas": [],
+          "upgradeImpact": "none"
+        },
+        "currentDesign": null,
+        "targetDesign": {
+          "responsibilities": [
+            "持久化项目和文件元数据",
+            "提供事务更新和查询"
+          ],
+          "nonResponsibilities": [
+            "保存文件二进制内容",
+            "执行检索排序"
+          ],
+          "technologies": [
+            {
+              "name": "PostgreSQL",
+              "role": "结构化元数据",
+              "decisionId": "DEC-WORKSPACE-METADATA",
+              "status": "target"
+            }
+          ],
+          "stateOwnership": "拥有结构化项目与文件状态",
+          "dataHandled": [
+            "项目",
+            "文件",
+            "版本",
+            "处理状态"
+          ],
+          "interfaceSummary": [
+            "SQL repository interface"
+          ],
+          "deploymentRole": "独立数据库资源",
+          "referenceIds": [
+            "REF-WORKSPACE-DESIGN"
+          ],
+          "notes": "",
+          "extensions": {}
+        },
+        "status": {
+          "designMaturity": "review_ready",
+          "implementationMaturity": "prototype",
+          "verificationStatus": "not_defined",
+          "runtimeStatus": "not_deployed"
+        },
+        "codePath": "src/workspace/metadata/",
+        "decisionIds": [
+          "DEC-WORKSPACE-METADATA"
+        ],
+        "riskIds": [
+          "RISK-WORKSPACE-CONC"
+        ],
+        "acceptanceCriteriaIds": [
+          "ACC-WS-METADATA"
+        ],
+        "gateIds": [],
+        "workItemIds": [
+          "WI-WORKSPACE-METADATA"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V04",
+          "REV-ACC-METADATA"
+        ],
+        "createdAt": "2026-08-08T10:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      },
+      {
+        "id": "MOD-VECTORSTORE",
+        "name": "Vector Store",
+        "layerId": "LAYER-DATA",
+        "architectureScope": "both",
+        "targetLayerId": null,
+        "category": "external",
+        "purpose": "保存项目资料向量索引并执行语义检索。",
+        "rationale": "复用现有向量数据库，不自建索引引擎。",
+        "requirementIds": [
+          "REQ-002",
+          "REQ-003"
+        ],
+        "source": {
+          "origin": "external_service",
+          "baselineId": null,
+          "changeType": "not_applicable",
+          "rationale": "外部数据服务。",
+          "changedAreas": [],
+          "upgradeImpact": "unknown"
+        },
+        "currentDesign": {
+          "responsibilities": [
+            "向量索引",
+            "过滤与语义检索"
+          ],
+          "nonResponsibilities": [
+            "项目状态管理",
+            "Agent 编排"
+          ],
+          "technologies": [
+            {
+              "name": "Vector Database",
+              "role": "语义索引",
+              "decisionId": null,
+              "status": "current"
+            }
+          ],
+          "stateOwnership": "拥有向量索引",
+          "dataHandled": [
+            "向量",
+            "文档片段",
+            "过滤元数据"
+          ],
+          "interfaceSummary": [
+            "Vector DB API"
+          ],
+          "deploymentRole": "外部开发服务",
+          "referenceIds": [],
+          "notes": "",
+          "extensions": {}
+        },
+        "targetDesign": null,
+        "status": {
+          "designMaturity": "confirmed",
+          "implementationMaturity": "stable",
+          "verificationStatus": "partial",
+          "runtimeStatus": "development"
+        },
+        "codePath": "",
+        "decisionIds": [],
+        "riskIds": [],
+        "acceptanceCriteriaIds": [
+          "ACC-RET-CONC"
+        ],
+        "gateIds": [
+          "GATE-RET-PERF"
+        ],
+        "workItemIds": [
+          "WI-RETRIEVAL-CONC"
+        ],
+        "reviewIds": [
+          "REV-ARCH-V02"
+        ],
+        "createdAt": "2026-07-20T09:00:00+08:00",
+        "updatedAt": "2026-08-08T10:00:00+08:00",
+        "extensions": {}
+      }
+    ],
+    "connections": [
+      {
+        "id": "CONN-CONSOLE-ORCH",
+        "name": "Console to Orchestrator",
+        "fromModuleId": "MOD-CONSOLE",
+        "toModuleId": "MOD-ORCHESTRATOR",
+        "architectureScope": "both",
+        "lifecycle": "active",
+        "flowDirection": "one_way",
+        "protocol": "HTTPS",
+        "communicationMode": "sync",
+        "dataSummary": "用户请求、项目上下文和操作指令",
+        "contractReferenceIds": [
+          "REF-INTERFACE"
+        ],
+        "authSummary": "开发环境管理员账号",
+        "reliabilitySummary": "超时与错误由控制台显示",
+        "rationale": "统一交互入口。",
+        "transitionId": null,
+        "extensions": {}
+      },
+      {
+        "id": "CONN-ORCH-AGENT",
+        "name": "Orchestrator to Business Agent",
+        "fromModuleId": "MOD-ORCHESTRATOR",
+        "toModuleId": "MOD-BUSINESS-AGENT",
+        "architectureScope": "both",
+        "lifecycle": "active",
+        "flowDirection": "bidirectional",
+        "protocol": "In-process Graph State",
+        "communicationMode": "direct",
+        "dataSummary": "任务、上下文、工具结果和状态",
+        "contractReferenceIds": [
+          "REF-INTERFACE"
+        ],
+        "authSummary": "进程内调用",
+        "reliabilitySummary": "由图运行时维护状态和重试",
+        "rationale": "复用 LangGraph 编排能力。",
+        "transitionId": null,
+        "extensions": {}
+      },
+      {
+        "id": "CONN-AGENT-DIRECT",
+        "name": "Business Agent Direct Vector Access",
+        "fromModuleId": "MOD-BUSINESS-AGENT",
+        "toModuleId": "MOD-DIRECT-VECTOR",
+        "architectureScope": "current",
+        "lifecycle": "deprecating",
+        "flowDirection": "one_way",
+        "protocol": "Python SDK",
+        "communicationMode": "sync",
+        "dataSummary": "检索查询与向量结果",
+        "contractReferenceIds": [],
+        "authSummary": "继承运行环境凭据",
+        "reliabilitySummary": "缺少统一超时与隔离策略",
+        "rationale": "保留旧路径直到统一检索链路完成验证。",
+        "transitionId": "TRANS-DIRECT-REMOVE",
+        "extensions": {}
+      },
+      {
+        "id": "CONN-AGENT-RETRIEVAL",
+        "name": "Business Agent to Retrieval Agent",
+        "fromModuleId": "MOD-BUSINESS-AGENT",
+        "toModuleId": "MOD-RETRIEVAL",
+        "architectureScope": "both",
+        "lifecycle": "active",
+        "flowDirection": "one_way",
+        "protocol": "HTTP JSON",
+        "communicationMode": "sync",
+        "dataSummary": "RetrievalRequest / RetrievalResult",
+        "contractReferenceIds": [
+          "REF-INTERFACE"
+        ],
+        "authSummary": "开发环境内部 Token",
+        "reliabilitySummary": "30 秒超时，最多 2 次重试",
+        "rationale": "形成统一检索边界。",
+        "transitionId": null,
+        "extensions": {}
+      },
+      {
+        "id": "CONN-RETRIEVAL-WORKSPACE",
+        "name": "Retrieval Agent to Workspace",
+        "fromModuleId": "MOD-RETRIEVAL",
+        "toModuleId": "MOD-WORKSPACE",
+        "architectureScope": "both",
+        "lifecycle": "active",
+        "flowDirection": "one_way",
+        "protocol": "Python Service Interface",
+        "communicationMode": "sync",
+        "dataSummary": "工作空间范围、资料索引和文件定位",
+        "contractReferenceIds": [
+          "REF-INTERFACE"
+        ],
+        "authSummary": "进程内服务调用",
+        "reliabilitySummary": "调用失败返回显式错误，不静默降级",
+        "rationale": "由 Workspace 管理项目资料边界。",
+        "transitionId": null,
+        "extensions": {}
+      },
+      {
+        "id": "CONN-WORKSPACE-VECTOR",
+        "name": "Workspace to Vector Store",
+        "fromModuleId": "MOD-WORKSPACE",
+        "toModuleId": "MOD-VECTORSTORE",
+        "architectureScope": "both",
+        "lifecycle": "active",
+        "flowDirection": "bidirectional",
+        "protocol": "Vector DB Client",
+        "communicationMode": "sync",
+        "dataSummary": "索引写入、过滤条件和检索结果",
+        "contractReferenceIds": [
+          "REF-INTERFACE"
+        ],
+        "authSummary": "外部凭据文件",
+        "reliabilitySummary": "客户端超时和失败重试",
+        "rationale": "提供语义检索存储。",
+        "transitionId": null,
+        "extensions": {}
+      },
+      {
+        "id": "CONN-WORKSPACE-METADATA",
+        "name": "Workspace to Metadata Store",
+        "fromModuleId": "MOD-WORKSPACE",
+        "toModuleId": "MOD-METADATA",
+        "architectureScope": "target",
+        "lifecycle": "planned",
+        "flowDirection": "bidirectional",
+        "protocol": "PostgreSQL",
+        "communicationMode": "sync",
+        "dataSummary": "项目、文件、版本和状态元数据",
+        "contractReferenceIds": [
+          "REF-WORKSPACE-DESIGN"
+        ],
+        "authSummary": "外部凭据文件",
+        "reliabilitySummary": "事务保证单次更新一致性",
+        "rationale": "将结构化状态与文件内容分离。",
+        "transitionId": "TRANS-WORKSPACE-METADATA",
+        "extensions": {}
+      }
+    ],
+    "transitions": [
+      {
+        "id": "TRANS-DIRECT-REMOVE",
+        "subjectType": "connection",
+        "subjectId": "CONN-AGENT-DIRECT",
+        "fromVersionId": "ARCH-V03",
+        "toVersionId": "ARCH-V04",
+        "state": "in_progress",
+        "summary": "停止业务 Agent 直接访问向量存储。",
+        "reason": "统一入口已具备基础功能，需消除双路径。",
+        "workItemIds": [
+          "WI-DIRECT-MIGRATE"
+        ],
+        "decisionIds": [],
+        "riskIds": [
+          "RISK-VERIFY-GAP"
+        ],
+        "startedAt": "2026-08-08T10:00:00+08:00",
+        "targetDate": "2026-08-20",
+        "completedAt": null,
+        "extensions": {}
+      },
+      {
+        "id": "TRANS-WORKSPACE-METADATA",
+        "subjectType": "module",
+        "subjectId": "MOD-WORKSPACE",
+        "fromVersionId": "ARCH-V03",
+        "toVersionId": "ARCH-V04",
+        "state": "migrating",
+        "summary": "Workspace 从文件系统元数据迁移为文件系统加结构化元数据存储。",
+        "reason": "支持并发状态定位和资料追踪。",
+        "workItemIds": [
+          "WI-WORKSPACE-METADATA"
+        ],
+        "decisionIds": [
+          "DEC-WORKSPACE-METADATA"
+        ],
+        "riskIds": [
+          "RISK-WORKSPACE-CONC"
+        ],
+        "startedAt": "2026-08-08T10:00:00+08:00",
+        "targetDate": "2026-08-18",
+        "completedAt": null,
+        "extensions": {}
+      },
+      {
+        "id": "TRANS-METADATA-ADD",
+        "subjectType": "module",
+        "subjectId": "MOD-METADATA",
+        "fromVersionId": "ARCH-V03",
+        "toVersionId": "ARCH-V04",
+        "state": "in_progress",
+        "summary": "新增 Metadata Store。",
+        "reason": "从 Workspace 内部文件索引中拆出结构化状态。",
+        "workItemIds": [
+          "WI-WORKSPACE-METADATA"
+        ],
+        "decisionIds": [
+          "DEC-WORKSPACE-METADATA"
+        ],
+        "riskIds": [],
+        "startedAt": "2026-08-08T10:00:00+08:00",
+        "targetDate": "2026-08-18",
+        "completedAt": null,
+        "extensions": {}
+      }
+    ],
+    "extensions": {}
+  },
+  "stages": [
+    {
+      "id": "STG-REQ",
+      "name": "需求澄清",
+      "order": 10,
+      "status": "completed",
+      "purpose": "明确业务场景、功能需求和 V1 边界。",
+      "currentFocus": "",
+      "entryAcceptanceIds": [],
+      "exitAcceptanceIds": [
+        "ACC-STG-REQ"
+      ],
+      "moduleIds": [],
+      "blockerDecisionIds": [],
+      "blockerRiskIds": [],
+      "plannedStart": "2026-07-20",
+      "plannedEnd": "2026-07-23",
+      "actualStart": "2026-07-20",
+      "actualEnd": "2026-07-23",
+      "reviewId": "REV-STG-REQ",
+      "extensions": {}
+    },
+    {
+      "id": "STG-ARCH",
+      "name": "架构基线",
+      "order": 20,
+      "status": "completed",
+      "purpose": "形成经过评审的初始架构并明确开源基线。",
+      "currentFocus": "",
+      "entryAcceptanceIds": [
+        "ACC-STG-REQ"
+      ],
+      "exitAcceptanceIds": [
+        "ACC-STG-ARCH"
+      ],
+      "moduleIds": [
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "blockerDecisionIds": [],
+      "blockerRiskIds": [],
+      "plannedStart": "2026-07-24",
+      "plannedEnd": "2026-08-02",
+      "actualStart": "2026-07-24",
+      "actualEnd": "2026-08-03",
+      "reviewId": "REV-STG-ARCH",
+      "extensions": {}
+    },
+    {
+      "id": "STG-MVP",
+      "name": "MVP 实现",
+      "order": 30,
+      "status": "current",
+      "purpose": "实现并部署核心检索与共享工作空间链路。",
+      "currentFocus": "完成并发验收和 Workspace 元数据迁移评审。",
+      "entryAcceptanceIds": [
+        "ACC-STG-ARCH"
+      ],
+      "exitAcceptanceIds": [
+        "ACC-STG-MVP"
+      ],
+      "moduleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "blockerDecisionIds": [
+        "DEC-CACHE"
+      ],
+      "blockerRiskIds": [
+        "RISK-WORKSPACE-CONC"
+      ],
+      "plannedStart": "2026-08-04",
+      "plannedEnd": "2026-08-20",
+      "actualStart": "2026-08-04",
+      "actualEnd": null,
+      "reviewId": null,
+      "extensions": {}
+    },
+    {
+      "id": "STG-INTEGRATION",
+      "name": "集成验证",
+      "order": 40,
+      "status": "not_started",
+      "purpose": "验证端到端数据流、异常处理和模块替换边界。",
+      "currentFocus": "",
+      "entryAcceptanceIds": [
+        "ACC-STG-MVP"
+      ],
+      "exitAcceptanceIds": [
+        "ACC-STG-INTEGRATION"
+      ],
+      "moduleIds": [
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "blockerDecisionIds": [],
+      "blockerRiskIds": [],
+      "plannedStart": "2026-08-21",
+      "plannedEnd": "2026-08-27",
+      "actualStart": null,
+      "actualEnd": null,
+      "reviewId": null,
+      "extensions": {}
+    },
+    {
+      "id": "STG-TRIAL",
+      "name": "试用",
+      "order": 50,
+      "status": "not_started",
+      "purpose": "在真实项目资料上试用并收集问题。",
+      "currentFocus": "",
+      "entryAcceptanceIds": [
+        "ACC-STG-INTEGRATION"
+      ],
+      "exitAcceptanceIds": [
+        "ACC-STG-TRIAL"
+      ],
+      "moduleIds": [],
+      "blockerDecisionIds": [],
+      "blockerRiskIds": [],
+      "plannedStart": null,
+      "plannedEnd": null,
+      "actualStart": null,
+      "actualEnd": null,
+      "reviewId": null,
+      "extensions": {}
+    },
+    {
+      "id": "STG-ITERATE",
+      "name": "迭代与发布",
+      "order": 60,
+      "status": "not_started",
+      "purpose": "根据试用结果迭代并形成正式发布。",
+      "currentFocus": "",
+      "entryAcceptanceIds": [
+        "ACC-STG-TRIAL"
+      ],
+      "exitAcceptanceIds": [],
+      "moduleIds": [],
+      "blockerDecisionIds": [],
+      "blockerRiskIds": [],
+      "plannedStart": null,
+      "plannedEnd": null,
+      "actualStart": null,
+      "actualEnd": null,
+      "reviewId": null,
+      "extensions": {}
+    }
+  ],
+  "workItems": [
+    {
+      "id": "WI-RETRIEVAL-IMPL",
+      "title": "实现统一检索接口",
+      "type": "implementation",
+      "status": "completed",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-RETRIEVAL"
+      ],
+      "requirementIds": [
+        "REQ-002"
+      ],
+      "purpose": "将检索逻辑从业务 Agent 中抽离。",
+      "problem": "多个 Agent 各自实现检索，行为不一致。",
+      "expectedImpact": "Retrieval Agent 从 Prototype 进入 Functional。",
+      "actualImpact": "已完成 HTTP 接口、Workspace 范围和来源返回。",
+      "decisionIds": [],
+      "riskIds": [
+        "RISK-VERIFY-GAP"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-FUNC"
+      ],
+      "referenceIds": [
+        "REF-RETRIEVAL-DESIGN",
+        "REF-TEST-RETRIEVAL"
+      ],
+      "startedAt": "2026-08-03T20:00:00+08:00",
+      "dueAt": "2026-08-08T10:00:00+08:00",
+      "completedAt": "2026-08-08T10:00:00+08:00",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "WI-RETRIEVAL-CONC",
+      "title": "验证并发检索",
+      "type": "validation",
+      "status": "in_progress",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "requirementIds": [
+        "REQ-003"
+      ],
+      "purpose": "验证共享检索链路能被多个业务 Agent 并发调用。",
+      "problem": "当前只有单链路验证。",
+      "expectedImpact": "完成核心并发验收，为进入集成阶段提供证据。",
+      "actualImpact": "",
+      "decisionIds": [
+        "DEC-CACHE"
+      ],
+      "riskIds": [
+        "RISK-WORKSPACE-CONC"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-CONC",
+        "ACC-WS-CONSISTENCY"
+      ],
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "startedAt": "2026-08-08T10:00:00+08:00",
+      "dueAt": "2026-08-12T18:00:00+08:00",
+      "completedAt": null,
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "WI-WORKSPACE-METADATA",
+      "title": "拆分 Workspace 元数据存储",
+      "type": "migration",
+      "status": "in_progress",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "requirementIds": [
+        "REQ-004"
+      ],
+      "purpose": "为文件、版本和状态建立结构化索引。",
+      "problem": "文件系统目录无法稳定支撑并发状态定位。",
+      "expectedImpact": "Workspace 目标设计转为 Filesystem + Metadata Store。",
+      "actualImpact": "已完成表结构草案和迁移原型，等待架构评审。",
+      "decisionIds": [
+        "DEC-WORKSPACE-METADATA"
+      ],
+      "riskIds": [
+        "RISK-WORKSPACE-CONC"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-WS-METADATA",
+        "ACC-WS-CONSISTENCY"
+      ],
+      "referenceIds": [
+        "REF-WORKSPACE-DESIGN"
+      ],
+      "startedAt": "2026-08-08T10:00:00+08:00",
+      "dueAt": "2026-08-18T18:00:00+08:00",
+      "completedAt": null,
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "WI-DIRECT-MIGRATE",
+      "title": "移除业务 Agent 直接向量访问",
+      "type": "migration",
+      "status": "planned",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-BUSINESS-AGENT",
+        "MOD-DIRECT-VECTOR",
+        "MOD-RETRIEVAL"
+      ],
+      "requirementIds": [
+        "REQ-002"
+      ],
+      "purpose": "收敛为单一检索路径。",
+      "problem": "双路径可能导致行为与权限不一致。",
+      "expectedImpact": "目标架构中 Direct Vector Access 被移除。",
+      "actualImpact": "",
+      "decisionIds": [],
+      "riskIds": [
+        "RISK-VERIFY-GAP"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-FUNC"
+      ],
+      "referenceIds": [
+        "REF-ARCH"
+      ],
+      "startedAt": null,
+      "dueAt": "2026-08-20T18:00:00+08:00",
+      "completedAt": null,
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "WI-DEPLOY-V08",
+      "title": "部署 v0.8 开发版本",
+      "type": "deployment",
+      "status": "completed",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "requirementIds": [
+        "REQ-005"
+      ],
+      "purpose": "提供可访问的开发试用环境。",
+      "problem": "模块只在本地单独运行。",
+      "expectedImpact": "形成可追踪的 DEV 部署和资源关系。",
+      "actualImpact": "v0.8-dev 已部署到开发主机。",
+      "decisionIds": [],
+      "riskIds": [],
+      "acceptanceCriteriaIds": [
+        "ACC-DEP-DEV"
+      ],
+      "referenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "startedAt": "2026-08-03T20:00:00+08:00",
+      "dueAt": "2026-08-08T10:00:00+08:00",
+      "completedAt": "2026-08-08T10:00:00+08:00",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    }
+  ],
+  "releases": [
+    {
+      "id": "REL-V08",
+      "version": "0.8-dev",
+      "name": "MVP Development",
+      "status": "deployed",
+      "architectureVersionId": "ARCH-V03",
+      "stageId": "STG-MVP",
+      "moduleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE",
+        "MOD-DIRECT-VECTOR",
+        "MOD-VECTORSTORE"
+      ],
+      "goals": [
+        "提供统一检索的开发版本",
+        "建立可访问的工作空间链路"
+      ],
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "releasedAt": "2026-08-08T10:00:00+08:00",
+      "deploymentIds": [
+        "DEP-DEV"
+      ],
+      "referenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REL-V10",
+      "version": "1.0",
+      "name": "First Trial Release",
+      "status": "planned",
+      "architectureVersionId": "ARCH-V04",
+      "stageId": "STG-TRIAL",
+      "moduleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE",
+        "MOD-METADATA",
+        "MOD-VECTORSTORE"
+      ],
+      "goals": [
+        "完成并发检索验收",
+        "停止直接向量访问",
+        "支持项目资料元数据追踪"
+      ],
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "releasedAt": null,
+      "deploymentIds": [
+        "DEP-PROD"
+      ],
+      "referenceIds": [
+        "REF-ARCH"
+      ],
+      "extensions": {}
+    }
+  ],
+  "deployments": [
+    {
+      "id": "DEP-DEV",
+      "name": "Development Deployment",
+      "environment": "development",
+      "status": "active",
+      "releaseId": "REL-V08",
+      "architectureVersionId": "ARCH-V03",
+      "deployedAt": "2026-08-08T10:00:00+08:00",
+      "resourceIds": [
+        "RES-DEV-HOST",
+        "RES-DEV-DB",
+        "RES-DEV-VECTOR",
+        "RES-DEV-ADMIN",
+        "RES-OPENAI"
+      ],
+      "moduleDeployments": [
+        {
+          "moduleId": "MOD-CONSOLE",
+          "artifactVersion": "0.8.0",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-HOST"
+          ],
+          "endpoints": [
+            "http://localhost:8080"
+          ],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-ORCHESTRATOR",
+          "artifactVersion": "0.8.0",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-OPENAI"
+          ],
+          "endpoints": [
+            "http://localhost:8000"
+          ],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-BUSINESS-AGENT",
+          "artifactVersion": "0.8.0",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-OPENAI"
+          ],
+          "endpoints": [],
+          "notes": "进程内运行。"
+        },
+        {
+          "moduleId": "MOD-RETRIEVAL",
+          "artifactVersion": "0.5.0",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-DEV-VECTOR"
+          ],
+          "endpoints": [
+            "http://localhost:8010/retrieve"
+          ],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-WORKSPACE",
+          "artifactVersion": "0.4.0",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-DEV-VECTOR"
+          ],
+          "endpoints": [],
+          "notes": "当前仍使用文件系统元数据。"
+        },
+        {
+          "moduleId": "MOD-DIRECT-VECTOR",
+          "artifactVersion": "legacy",
+          "status": "active",
+          "resourceIds": [
+            "RES-DEV-VECTOR"
+          ],
+          "endpoints": [],
+          "notes": "兼容路径，计划移除。"
+        }
+      ],
+      "externalResourceIds": [
+        "RES-OPENAI"
+      ],
+      "configReferenceIds": [
+        "REF-DEPLOY-DEV",
+        "REF-DEV-SECRETS"
+      ],
+      "notes": "本地开发部署，包含嵌入式测试管理员账号。",
+      "extensions": {}
+    },
+    {
+      "id": "DEP-PROD",
+      "name": "Production Deployment",
+      "environment": "production",
+      "status": "planned",
+      "releaseId": "REL-V10",
+      "architectureVersionId": "ARCH-V04",
+      "deployedAt": null,
+      "resourceIds": [
+        "RES-PROD-HOST",
+        "RES-PROD-DB",
+        "RES-OPENAI"
+      ],
+      "moduleDeployments": [
+        {
+          "moduleId": "MOD-CONSOLE",
+          "artifactVersion": "1.0.0",
+          "status": "planned",
+          "resourceIds": [
+            "RES-PROD-HOST"
+          ],
+          "endpoints": [],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-ORCHESTRATOR",
+          "artifactVersion": "1.0.0",
+          "status": "planned",
+          "resourceIds": [
+            "RES-PROD-HOST",
+            "RES-OPENAI"
+          ],
+          "endpoints": [],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-RETRIEVAL",
+          "artifactVersion": "1.0.0",
+          "status": "planned",
+          "resourceIds": [
+            "RES-PROD-HOST"
+          ],
+          "endpoints": [],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-WORKSPACE",
+          "artifactVersion": "1.0.0",
+          "status": "planned",
+          "resourceIds": [
+            "RES-PROD-HOST",
+            "RES-PROD-DB"
+          ],
+          "endpoints": [],
+          "notes": ""
+        },
+        {
+          "moduleId": "MOD-METADATA",
+          "artifactVersion": "1.0.0",
+          "status": "planned",
+          "resourceIds": [
+            "RES-PROD-DB"
+          ],
+          "endpoints": [],
+          "notes": ""
+        }
+      ],
+      "externalResourceIds": [
+        "RES-OPENAI"
+      ],
+      "configReferenceIds": [],
+      "notes": "仅为目标部署资源预留，尚未上线。",
+      "extensions": {}
+    }
+  ],
+  "resources": [
+    {
+      "id": "RES-DEV-HOST",
+      "name": "Development Host",
+      "type": "container_host",
+      "environment": "development",
+      "status": "active",
+      "provider": "Local Docker",
+      "location": "Developer Workstation",
+      "access": {
+        "url": "",
+        "host": "localhost",
+        "port": null,
+        "database": "",
+        "instructions": "通过本机 Docker 访问。",
+        "credentials": {
+          "mode": "none",
+          "sensitive": false
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-DEV"
+      ],
+      "referenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "notes": "",
+      "extensions": {}
+    },
+    {
+      "id": "RES-DEV-DB",
+      "name": "Development PostgreSQL",
+      "type": "database",
+      "environment": "development",
+      "status": "active",
+      "provider": "Docker",
+      "location": "Development Host",
+      "access": {
+        "url": "",
+        "host": "localhost",
+        "port": 5432,
+        "database": "agent_workspace",
+        "instructions": "凭据保存在开发 secrets 文件中。",
+        "credentials": {
+          "mode": "external_file",
+          "sensitive": true,
+          "path": "./config/dev-secrets.env",
+          "keys": [
+            "DB_USERNAME",
+            "DB_PASSWORD"
+          ]
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-METADATA"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-DEV"
+      ],
+      "referenceIds": [
+        "REF-DEV-SECRETS"
+      ],
+      "notes": "目标元数据模块正在接入。",
+      "extensions": {}
+    },
+    {
+      "id": "RES-DEV-VECTOR",
+      "name": "Development Vector Store",
+      "type": "vector_store",
+      "environment": "development",
+      "status": "active",
+      "provider": "Local Service",
+      "location": "Development Host",
+      "access": {
+        "url": "http://localhost:6333",
+        "host": "localhost",
+        "port": 6333,
+        "database": "",
+        "instructions": "开发环境向量服务。",
+        "credentials": {
+          "mode": "none",
+          "sensitive": false
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-DIRECT-VECTOR",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE",
+        "MOD-VECTORSTORE"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-DEV"
+      ],
+      "referenceIds": [],
+      "notes": "",
+      "extensions": {}
+    },
+    {
+      "id": "RES-DEV-ADMIN",
+      "name": "Development Admin Account",
+      "type": "admin_console",
+      "environment": "development",
+      "status": "active",
+      "provider": "Project Console",
+      "location": "Development Host",
+      "access": {
+        "url": "http://localhost:8080/admin",
+        "host": "localhost",
+        "port": 8080,
+        "database": "",
+        "instructions": "仅用于本地开发管理页面。",
+        "credentials": {
+          "mode": "embedded",
+          "sensitive": true,
+          "maskedByDefault": true,
+          "fields": {
+            "username": "admin-dev",
+            "password": "change-me-dev"
+          }
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-CONSOLE"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-DEV"
+      ],
+      "referenceIds": [],
+      "notes": "示例凭据；实际项目应由用户决定是否保留在 HTML。",
+      "extensions": {}
+    },
+    {
+      "id": "RES-OPENAI",
+      "name": "LLM External API",
+      "type": "external_api",
+      "environment": "shared",
+      "status": "active",
+      "provider": "External Provider",
+      "location": "Internet",
+      "access": {
+        "url": "https://api.example.invalid",
+        "host": "",
+        "port": null,
+        "database": "",
+        "instructions": "API Key 由外部文件提供。",
+        "credentials": {
+          "mode": "external_file",
+          "sensitive": true,
+          "path": "./config/dev-secrets.env",
+          "keys": [
+            "LLM_API_KEY"
+          ]
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-DEV",
+        "DEP-PROD"
+      ],
+      "referenceIds": [
+        "REF-DEV-SECRETS"
+      ],
+      "notes": "",
+      "extensions": {}
+    },
+    {
+      "id": "RES-PROD-HOST",
+      "name": "Production Application Host",
+      "type": "compute",
+      "environment": "production",
+      "status": "reserved",
+      "provider": "TBD",
+      "location": "Production",
+      "access": {
+        "url": "",
+        "host": "",
+        "port": null,
+        "database": "",
+        "instructions": "尚未分配。",
+        "credentials": {
+          "mode": "none",
+          "sensitive": false
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-CONSOLE",
+        "MOD-ORCHESTRATOR",
+        "MOD-BUSINESS-AGENT",
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-PROD"
+      ],
+      "referenceIds": [],
+      "notes": "",
+      "extensions": {}
+    },
+    {
+      "id": "RES-PROD-DB",
+      "name": "Production PostgreSQL",
+      "type": "database",
+      "environment": "production",
+      "status": "planned",
+      "provider": "TBD",
+      "location": "Production",
+      "access": {
+        "url": "",
+        "host": "",
+        "port": 5432,
+        "database": "agent_workspace",
+        "instructions": "凭据计划使用外部 Secret Store。",
+        "credentials": {
+          "mode": "external_store",
+          "sensitive": true,
+          "provider": "TBD Secret Manager",
+          "reference": "PROD/AGENT_WORKSPACE_DB",
+          "keys": [
+            "username",
+            "password"
+          ]
+        }
+      },
+      "usedByModuleIds": [
+        "MOD-METADATA",
+        "MOD-WORKSPACE"
+      ],
+      "usedByDeploymentIds": [
+        "DEP-PROD"
+      ],
+      "referenceIds": [],
+      "notes": "",
+      "extensions": {}
+    }
+  ],
+  "decisions": [
+    {
+      "id": "DEC-WORKSPACE-METADATA",
+      "title": "Workspace 元数据存储方案",
+      "question": "Workspace 是否继续只使用文件系统，还是增加结构化元数据存储？",
+      "status": "approved",
+      "impactLevel": "architecture",
+      "trigger": "并发状态定位和资料追踪需求。",
+      "context": "文件系统适合快速验证，但无法稳定表达文件版本、项目归属和处理状态。",
+      "relatedModuleIds": [
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "relatedRequirementIds": [
+        "REQ-003",
+        "REQ-004"
+      ],
+      "stageId": "STG-MVP",
+      "relatedReleaseIds": [
+        "REL-V10"
+      ],
+      "options": [
+        {
+          "id": "OPT-WS-FS",
+          "title": "Filesystem Only",
+          "summary": "继续使用目录和 JSON 文件维护状态。",
+          "benefits": [
+            "实现简单",
+            "无新增数据库依赖"
+          ],
+          "drawbacks": [
+            "并发一致性弱",
+            "查询与版本追踪困难"
+          ],
+          "impacts": [
+            "不新增模块"
+          ],
+          "risks": [
+            "后续迁移成本增加"
+          ],
+          "reversibility": "high",
+          "estimatedCost": "low"
+        },
+        {
+          "id": "OPT-WS-PG",
+          "title": "Filesystem + PostgreSQL Metadata",
+          "summary": "文件保留在文件系统，结构化状态进入 PostgreSQL。",
+          "benefits": [
+            "状态查询明确",
+            "支持事务和版本追踪"
+          ],
+          "drawbacks": [
+            "新增数据库和迁移逻辑"
+          ],
+          "impacts": [
+            "新增 MOD-METADATA",
+            "修改 MOD-WORKSPACE"
+          ],
+          "risks": [
+            "设计不当会产生双写一致性问题"
+          ],
+          "reversibility": "medium",
+          "estimatedCost": "medium"
+        }
+      ],
+      "recommendedOptionId": "OPT-WS-PG",
+      "selectedOptionId": "OPT-WS-PG",
+      "selectionRationale": "V1 需要可追踪的共享工作空间，结构化元数据是必要边界，但文件内容仍保留在文件系统以控制复杂度。",
+      "requiredBy": "2026-08-08",
+      "reviewId": "REV-DEC-WS",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "decidedAt": "2026-08-08T10:00:00+08:00",
+      "referenceIds": [
+        "REF-WORKSPACE-DESIGN"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "DEC-CACHE",
+      "title": "Retrieval Cache Strategy",
+      "question": "并发验收前是否需要引入缓存层？",
+      "status": "review_pending",
+      "impactLevel": "module",
+      "trigger": "担心并发检索响应时间不稳定。",
+      "context": "当前尚未形成完整压测证据，提前引入缓存可能掩盖真实瓶颈。",
+      "relatedModuleIds": [
+        "MOD-RETRIEVAL",
+        "MOD-WORKSPACE"
+      ],
+      "relatedRequirementIds": [
+        "REQ-003"
+      ],
+      "stageId": "STG-MVP",
+      "relatedReleaseIds": [
+        "REL-V10"
+      ],
+      "options": [
+        {
+          "id": "OPT-CACHE-NONE",
+          "title": "先不增加缓存",
+          "summary": "先完成基线压测，再根据瓶颈决定。",
+          "benefits": [
+            "避免过早优化",
+            "保留清晰基线"
+          ],
+          "drawbacks": [
+            "可能需要第二轮性能优化"
+          ],
+          "impacts": [
+            "架构不变"
+          ],
+          "risks": [
+            "若性能不足会延后集成"
+          ],
+          "reversibility": "high",
+          "estimatedCost": "low"
+        },
+        {
+          "id": "OPT-CACHE-MEM",
+          "title": "进程内短期缓存",
+          "summary": "为重复查询增加轻量缓存。",
+          "benefits": [
+            "实现快",
+            "无外部依赖"
+          ],
+          "drawbacks": [
+            "多实例不共享",
+            "重启丢失"
+          ],
+          "impacts": [
+            "修改 MOD-RETRIEVAL"
+          ],
+          "risks": [
+            "后续替换"
+          ],
+          "reversibility": "high",
+          "estimatedCost": "low"
+        },
+        {
+          "id": "OPT-CACHE-REDIS",
+          "title": "Redis Cache",
+          "summary": "增加共享缓存服务。",
+          "benefits": [
+            "多实例共享",
+            "成熟机制"
+          ],
+          "drawbacks": [
+            "增加运行资源和失效策略"
+          ],
+          "impacts": [
+            "新增资源和模块依赖"
+          ],
+          "risks": [
+            "当前阶段过度工程"
+          ],
+          "reversibility": "medium",
+          "estimatedCost": "medium"
+        }
+      ],
+      "recommendedOptionId": "OPT-CACHE-NONE",
+      "selectedOptionId": null,
+      "selectionRationale": "",
+      "requiredBy": "2026-08-12",
+      "reviewId": "REV-DEC-CACHE",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "decidedAt": null,
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "extensions": {}
+    }
+  ],
+  "risks": [
+    {
+      "id": "RISK-WORKSPACE-CONC",
+      "title": "Workspace 并发一致性未验证",
+      "category": "verification",
+      "severity": "high",
+      "status": "open",
+      "description": "当前实现能够运行，但多个 Agent 同时更新状态时的一致性尚无证据。",
+      "impact": "可能导致状态覆盖、资料索引错位，并阻塞集成阶段。",
+      "mitigation": "先完成基线并发测试；若失败，再根据结果决定锁、事务或队列方案。",
+      "relatedModuleIds": [
+        "MOD-WORKSPACE",
+        "MOD-METADATA"
+      ],
+      "relatedRequirementIds": [
+        "REQ-003",
+        "REQ-004"
+      ],
+      "stageId": "STG-MVP",
+      "relatedReleaseIds": [
+        "REL-V10"
+      ],
+      "source": "mixed",
+      "detectedAt": "2026-08-08T10:00:00+08:00",
+      "resolvedAt": null,
+      "referenceIds": [
+        "REF-TEST-WORKSPACE"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "RISK-BASELINE-DIVERGENCE",
+      "title": "LangGraph 基线偏离增加",
+      "category": "baseline",
+      "severity": "medium",
+      "status": "monitoring",
+      "description": "Orchestrator 状态处理已做定制，后续若继续侵入核心运行时会增加升级成本。",
+      "impact": "上游版本升级可能需要手工迁移。",
+      "mitigation": "将共享 Workspace、Retrieval 等能力保持为独立模块；核心运行时只保留必要适配。",
+      "relatedModuleIds": [
+        "MOD-ORCHESTRATOR"
+      ],
+      "relatedRequirementIds": [],
+      "stageId": "STG-MVP",
+      "relatedReleaseIds": [
+        "REL-V08",
+        "REL-V10"
+      ],
+      "source": "ai",
+      "detectedAt": "2026-08-03T20:00:00+08:00",
+      "resolvedAt": null,
+      "referenceIds": [
+        "REF-LANGGRAPH",
+        "REF-ARCH"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "RISK-VERIFY-GAP",
+      "title": "旧检索路径尚未退出",
+      "category": "transition",
+      "severity": "medium",
+      "status": "monitoring",
+      "description": "业务 Agent 同时保留统一检索和直接向量访问路径。",
+      "impact": "行为可能不一致，问题定位困难。",
+      "mitigation": "完成统一检索验收后移除直接路径。",
+      "relatedModuleIds": [
+        "MOD-BUSINESS-AGENT",
+        "MOD-DIRECT-VECTOR",
+        "MOD-RETRIEVAL"
+      ],
+      "relatedRequirementIds": [
+        "REQ-002"
+      ],
+      "stageId": "STG-MVP",
+      "relatedReleaseIds": [
+        "REL-V08",
+        "REL-V10"
+      ],
+      "source": "rule",
+      "detectedAt": "2026-08-08T10:00:00+08:00",
+      "resolvedAt": null,
+      "referenceIds": [
+        "REF-ARCH"
+      ],
+      "extensions": {}
+    }
+  ],
+  "acceptanceCriteria": [
+    {
+      "id": "ACC-REQ-001",
+      "title": "共享工作空间场景可运行",
+      "scopeType": "requirement",
+      "scopeId": "REQ-001",
+      "category": "functional",
+      "description": "至少两个业务 Agent 能读取同一工作空间中的资料。",
+      "expectedEvidence": "端到端场景测试报告",
+      "status": "accepted",
+      "definedBy": "human",
+      "verificationStatus": "passed",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": "REV-ACC-REQ-001",
+      "createdAt": "2026-07-20T09:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-RET-FUNC",
+      "title": "统一检索接口可用",
+      "scopeType": "module",
+      "scopeId": "MOD-RETRIEVAL",
+      "category": "functional",
+      "description": "支持工作空间范围、查询输入、来源返回和显式错误。",
+      "expectedEvidence": "接口测试和集成测试报告",
+      "status": "accepted",
+      "definedBy": "joint",
+      "verificationStatus": "passed",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": "REV-ACC-RET-FUNC",
+      "createdAt": "2026-07-28T18:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-RET-CONC",
+      "title": "并发检索基线",
+      "scopeType": "module",
+      "scopeId": "MOD-RETRIEVAL",
+      "category": "performance",
+      "description": "20 个并发调用无错误，P95 响应时间低于项目确认阈值。",
+      "expectedEvidence": "并发压测结果",
+      "status": "review_pending",
+      "definedBy": "ai",
+      "verificationStatus": "partial",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": "REV-ACC-RET-CONC",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-WS-CONSISTENCY",
+      "title": "Workspace 并发状态一致性",
+      "scopeType": "module",
+      "scopeId": "MOD-WORKSPACE",
+      "category": "reliability",
+      "description": "并发写入不覆盖其他 Agent 的有效状态，失败可检测并恢复。",
+      "expectedEvidence": "并发与失败注入测试报告",
+      "status": "review_pending",
+      "definedBy": "ai",
+      "verificationStatus": "not_run",
+      "evidenceReferenceIds": [],
+      "reviewId": "REV-ACC-WS",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-WS-METADATA",
+      "title": "资料元数据可追踪",
+      "scopeType": "module",
+      "scopeId": "MOD-METADATA",
+      "category": "functional",
+      "description": "可按项目、文件和版本定位资料状态。",
+      "expectedEvidence": "迁移测试和查询示例",
+      "status": "proposed",
+      "definedBy": "ai",
+      "verificationStatus": "not_run",
+      "evidenceReferenceIds": [],
+      "reviewId": "REV-ACC-METADATA",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-DEP-DEV",
+      "title": "开发部署可访问",
+      "scopeType": "deployment",
+      "scopeId": "DEP-DEV",
+      "category": "integration",
+      "description": "开发控制台、编排、检索和依赖资源均可定位并访问。",
+      "expectedEvidence": "部署记录和访问验证",
+      "status": "accepted",
+      "definedBy": "human",
+      "verificationStatus": "passed",
+      "evidenceReferenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "reviewId": "REV-ACC-DEP",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-STG-REQ",
+      "title": "需求阶段退出",
+      "scopeType": "stage",
+      "scopeId": "STG-REQ",
+      "category": "architecture",
+      "description": "V1 业务场景、功能需求和明确不做事项已经确认。",
+      "expectedEvidence": "需求说明和评审记录",
+      "status": "accepted",
+      "definedBy": "joint",
+      "verificationStatus": "passed",
+      "evidenceReferenceIds": [
+        "REF-PRD"
+      ],
+      "reviewId": "REV-STG-REQ",
+      "createdAt": "2026-07-20T09:00:00+08:00",
+      "updatedAt": "2026-07-28T18:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-STG-ARCH",
+      "title": "架构基线阶段退出",
+      "scopeType": "stage",
+      "scopeId": "STG-ARCH",
+      "category": "architecture",
+      "description": "P0 需求有模块承载，核心数据流和开源基线已经评审。",
+      "expectedEvidence": "架构说明和评审记录",
+      "status": "accepted",
+      "definedBy": "joint",
+      "verificationStatus": "passed",
+      "evidenceReferenceIds": [
+        "REF-ARCH"
+      ],
+      "reviewId": "REV-STG-ARCH",
+      "createdAt": "2026-07-28T18:00:00+08:00",
+      "updatedAt": "2026-08-03T20:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-STG-MVP",
+      "title": "MVP 实现阶段退出",
+      "scopeType": "stage",
+      "scopeId": "STG-MVP",
+      "category": "integration",
+      "description": "核心模块实现可用，并发和状态一致性验收通过，目标架构迁移无阻塞。",
+      "expectedEvidence": "集成、并发和迁移测试结果",
+      "status": "accepted",
+      "definedBy": "joint",
+      "verificationStatus": "partial",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": "REV-ACC-STG-MVP",
+      "createdAt": "2026-08-03T20:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-STG-INTEGRATION",
+      "title": "集成验证阶段退出",
+      "scopeType": "stage",
+      "scopeId": "STG-INTEGRATION",
+      "category": "integration",
+      "description": "端到端数据流、异常路径和模块边界验证通过。",
+      "expectedEvidence": "集成测试与替换影响分析",
+      "status": "proposed",
+      "definedBy": "ai",
+      "verificationStatus": "not_run",
+      "evidenceReferenceIds": [],
+      "reviewId": "REV-ACC-STG-INTEGRATION",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "ACC-STG-TRIAL",
+      "title": "试用阶段退出",
+      "scopeType": "stage",
+      "scopeId": "STG-TRIAL",
+      "category": "usability",
+      "description": "真实项目试用完成，阻塞问题已关闭或有明确处理计划。",
+      "expectedEvidence": "试用记录和问题清单",
+      "status": "proposed",
+      "definedBy": "ai",
+      "verificationStatus": "not_run",
+      "evidenceReferenceIds": [],
+      "reviewId": "REV-ACC-STG-TRIAL",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    }
+  ],
+  "gates": [
+    {
+      "id": "GATE-ARCH-V03",
+      "title": "Architecture v0.3 Review",
+      "scopeType": "stage",
+      "scopeId": "STG-ARCH",
+      "gateType": "architecture_review",
+      "required": true,
+      "status": "passed",
+      "automation": "manual",
+      "summary": "确认统一检索与共享 Workspace 架构基线。",
+      "lastRunAt": "2026-08-03T20:00:00+08:00",
+      "resultSummary": "Approved",
+      "evidenceReferenceIds": [
+        "REF-ARCH"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-STG-ARCH"
+      ],
+      "referenceIds": [
+        "REF-ARCH"
+      ],
+      "reviewId": "REV-ARCH-V03",
+      "extensions": {}
+    },
+    {
+      "id": "GATE-RET-UNIT",
+      "title": "Retrieval Unit Tests",
+      "scopeType": "module",
+      "scopeId": "MOD-RETRIEVAL",
+      "gateType": "unit_test",
+      "required": true,
+      "status": "passed",
+      "automation": "script",
+      "summary": "验证检索请求、错误和结果映射。",
+      "lastRunAt": "2026-08-08T10:00:00+08:00",
+      "resultSummary": "42 passed",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-FUNC"
+      ],
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": null,
+      "extensions": {}
+    },
+    {
+      "id": "GATE-RET-INTEGRATION",
+      "title": "Retrieval Integration Tests",
+      "scopeType": "module",
+      "scopeId": "MOD-RETRIEVAL",
+      "gateType": "integration_test",
+      "required": true,
+      "status": "passed",
+      "automation": "script",
+      "summary": "验证业务 Agent、Retrieval 和 Workspace 基础链路。",
+      "lastRunAt": "2026-08-08T10:00:00+08:00",
+      "resultSummary": "12 passed",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-FUNC"
+      ],
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": null,
+      "extensions": {}
+    },
+    {
+      "id": "GATE-RET-PERF",
+      "title": "Retrieval Concurrency Gate",
+      "scopeType": "module",
+      "scopeId": "MOD-RETRIEVAL",
+      "gateType": "performance",
+      "required": true,
+      "status": "running",
+      "automation": "script",
+      "summary": "验证 20 并发和 P95 响应时间。",
+      "lastRunAt": "2026-08-08T10:00:00+08:00",
+      "resultSummary": "基线已采集，阈值待评审。",
+      "evidenceReferenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-RET-CONC"
+      ],
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "reviewId": "REV-ACC-RET-CONC",
+      "extensions": {}
+    },
+    {
+      "id": "GATE-WS-CONC",
+      "title": "Workspace Consistency Gate",
+      "scopeType": "module",
+      "scopeId": "MOD-WORKSPACE",
+      "gateType": "integration_test",
+      "required": true,
+      "status": "not_configured",
+      "automation": "mixed",
+      "summary": "并发写入和失败恢复门禁。",
+      "lastRunAt": null,
+      "resultSummary": "",
+      "evidenceReferenceIds": [],
+      "acceptanceCriteriaIds": [
+        "ACC-WS-CONSISTENCY"
+      ],
+      "referenceIds": [
+        "REF-TEST-WORKSPACE"
+      ],
+      "reviewId": "REV-ACC-WS",
+      "extensions": {}
+    },
+    {
+      "id": "GATE-DEP-DEV",
+      "title": "Development Deployment Check",
+      "scopeType": "deployment",
+      "scopeId": "DEP-DEV",
+      "gateType": "deployment",
+      "required": true,
+      "status": "passed",
+      "automation": "manual",
+      "summary": "开发服务和资源访问验证。",
+      "lastRunAt": "2026-08-08T10:00:00+08:00",
+      "resultSummary": "All required services reachable.",
+      "evidenceReferenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "acceptanceCriteriaIds": [
+        "ACC-DEP-DEV"
+      ],
+      "referenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "reviewId": "REV-ACC-DEP",
+      "extensions": {}
+    }
+  ],
+  "references": [
+    {
+      "id": "REF-PRD",
+      "type": "design_spec",
+      "title": "Project Requirements",
+      "locationType": "relative_path",
+      "location": "./docs/requirements.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "project",
+          "id": "PRJ-MARW",
+          "label": "Project"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-ARCH",
+      "type": "design_spec",
+      "title": "Architecture Design",
+      "locationType": "relative_path",
+      "location": "./docs/architecture.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V03",
+          "label": "Current Architecture"
+        },
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V04",
+          "label": "Target Architecture"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-RETRIEVAL-DESIGN",
+      "type": "design_spec",
+      "title": "Retrieval Agent Design",
+      "locationType": "relative_path",
+      "location": "./docs/retrieval-agent.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-RETRIEVAL",
+          "label": "Retrieval Agent"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-WORKSPACE-DESIGN",
+      "type": "design_spec",
+      "title": "Workspace and Metadata Design",
+      "locationType": "relative_path",
+      "location": "./docs/workspace.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-WORKSPACE",
+          "label": "Shared Workspace"
+        },
+        {
+          "type": "module",
+          "id": "MOD-METADATA",
+          "label": "Metadata Store"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-INTERFACE",
+      "type": "interface_contract",
+      "title": "Core Interface Contracts",
+      "locationType": "relative_path",
+      "location": "./docs/interfaces.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "connection",
+          "id": "CONN-AGENT-RETRIEVAL",
+          "label": "Retrieval API"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-TEST-RETRIEVAL",
+      "type": "test_report",
+      "title": "Retrieval Test Report",
+      "locationType": "relative_path",
+      "location": "./reports/retrieval-tests.md",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-RETRIEVAL",
+          "label": "Retrieval Agent"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-TEST-WORKSPACE",
+      "type": "test_report",
+      "title": "Workspace Concurrency Test",
+      "locationType": "relative_path",
+      "location": "./reports/workspace-concurrency.md",
+      "status": "missing",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-WORKSPACE",
+          "label": "Shared Workspace"
+        }
+      ],
+      "notes": "尚未生成。",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-LANGGRAPH",
+      "type": "oss_reference",
+      "title": "LangGraph Baseline",
+      "locationType": "url",
+      "location": "https://example.invalid/langgraph-baseline",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "baseline",
+          "id": "BASE-LANGGRAPH",
+          "label": "OSS Baseline"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-CODE-RETRIEVAL",
+      "type": "source_directory",
+      "title": "Retrieval Source Directory",
+      "locationType": "relative_path",
+      "location": "./src/retrieval/",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-RETRIEVAL",
+          "label": "Retrieval Agent"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-CODE-WORKSPACE",
+      "type": "source_directory",
+      "title": "Workspace Source Directory",
+      "locationType": "relative_path",
+      "location": "./src/workspace/",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "module",
+          "id": "MOD-WORKSPACE",
+          "label": "Shared Workspace"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-DEV-SECRETS",
+      "type": "credential_file",
+      "title": "Development Secrets",
+      "locationType": "relative_path",
+      "location": "./config/dev-secrets.env",
+      "status": "available",
+      "sensitive": true,
+      "relatedEntities": [
+        {
+          "type": "resource",
+          "id": "RES-DEV-DB",
+          "label": "Development PostgreSQL"
+        },
+        {
+          "type": "resource",
+          "id": "RES-OPENAI",
+          "label": "LLM API"
+        }
+      ],
+      "notes": "HTML 只展示文件路径和 Key 名称。",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    },
+    {
+      "id": "REF-DEPLOY-DEV",
+      "type": "deployment_config",
+      "title": "Development Deployment",
+      "locationType": "relative_path",
+      "location": "./deploy/docker-compose.dev.yml",
+      "status": "available",
+      "sensitive": false,
+      "relatedEntities": [
+        {
+          "type": "deployment",
+          "id": "DEP-DEV",
+          "label": "Development Deployment"
+        }
+      ],
+      "notes": "",
+      "updatedAt": "2026-08-08T10:00:00+08:00",
+      "extensions": {}
+    }
+  ],
+  "reviews": [
+    {
+      "id": "REV-INTENT-001",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "intent",
+          "id": "PRJ-MARW",
+          "label": "Project Intent"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-20T09:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-20T09:00:00+08:00",
+      "summary": "确认 V1 优先落地试用。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-001",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-001",
+          "label": "Shared Workspace"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-20T09:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-20T09:00:00+08:00",
+      "summary": "确认业务场景。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-002",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-002",
+          "label": "Unified Retrieval"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-20T09:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-20T09:00:00+08:00",
+      "summary": "确认功能需求。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-003",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-003",
+          "label": "Concurrent Retrieval"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-28T18:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-28T18:00:00+08:00",
+      "summary": "确认并发需求。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-004",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-004",
+          "label": "Metadata Traceability"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-28T18:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-28T18:00:00+08:00",
+      "summary": "确认资料追踪需求。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-005",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-005",
+          "label": "Dev Access"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-03T20:00:00+08:00",
+      "summary": "确认开发环境可访问需求。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-REQ-006",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "requirement",
+          "id": "REQ-006",
+          "label": "Long-term Memory"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "human",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-03T20:00:00+08:00",
+      "summary": "将长期记忆推迟到试用后。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ARCH-V01",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V01",
+          "label": "0.1"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-20T09:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-20T09:00:00+08:00",
+      "summary": "批准初始最短链路。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [
+        "CHG-001"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ARCH-V02",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V02",
+          "label": "0.2"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-28T18:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-28T18:00:00+08:00",
+      "summary": "批准引入共享检索和 Workspace。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [
+        "CHG-002"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ARCH-V03",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V03",
+          "label": "0.3"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-03T20:00:00+08:00",
+      "summary": "批准开发态架构基线。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ARCH-V04",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V04",
+          "label": "0.4"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "评审 Metadata Store 和直接路径移除。",
+      "comments": "",
+      "decisionIds": [
+        "DEC-WORKSPACE-METADATA"
+      ],
+      "changeIds": [
+        "CHG-003"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REV-DEC-WS",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "decision",
+          "id": "DEC-WORKSPACE-METADATA",
+          "label": "Workspace Metadata"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-08T10:00:00+08:00",
+      "summary": "批准 Filesystem + PostgreSQL Metadata。",
+      "comments": "",
+      "decisionIds": [
+        "DEC-WORKSPACE-METADATA"
+      ],
+      "changeIds": [
+        "CHG-003"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REV-DEC-CACHE",
+      "type": "module_design",
+      "subjectRefs": [
+        {
+          "type": "decision",
+          "id": "DEC-CACHE",
+          "label": "Cache Strategy"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "module",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "决定是否在基线压测前引入缓存。",
+      "comments": "",
+      "decisionIds": [
+        "DEC-CACHE"
+      ],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-REQ-001",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-REQ-001",
+          "label": "Shared Workspace Acceptance"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "module",
+      "requestedBy": "human",
+      "requestedAt": "2026-07-20T09:00:00+08:00",
+      "reviewedBy": "ai",
+      "reviewedAt": "2026-07-28T18:00:00+08:00",
+      "summary": "AI 评审验收标准可测试。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-RET-FUNC",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-RET-FUNC",
+          "label": "Retrieval Functional"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "module",
+      "requestedBy": "human",
+      "requestedAt": "2026-07-28T18:00:00+08:00",
+      "reviewedBy": "ai+user",
+      "reviewedAt": "2026-08-03T20:00:00+08:00",
+      "summary": "共同确认功能验收。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-RET-CONC",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-RET-CONC",
+          "label": "Retrieval Concurrency"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "module",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "等待用户确认并发阈值。",
+      "comments": "",
+      "decisionIds": [
+        "DEC-CACHE"
+      ],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-WS",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-WS-CONSISTENCY",
+          "label": "Workspace Consistency"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "module",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "等待用户评审状态一致性验收。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-METADATA",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-WS-METADATA",
+          "label": "Metadata Traceability"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "module",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "等待目标模块设计评审后确认。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-DEP",
+      "type": "deployment",
+      "subjectRefs": [
+        {
+          "type": "deployment",
+          "id": "DEP-DEV",
+          "label": "Dev Deployment"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "deployment",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-08T10:00:00+08:00",
+      "summary": "确认开发部署可访问。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [
+        "CHG-005"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "REV-STG-REQ",
+      "type": "requirement",
+      "subjectRefs": [
+        {
+          "type": "stage",
+          "id": "STG-REQ",
+          "label": "Requirements"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-07-28T18:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-07-28T18:00:00+08:00",
+      "summary": "批准退出需求阶段。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-STG-ARCH",
+      "type": "architecture",
+      "subjectRefs": [
+        {
+          "type": "stage",
+          "id": "STG-ARCH",
+          "label": "Architecture"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-03T20:00:00+08:00",
+      "summary": "批准进入 MVP 实现。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-STG-MVP",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-STG-MVP",
+          "label": "MVP Exit"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "project",
+      "requestedBy": "human",
+      "requestedAt": "2026-08-03T20:00:00+08:00",
+      "reviewedBy": "ai",
+      "reviewedAt": "2026-08-08T10:00:00+08:00",
+      "summary": "AI 评审补充了并发和迁移条件。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-STG-INTEGRATION",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-STG-INTEGRATION",
+          "label": "Integration Exit"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "等待进入阶段前评审。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-ACC-STG-TRIAL",
+      "type": "acceptance",
+      "subjectRefs": [
+        {
+          "type": "acceptance",
+          "id": "ACC-STG-TRIAL",
+          "label": "Trial Exit"
+        }
+      ],
+      "status": "pending",
+      "impactLevel": "project",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "",
+      "reviewedAt": null,
+      "summary": "等待进入阶段前评审。",
+      "comments": "",
+      "decisionIds": [],
+      "changeIds": [],
+      "extensions": {}
+    },
+    {
+      "id": "REV-UPD-003",
+      "type": "panorama_update",
+      "subjectRefs": [
+        {
+          "type": "project",
+          "id": "PRJ-MARW",
+          "label": "Project Panorama"
+        }
+      ],
+      "status": "approved",
+      "impactLevel": "architecture",
+      "requestedBy": "ai",
+      "requestedAt": "2026-08-08T10:00:00+08:00",
+      "reviewedBy": "user",
+      "reviewedAt": "2026-08-08T10:00:00+08:00",
+      "summary": "批准记录 Metadata 目标架构、Retrieval 功能进展和开发部署。",
+      "comments": "Metadata Store 保持 review_ready，未视为最终确认。",
+      "decisionIds": [
+        "DEC-WORKSPACE-METADATA"
+      ],
+      "changeIds": [
+        "CHG-003",
+        "CHG-004",
+        "CHG-005"
+      ],
+      "extensions": {}
+    }
+  ],
+  "changes": [
+    {
+      "id": "CHG-001",
+      "occurredAt": "2026-07-20T09:00:00+08:00",
+      "category": "architecture",
+      "impactLevel": "architecture",
+      "summary": "建立 LangGraph 初始架构。",
+      "reason": "验证最短可运行链路。",
+      "source": "mixed",
+      "entityRefs": [
+        {
+          "type": "architecture_version",
+          "id": "ARCH-V01",
+          "label": "Initial"
+        }
+      ],
+      "beforeSummary": "无架构。",
+      "afterSummary": "业务 Agent 直接访问向量存储。",
+      "reviewId": "REV-ARCH-V01",
+      "significant": true,
+      "architectureVersionId": "ARCH-V01",
+      "referenceIds": [
+        "REF-ARCH"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "CHG-002",
+      "occurredAt": "2026-07-28T18:00:00+08:00",
+      "category": "architecture",
+      "impactLevel": "architecture",
+      "summary": "新增 Retrieval Agent 和 Shared Workspace。",
+      "reason": "统一检索能力并建立项目资料边界。",
+      "source": "mixed",
+      "entityRefs": [
+        {
+          "type": "module",
+          "id": "MOD-RETRIEVAL",
+          "label": "Retrieval Agent"
+        },
+        {
+          "type": "module",
+          "id": "MOD-WORKSPACE",
+          "label": "Shared Workspace"
+        }
+      ],
+      "beforeSummary": "业务 Agent 直接访问向量存储。",
+      "afterSummary": "增加统一检索和共享工作空间路径。",
+      "reviewId": "REV-ARCH-V02",
+      "significant": true,
+      "architectureVersionId": "ARCH-V02",
+      "referenceIds": [
+        "REF-RETRIEVAL-DESIGN",
+        "REF-WORKSPACE-DESIGN"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "CHG-003",
+      "occurredAt": "2026-08-08T10:00:00+08:00",
+      "category": "architecture",
+      "impactLevel": "architecture",
+      "summary": "提出 Workspace 元数据拆分目标架构。",
+      "reason": "解决并发状态定位与资料追踪。",
+      "source": "mixed",
+      "entityRefs": [
+        {
+          "type": "module",
+          "id": "MOD-WORKSPACE",
+          "label": "Shared Workspace"
+        },
+        {
+          "type": "module",
+          "id": "MOD-METADATA",
+          "label": "Metadata Store"
+        }
+      ],
+      "beforeSummary": "Workspace 以文件系统目录和 JSON 维护元数据。",
+      "afterSummary": "目标架构采用 Filesystem + PostgreSQL Metadata。",
+      "reviewId": "REV-UPD-003",
+      "significant": true,
+      "architectureVersionId": "ARCH-V04",
+      "referenceIds": [
+        "REF-WORKSPACE-DESIGN"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "CHG-004",
+      "occurredAt": "2026-08-08T10:00:00+08:00",
+      "category": "implementation",
+      "impactLevel": "module",
+      "summary": "Retrieval Agent 从 Prototype 进入 Functional。",
+      "reason": "完成统一接口、工作空间范围和来源返回。",
+      "source": "artifact",
+      "entityRefs": [
+        {
+          "type": "module",
+          "id": "MOD-RETRIEVAL",
+          "label": "Retrieval Agent"
+        }
+      ],
+      "beforeSummary": "Prototype。",
+      "afterSummary": "Functional，Verification Partial。",
+      "reviewId": "REV-UPD-003",
+      "significant": true,
+      "architectureVersionId": "ARCH-V03",
+      "referenceIds": [
+        "REF-TEST-RETRIEVAL"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "CHG-005",
+      "occurredAt": "2026-08-08T10:00:00+08:00",
+      "category": "deployment",
+      "impactLevel": "deployment",
+      "summary": "v0.8-dev 部署到开发环境。",
+      "reason": "提供可访问的 MVP 开发版本。",
+      "source": "artifact",
+      "entityRefs": [
+        {
+          "type": "release",
+          "id": "REL-V08",
+          "label": "0.8-dev"
+        },
+        {
+          "type": "deployment",
+          "id": "DEP-DEV",
+          "label": "Development"
+        }
+      ],
+      "beforeSummary": "模块分散运行。",
+      "afterSummary": "形成可追踪的开发部署和资源池。",
+      "reviewId": "REV-UPD-003",
+      "significant": true,
+      "architectureVersionId": "ARCH-V03",
+      "referenceIds": [
+        "REF-DEPLOY-DEV"
+      ],
+      "extensions": {}
+    }
+  ],
+  "updateBatches": [
+    {
+      "id": "UPD-001",
+      "revisionFrom": 0,
+      "revisionTo": 1,
+      "periodStart": "2026-07-20T09:00:00+08:00",
+      "periodEnd": "2026-07-20T09:00:00+08:00",
+      "createdAt": "2026-07-20T09:00:00+08:00",
+      "status": "applied",
+      "reviewId": "REV-ARCH-V01",
+      "changeIds": [
+        "CHG-001"
+      ],
+      "summaryItems": [
+        "建立项目意图、需求和初始架构。"
+      ],
+      "attentionItems": [],
+      "nextFocusOptionIds": [],
+      "projectStageBefore": "STG-REQ",
+      "projectStageAfter": "STG-REQ",
+      "changeLevel": "architecture",
+      "extensions": {}
+    },
+    {
+      "id": "UPD-002",
+      "revisionFrom": 1,
+      "revisionTo": 2,
+      "periodStart": "2026-07-20T09:00:00+08:00",
+      "periodEnd": "2026-07-28T18:00:00+08:00",
+      "createdAt": "2026-07-28T18:00:00+08:00",
+      "status": "applied",
+      "reviewId": "REV-ARCH-V02",
+      "changeIds": [
+        "CHG-002"
+      ],
+      "summaryItems": [
+        "新增统一检索和共享工作空间架构。"
+      ],
+      "attentionItems": [
+        {
+          "type": "verification_gap",
+          "severity": "warning",
+          "title": "新模块尚未验证",
+          "summary": "Retrieval 与 Workspace 仅完成设计。",
+          "relatedEntities": [
+            {
+              "type": "module",
+              "id": "MOD-RETRIEVAL",
+              "label": "Retrieval"
+            }
+          ]
+        }
+      ],
+      "nextFocusOptionIds": [],
+      "projectStageBefore": "STG-ARCH",
+      "projectStageAfter": "STG-ARCH",
+      "changeLevel": "architecture",
+      "extensions": {}
+    },
+    {
+      "id": "UPD-003",
+      "revisionFrom": 2,
+      "revisionTo": 3,
+      "periodStart": "2026-07-28T18:00:00+08:00",
+      "periodEnd": "2026-08-08T10:00:00+08:00",
+      "createdAt": "2026-08-08T10:00:00+08:00",
+      "status": "applied",
+      "reviewId": "REV-UPD-003",
+      "changeIds": [
+        "CHG-003",
+        "CHG-004",
+        "CHG-005"
+      ],
+      "summaryItems": [
+        "Retrieval Agent 从 Prototype 进入 Functional，基础集成门禁已通过。",
+        "Workspace 提出 Filesystem + Metadata Store 的目标设计，Architecture v0.4 等待评审。",
+        "v0.8-dev 已部署到开发环境，服务、数据库、外部 API 和测试账号已纳入资源池。",
+        "项目仍处于 MVP 实现阶段，总体主线未改变。"
+      ],
+      "attentionItems": [
+        {
+          "type": "review_required",
+          "severity": "high",
+          "title": "Architecture v0.4 等待评审",
+          "summary": "Metadata Store 的引入及旧检索路径移除属于架构级变化。",
+          "relatedEntities": [
+            {
+              "type": "architecture_version",
+              "id": "ARCH-V04",
+              "label": "Target Architecture"
+            }
+          ]
+        },
+        {
+          "type": "blocking_decision",
+          "severity": "warning",
+          "title": "缓存策略待决策",
+          "summary": "应先确认是否基于压测证据决定缓存，避免提前优化。",
+          "relatedEntities": [
+            {
+              "type": "decision",
+              "id": "DEC-CACHE",
+              "label": "Cache Strategy"
+            }
+          ]
+        },
+        {
+          "type": "verification_gap",
+          "severity": "high",
+          "title": "Workspace 并发一致性缺口",
+          "summary": "模块已可运行，但关键并发状态验收尚未配置。",
+          "relatedEntities": [
+            {
+              "type": "module",
+              "id": "MOD-WORKSPACE",
+              "label": "Shared Workspace"
+            }
+          ]
+        }
+      ],
+      "nextFocusOptionIds": [
+        "FOCUS-A",
+        "FOCUS-B",
+        "FOCUS-C"
+      ],
+      "projectStageBefore": "STG-MVP",
+      "projectStageAfter": "STG-MVP",
+      "changeLevel": "architecture",
+      "extensions": {}
+    }
+  ],
+  "guidance": {
+    "generatedAt": "2026-08-08T10:00:00+08:00",
+    "status": "proposed",
+    "currentFocusSummary": "先收敛 Retrieval 与 Workspace 核心链路，再进入集成验证或增加新能力。",
+    "options": [
+      {
+        "id": "FOCUS-A",
+        "title": "完成 Workspace 并发与一致性验收",
+        "whyNow": "Workspace 是当前核心数据路径的状态承载者，且已进入 Functional，但关键门禁尚未配置。",
+        "recommendationReason": "这是进入集成验证的直接前置条件；先取得失败模式和性能证据，再决定锁、事务、队列或缓存，能避免以新组件替代问题分析。",
+        "benefits": [
+          "关闭当前最高验证风险",
+          "为 Cache 决策提供证据",
+          "允许移除旧检索路径"
+        ],
+        "risks": [
+          "若测试暴露设计问题，目标架构可能需要局部返工"
+        ],
+        "impact": "完成后可评审 Architecture v0.4 的可落地性，并接近 MVP 阶段退出。",
+        "prerequisites": [
+          "确认 ACC-WS-CONSISTENCY",
+          "配置 GATE-WS-CONC"
+        ],
+        "expectedOutcome": "形成 Workspace 并发测试报告和明确的后续设计结论。",
+        "relatedEntities": [
+          {
+            "type": "module",
+            "id": "MOD-WORKSPACE",
+            "label": "Workspace"
+          },
+          {
+            "type": "risk",
+            "id": "RISK-WORKSPACE-CONC",
+            "label": "Concurrency Risk"
+          }
+        ]
+      },
+      {
+        "id": "FOCUS-B",
+        "title": "先决定 Retrieval 缓存策略",
+        "whyNow": "并发验收阈值尚未最终确认，缓存决策可能影响测试基线。",
+        "recommendationReason": "只有在业务时延目标已明确且现有实现明显不满足时，提前做缓存才更合理；否则会增加 Redis 或失效策略等新变量。",
+        "benefits": [
+          "提前明确性能架构",
+          "避免后续重复压测"
+        ],
+        "risks": [
+          "可能过早优化",
+          "掩盖 Workspace 或向量存储的真实瓶颈"
+        ],
+        "impact": "可能形成 Module Change；若选择 Redis，还会增加部署资源与运行依赖。",
+        "prerequisites": [
+          "确认并发验收阈值",
+          "查看现有基线数据"
+        ],
+        "expectedOutcome": "形成经过评审的 Cache Decision。",
+        "relatedEntities": [
+          {
+            "type": "decision",
+            "id": "DEC-CACHE",
+            "label": "Cache Strategy"
+          }
+        ]
+      },
+      {
+        "id": "FOCUS-C",
+        "title": "直接推进 Metadata Store 实现",
+        "whyNow": "目标设计已经形成原型，能改善资料追踪能力。",
+        "recommendationReason": "该路线有功能收益，但 Architecture v0.4 尚未完成总体评审，且并发问题的真实原因还没有被测试证据确认。",
+        "benefits": [
+          "加快 REQ-004 覆盖",
+          "推进目标架构迁移"
+        ],
+        "risks": [
+          "可能在证据不足时固化数据库边界",
+          "增加迁移与双写问题"
+        ],
+        "impact": "Architecture v0.4 迁移进度加快，但可能提高返工成本。",
+        "prerequisites": [
+          "完成 REV-ARCH-V04",
+          "确认元数据事务边界"
+        ],
+        "expectedOutcome": "Metadata Store 从 Not Started 进入 Functional。",
+        "relatedEntities": [
+          {
+            "type": "module",
+            "id": "MOD-METADATA",
+            "label": "Metadata Store"
+          },
+          {
+            "type": "architecture_version",
+            "id": "ARCH-V04",
+            "label": "Target Architecture"
+          }
+        ]
+      }
+    ],
+    "recommendedOptionId": "FOCUS-A",
+    "selectedOptionId": null,
+    "extensions": {}
+  },
+  "extensions": {}
+}
