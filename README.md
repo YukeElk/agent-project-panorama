@@ -1,38 +1,62 @@
-# Agent Project Panorama V0.1
+# Agent Project Panorama V0.1.1
 
-`Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML
-的 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、
-演进、验证、部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
+`Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
+AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
+部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.1 内容
+## V0.1.1 能力
 
 - 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
 - `CONTROL / SYSTEM / EVOLUTION` 三主视图；
-- Current / Target / Transition 与 Native SVG Connection；
-- Module Drawer、Architecture Source、Stage × Module；
-- Release / Deployment / Module artifactVersion / Resource / Access；
+- Current / Target / Transition、Native SVG Connection 与通用 Entity Inspector；
+- 同环境多 Deployment、Deployment View 与完整 Resource Pool；
+- Module、Decision、Acceptance、Gate、Risk、Connection、Reference 详情；
 - Embedded / External File / External Store / None 四种凭据模式；
-- JSON Schema、全局 ID、跨实体引用及工程规则校验；
-- Revision/Hash 保护、备份、原子写入及最小 JSON Patch Apply；
-- Reference Project 和自动测试。
+- JSON Schema、全局 ID、跨实体引用、结构化 Findings 和工程规则校验；
+- Approval Hash、Revision/Hash、独占锁、备份、原子写入与最小 JSON Patch Apply；
+- 默认 Secret 脱敏、Git Secret Risk 与统一 URL Sanitizer；
+- INIT 自动校验、最小项目骨架、确定性 Proposal 工具和 GitHub Actions CI。
 
-页面只读。核心实体编辑、评审批准和文件写回都必须通过外部更新流程完成。
+页面只读。核心实体编辑、评审批准和文件写回必须通过外部更新流程完成。
 
 ## 环境
 
 - Python 3.10+
-- `jsonschema`（Schema 校验）
-- `pytest`（运行测试）
+- `jsonschema`
+- `pytest`
 
 ```powershell
 python -m pip install jsonschema pytest
 ```
 
-Renderer 本身不需要 Python；生成后的 HTML 可直接在桌面浏览器打开。
+Renderer 不需要 Python；生成后的 HTML 可直接在桌面浏览器打开。
 
-## 生成 Reference HTML
+## 最小项目初始化
 
-在本目录执行：
+先生成不虚构模块、部署或证据的最小 Schema-valid 数据：
+
+```powershell
+python scripts/new_project_data.py `
+  --project-id PRJ-MY-PROJECT `
+  --name "My Agent Project" `
+  --objective "建立项目工程认知" `
+  --current-focus "澄清首轮需求" `
+  --requirement "首个待澄清需求" `
+  --output project.v0.1.json
+```
+
+生成 HTML。INIT 默认执行 JSON 前置校验和生成后 HTML 校验；Error 阻止正式输出：
+
+```powershell
+python scripts/init_panorama.py `
+  --template templates/panorama.html `
+  --data project.v0.1.json `
+  --output project-panorama.local.html
+```
+
+`--allow-invalid` 只用于显式调试，不应生成正式 Panorama。
+
+## Reference Project
 
 ```powershell
 python scripts/init_panorama.py `
@@ -41,127 +65,149 @@ python scripts/init_panorama.py `
   --output examples/reference-project.html
 ```
 
-然后直接打开：
+直接打开 `examples/reference-project.html`。Reference 的 development 环境同时包含 Active
+与 Deploying Deployment，用于验证并行迁移和同环境多版本显示。
 
-```text
-examples/reference-project.html
-```
-
-## 读取与校验
+## 读取与脱敏
 
 ```powershell
 python scripts/read_panorama.py examples/reference-project.html
 python scripts/read_panorama.py examples/reference-project.html --json
+```
+
+`--json` 默认将所有 Embedded Credential 字段替换为 `***REDACTED***`，不会读取
+External File 内容，也不会解析 External Store。只有用户明确需要明文时才允许：
+
+```powershell
+python scripts/read_panorama.py examples/reference-project.html `
+  --json --unsafe-include-secrets
+```
+
+该命令会向 stderr 输出明文风险警告。
+
+## 校验
+
+```powershell
 python scripts/validate_panorama.py examples/reference-project.html
-python scripts/validate_panorama.py examples/reference-project.v0.1.json
+python scripts/validate_panorama.py examples/reference-project.html --json
 ```
 
-Validator 输出格式：
+文本输出保持 `ERROR / WARNING / INFO`；`--json` 输出包含 `level`、`severity`、`code`、
+`message`、`path` 的结构化 Findings。退出码：
 
-```text
-ERROR ...
-WARNING ...
-INFO ...
-```
-
-退出码：
-
-- `0`：无 Schema/Cross-reference Error（允许 Warning）；
+- `0`：无 Schema/Cross-reference Error；
 - `1`：Schema、跨引用或数据一致性 Error；
 - `2`：文件、JSON、Marker 或运行依赖错误。
 
-## Patch Apply
+Warning 不阻止生成，但 High/Critical Findings 在 Proposal 阶段不得被隐藏，并默认进入
+Update Batch Attention。
 
-更新包使用 Base Revision 和逻辑数据 Hash 防止覆盖新状态。支持 `add`、
-`replace`、`remove`，路径采用 JSON Pointer。
+## Proposal → Review → Apply
+
+准备候选操作文件：
 
 ```json
 {
-  "baseRevision": 3,
-  "baseDataHash": "<scripts.panorama_io.compute_data_hash 的结果>",
   "operations": [
-    {
-      "op": "replace",
-      "path": "/intent/currentFocus",
-      "value": "新的已评审主线"
-    }
+    {"op": "replace", "path": "/intent/currentFocus", "value": "新的主线"}
   ],
-  "changeRecords": [],
-  "reviewDraft": {},
-  "updateBatchDraft": {},
-  "guidanceDraft": {}
+  "summary": "更新当前主线",
+  "changeLevel": "local"
 }
 ```
 
-执行：
+确定性生成事实差异、Validation Findings、Attention、审计草稿和 Proposal Hash：
+
+```powershell
+python scripts/propose_update.py `
+  examples/reference-project.html `
+  candidate-update.json `
+  --output pending-update.json
+```
+
+`pending-update.json` 初始为 `approval.status = pending`，不能 Apply。用户审阅完整 Proposal
+后，只填写审批记录：
+
+```json
+{
+  "status": "approved",
+  "approvedBy": "user",
+  "approvedAt": "2026-08-08T12:00:00Z",
+  "proposalHash": "<保持 propose_update 生成的值>"
+}
+```
+
+不得在批准后继续修改 `baseRevision`、`baseDataHash`、`operations`、`changeRecords`、
+`reviewDraft`、`updateBatchDraft` 或 `guidanceDraft`。任一字段变化都会使 Approval Hash 失效，
+必须重新 Proposal 和 Review。
+
+Apply：
 
 ```powershell
 python scripts/apply_patch.py `
   examples/reference-project.html `
-  path/to/approved-update-package.json
+  pending-update.json
 ```
 
-Apply 顺序：
+Apply 强制检查 Approval Hash、Review/UpdateBatch 关系、Base Revision/Data Hash、Schema、
+跨引用、Presentation Hash 和提交前并发状态。失败不覆盖原 HTML；进入 Apply 后创建的备份
+保留用于审计和恢复。历史 Next Focus 会在 v0.1.1 兼容层中保留为 inactive historical
+record，当前 UI 只显示当前 Guidance。
 
-1. 获取同目录独占更新锁并读取 HTML 数据锚点；
-2. 校验 Base Revision / Data Hash；
-3. 创建同目录时间戳备份；
-4. 在内存应用 Patch 并更新 Revision / 时间；
-5. 追加可选 Change / Review / Update Batch 并更新 Guidance；
-6. 执行 Schema、跨引用和规则校验；
-7. 生成暂存 HTML 并确认 Presentation Hash 不变；
-8. 提交前重新比较目标文件，拒绝覆盖并发新状态；
-9. 原子替换原 HTML 并校验最终字节。
+## Security
 
-任何失败都保留原 HTML；若已经进入 Apply 阶段，备份仍保留用于审计和恢复。
+- Embedded 允许用于本地开发，但遮蔽不是加密，HTML 源码仍可读取值；
+- 推荐使用 `project-panorama.local.html`，仓库 `.gitignore` 已包含 `*.local.html`；
+- Embedded 数据位于 Git tracked/staged 文件时，Validator 输出 High `GIT_SECRET_RISK`；
+- Production Credential 优先使用 External File / External Store；不自动迁移用户数据；
+- Renderer 的所有动态链接统一经过 `safeHref()`；允许 HTTP、HTTPS、file 和相对路径，
+  拒绝 JavaScript、VBScript、data 和其他未批准 Scheme。
 
-## 自动测试
+## Runtime 与 Inspector
+
+`SYSTEM → Runtime & Resources` 包含：
+
+- Deployment View：Environment → Deployment List → Release → Module artifactVersion → Resource → Access；
+- Resource Pool：按 Environment / Type / Status 过滤所有项目资源，包括未绑定当前 Deployment 的资源；
+- Resource Access 与 Credential Mode；Embedded 默认遮蔽；
+- 通用右侧 Inspector：Module、Decision、Acceptance、Gate、Risk、Connection、Reference。
+
+CONTROL 环境状态聚合同环境全部 Deployment，例如 `1 active / 1 deploying`。
+
+## 兼容性
+
+- Data Schema：`0.1`
+- Renderer：`0.1.1`
+- 支持 Template：`0.1.0`、`0.1.1`
+- Skill 支持 Schema：`0.1`
+
+不支持的 Schema/Template 会显示或返回明确错误，不静默渲染。
+
+## 自动测试与 CI
 
 ```powershell
 python -m pytest -q
 ```
 
-覆盖：
-
-- Schema Draft 2020-12 与 Reference Data；
-- 全局 ID、Module/Connection/Deployment/Decision/Guidance 引用破坏；
-- Stable Marker、中文与 `</script>` 安全序列化；
-- Presentation Hash 保持；
-- Reference Current / Target / Transition 语义；
-- 四种凭据显示数据；
-- JSON Patch add / replace / remove；
-- Revision/Hash 冲突、备份、失败不覆盖、Schema 回滚；
-- 并发写入窗口保护、无效 UTF-8 与畸形 Schema 输入；
-- 已实现 Module Review、Acceptance Evidence、Release Module 部署缺失；
-- Change / Review / Update Batch / Guidance 追加。
+CI 在 Python 3.10 / 3.12 上运行测试、Node URL Sanitizer、校验 Reference JSON、生成并校验
+Reference HTML，以及检查 Presentation Hash。
 
 ## Presentation Compatibility Contract
 
-普通数据更新必须满足：
+普通数据更新必须：
 
-1. 保持 `project-panorama-data` ID；
-2. 保持 `PANORAMA_DATA_START / END` Marker；
-3. 只替换 `<script type="application/json">` 的 JSON payload；
-4. 不改 CSS、Renderer JavaScript 或 DOM；
-5. 保留 `extensions` 和未知扩展字段；
-6. Apply 前后 `compute_presentation_hash` 一致。
+1. 保持 `project-panorama-data` ID 与两个 Marker；
+2. 只替换 `application/json` payload；
+3. 不改 CSS、Renderer JavaScript 或 DOM；
+4. 保留所有 `extensions` 和未知扩展字段；
+5. Apply 前后 `compute_presentation_hash` 一致。
 
-## 凭据说明
+## Design Baseline 与 Schema Findings
 
-Embedded 凭据默认遮蔽，但遮蔽不是加密，查看 HTML 源码仍可读取值。
-External File 只显示路径和 Key，External Store 只显示 Provider、Reference 和
-Key。Validator 会对 Embedded Secret、Production Embedded Secret 和失效路径告警，
-但不会擅自迁移或删除用户选择的凭据模式。
+- 原始设计基线位于 `docs/design/`；
+- 当前冻结 Schema 为 `schema/panorama.schema.v0.1.json`；
+- 建模缺口记录在 `docs/schema-findings.md`；
+- V0.1.1 没有覆盖或重构 v0.1 Schema。
 
-## Schema Findings
-
-实现期间发现但未修改的 Schema 问题记录在
-[`docs/schema-findings.md`](docs/schema-findings.md)。本轮以
-`schema/panorama.schema.v0.1.json` 为冻结基线。
-
-## 本轮边界
-
-`SKILL.md` 严格在 Renderer、Scripts、测试、Reference HTML、Patch Apply 和 README
-完成后编写，支持 INIT / INSPECT / PROPOSE UPDATE / APPLY UPDATE / VALIDATE，并要求
-Preview 先于 Apply。页面内编辑、拖拽架构、直接批准 Review、自动 Git 扫描、云端协作、
-Task Kanban、企业级 Secret 加密和完整 Impact Graph 均不在 V0.1 第一轮范围内。
+V0.2 的历史快照、Artifact Manifest、结构化 Replacement 和正式 Next Focus Snapshot 仅作为
+后续 Migration Proposal，本轮未执行。

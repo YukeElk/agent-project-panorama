@@ -109,8 +109,20 @@
 - 影响：无法基于单份快照判断修改区域增长趋势。
 - 建议：记录每次架构版本的 Baseline Diff 指标或可追溯 changedAreas 快照。
 
+## SF-13 Next Focus 历史引用依赖可变 Guidance
+
+- 证据：`updateBatch.nextFocusOptionIds` 引用顶层 `guidance.options`；顶层 Guidance 表示当前建议，
+  但历史 Update Batch 需要不可变地解释当次 A/B/C 选择。
+- 当前处理：V0.1.1 Apply 保留历史 Guidance Option 的兼容副本，并在
+  `guidance.extensions.historicalOptions` 中标记 `historical / inactive`；Renderer 只展示当前
+  `guidance.options`。Validator 同时检查所有历史 `nextFocusOptionIds`，禁止产生悬空引用。
+- 影响：兼容副本避免连续更新破坏旧 Update Batch，但历史快照仍不属于 Update Batch 本身，
+  数据所有权不够清晰。
+- 建议：V0.2 将当次 Next Focus Snapshot（Options 与 Recommended/Selected）保存到对应
+  Update Batch，顶层 Guidance 只代表当前建议，并提供 v0.1 → v0.2 Migration。
+
 ## 结论
 
 - 本轮未修改或重构 Schema。
 - 上述 Finding 均有显式兼容策略，不阻塞 Reference Project V0.1 的读取、校验和渲染。
-- SF-01、SF-03、SF-08、SF-09 建议作为下一版 Schema 设计的优先议题。
+- SF-01、SF-03、SF-08、SF-09、SF-13 建议作为下一版 Schema 设计的优先议题。

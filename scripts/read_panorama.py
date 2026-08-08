@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from panorama_io import extract_data
+
+
+REDACTED = "***REDACTED***"
 
 
 def _by_id(items: list[dict[str, Any]], entity_id: str | None) -> dict[str, Any] | None:
@@ -34,6 +39,33 @@ def _contains_embedded_secret(data: dict[str, Any]) -> bool:
         if credentials.get("mode") == "embedded":
             return True
     return False
+
+
+def redact_embedded_secrets(data: dict[str, Any]) -> dict[str, Any]:
+    """Return a deep copy with only Embedded credential values redacted."""
+
+    redacted = copy.deepcopy(data)
+    for resource in redacted.get("resources", []):
+        if not isinstance(resource, dict):
+            continue
+        access = resource.get("access", {})
+        credentials = access.get("credentials", {}) if isinstance(access, dict) else {}
+        if not isinstance(credentials, dict) or credentials.get("mode") != "embedded":
+            continue
+        fields = credentials.get("fields", {})
+        if isinstance(fields, dict):
+            credentials["fields"] = {key: REDACTED for key in fields}
+    return redacted
+
+
+def load_data(path: Path) -> dict[str, Any]:
+    if path.suffix.lower() in {".html", ".htm"}:
+        return extract_data(path)
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    if not isinstance(data, dict):
+        raise ValueError("Panorama data must be a JSON object.")
+    return data
 
 
 def orientation_summary(data: dict[str, Any]) -> list[tuple[str, str]]:
@@ -75,14 +107,30 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the complete embedded JSON instead of the orientation summary.",
     )
+    parser.add_argument(
+        "--unsafe-include-secrets",
+        action="store_true",
+        help="Emit Embedded credential values in plaintext (requires --json).",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    data = extract_data(args.html)
+    data = load_data(args.html)
+    if args.unsafe_include_secrets and not args.json:
+        print("ERROR: --unsafe-include-secrets requires --json.", file=sys.stderr)
+        return 2
     if args.json:
-        print(json.dumps(data, ensure_ascii=False, indent=2))
+        if args.unsafe_include_secrets:
+            print(
+                "WARNING: Embedded secrets are being emitted in plaintext.",
+                file=sys.stderr,
+            )
+            output = data
+        else:
+            output = redact_embedded_secrets(data)
+        print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0
     for label, value in orientation_summary(data):
         print(f"{label}: {value}")

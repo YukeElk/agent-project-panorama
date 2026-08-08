@@ -20,6 +20,7 @@ from apply_patch import (
     RevisionConflictError,
     apply_operations,
     apply_update_package,
+    compute_proposal_hash,
 )
 
 
@@ -112,6 +113,17 @@ def base_package(reference_data):
     }
 
 
+def approve_package(package):
+    package["proposalHash"] = compute_proposal_hash(package)
+    package["approval"] = {
+        "status": "approved",
+        "approvedBy": "user",
+        "approvedAt": "2026-08-08T12:00:00Z",
+        "proposalHash": package["proposalHash"],
+    }
+    return package
+
+
 def test_minimal_patch_add_replace_remove():
     original = {"value": 1, "items": ["a", "b"], "extensions": {"keep": True}}
     updated = apply_operations(
@@ -146,7 +158,9 @@ def test_patch_apply_increments_revision_backs_up_and_preserves_ui(
         }
     ]
 
-    backup, updated, warnings = apply_update_package(html, package, schema_path)
+    backup, updated, warnings = apply_update_package(
+        html, approve_package(package), schema_path
+    )
 
     assert backup.read_bytes() == before_bytes
     assert updated["meta"]["revision"] == reference_data["meta"]["revision"] + 1
@@ -219,7 +233,7 @@ def test_patch_apply_appends_change_review_batch_and_guidance(
     }
     package["guidanceDraft"] = deepcopy(reference_data["guidance"])
 
-    _, updated, _ = apply_update_package(html, package, schema_path)
+    _, updated, _ = apply_update_package(html, approve_package(package), schema_path)
 
     assert updated["changes"][-1]["id"] == "CHG-TEST"
     assert updated["reviews"][-1]["id"] == "REV-TEST"
@@ -238,6 +252,7 @@ def test_stale_package_is_rejected_without_backup(
     before = html.read_bytes()
     package = base_package(reference_data)
     package[field] = value
+    approve_package(package)
     with pytest.raises(RevisionConflictError):
         apply_update_package(html, package, schema_path)
     assert html.read_bytes() == before
@@ -253,6 +268,7 @@ def test_failed_operation_keeps_original_and_backup(
     package["operations"] = [
         {"op": "replace", "path": "/project/not-a-field", "value": "x"}
     ]
+    approve_package(package)
     with pytest.raises(PatchOperationError):
         apply_update_package(html, package, schema_path)
     assert html.read_bytes() == before
@@ -268,6 +284,7 @@ def test_schema_invalid_patch_keeps_original(
     before = html.read_bytes()
     package = base_package(reference_data)
     package["operations"] = [{"op": "remove", "path": "/project/name"}]
+    approve_package(package)
     with pytest.raises(ApplyPatchError):
         apply_update_package(html, package, schema_path)
     assert html.read_bytes() == before
@@ -285,10 +302,11 @@ def test_concurrent_change_before_commit_is_not_overwritten(
             "value": "STALE APPROVED UPDATE",
         }
     ]
+    approve_package(package)
     real_validate = patch_module.validate_data
 
-    def validate_after_concurrent_write(updated, schema, *, base_dir):
-        report = real_validate(updated, schema, base_dir=base_dir)
+    def validate_after_concurrent_write(updated, schema, *, base_dir, **kwargs):
+        report = real_validate(updated, schema, base_dir=base_dir, **kwargs)
         newer = deepcopy(reference_data)
         newer["meta"]["revision"] = 13
         newer["intent"]["currentFocus"] = "CONCURRENT NEWER STATE"

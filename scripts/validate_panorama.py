@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -46,6 +47,9 @@ SCOPE_TYPE_MAP = {
     "deployment": "deployment",
 }
 
+SUPPORTED_SCHEMA_VERSIONS = {"0.1"}
+SUPPORTED_TEMPLATE_VERSIONS = {"0.1.0", "0.1.1"}
+
 
 class ValidationRuntimeError(RuntimeError):
     """An input, marker, schema, or dependency failure (CLI exit code 2)."""
@@ -57,24 +61,66 @@ class ValidationIssue:
     code: str
     message: str
     path: str = ""
+    severity: str = "warning"
 
     def render(self) -> str:
         location = f" [{self.path}]" if self.path else ""
-        return f"{self.level} {self.code}{location}: {self.message}"
+        severity = (
+            f" [severity={self.severity}]"
+            if self.severity not in {"error", self.level.lower()}
+            else ""
+        )
+        return f"{self.level} {self.code}{severity}{location}: {self.message}"
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "level": self.level,
+            "severity": self.severity,
+            "code": self.code,
+            "message": self.message,
+            "path": self.path,
+        }
 
 
 @dataclass
 class ValidationReport:
     issues: list[ValidationIssue] = field(default_factory=list)
 
-    def add(self, level: str, code: str, message: str, path: str = "") -> None:
-        self.issues.append(ValidationIssue(level, code, message, path))
+    def add(
+        self,
+        level: str,
+        code: str,
+        message: str,
+        path: str = "",
+        *,
+        severity: str | None = None,
+    ) -> None:
+        default_severity = {"ERROR": "error", "WARNING": "warning", "INFO": "info"}
+        self.issues.append(
+            ValidationIssue(
+                level,
+                code,
+                message,
+                path,
+                severity or default_severity.get(level, "warning"),
+            )
+        )
 
     def error(self, code: str, message: str, path: str = "") -> None:
         self.add("ERROR", code, message, path)
 
-    def warning(self, code: str, message: str, path: str = "") -> None:
-        self.add("WARNING", code, message, path)
+    def warning(
+        self,
+        code: str,
+        message: str,
+        path: str = "",
+        *,
+        severity: str = "warning",
+    ) -> None:
+        self.add("WARNING", code, message, path, severity=severity)
+
+    def high(self, code: str, message: str, path: str = "") -> None:
+        self.warning(code, message, path, severity="high")
 
     def info(self, code: str, message: str, path: str = "") -> None:
         self.add("INFO", code, message, path)
@@ -86,6 +132,19 @@ class ValidationReport:
     @property
     def warnings(self) -> list[ValidationIssue]:
         return [issue for issue in self.issues if issue.level == "WARNING"]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "valid": not self.errors,
+            "counts": {
+                "errors": len(self.errors),
+                "warnings": len(self.warnings),
+                "infos": sum(issue.level == "INFO" for issue in self.issues),
+                "high": sum(issue.severity == "high" for issue in self.issues),
+                "critical": sum(issue.severity == "critical" for issue in self.issues),
+            },
+            "findings": [issue.to_dict() for issue in self.issues],
+        }
 
 
 @dataclass
@@ -145,6 +204,13 @@ def build_registry(data: dict[str, Any], report: ValidationReport) -> EntityRegi
             option
             for option in data.get("guidance", {}).get("options", [])
             if isinstance(option, dict)
+        ]
+        + [
+            record.get("option")
+            for record in data.get("guidance", {})
+            .get("extensions", {})
+            .get("historicalOptions", [])
+            if isinstance(record, dict) and isinstance(record.get("option"), dict)
         ],
     }
 
@@ -515,6 +581,71 @@ def validate_cross_references(
             )
     for option_index, option in enumerate(guidance.get("options", [])):
         require_entity_refs(option.get("relatedEntities"), f"/guidance/options/{option_index}/relatedEntities")
+    for option_index, record in enumerate(
+        guidance.get("extensions", {}).get("historicalOptions", [])
+        if isinstance(guidance.get("extensions"), dict)
+        else []
+    ):
+        if not isinstance(record, dict) or record.get("lifecycle") != "historical" or record.get("active") is not False:
+            report.error(
+                "INVALID_GUIDANCE_HISTORY",
+                "Historical Next Focus records must be marked historical and inactive.",
+                f"/guidance/extensions/historicalOptions/{option_index}",
+            )
+            continue
+        option = record.get("option", {})
+        require_entity_refs(
+            option.get("relatedEntities") if isinstance(option, dict) else [],
+            f"/guidance/extensions/historicalOptions/{option_index}/option/relatedEntities",
+        )
+
+
+def _git_file_state(source_path: Path | None) -> str:
+    """Return tracked, untracked, or unknown without mutating the repository."""
+
+    if source_path is None:
+        return "unknown"
+    try:
+        source = source_path.resolve()
+        root_result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=source.parent,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=3,
+        )
+        if root_result.returncode != 0:
+            return "untracked"
+        root = Path(root_result.stdout.strip()).resolve()
+        relative = source.relative_to(root)
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", "--", relative.as_posix()],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=3,
+        )
+        if tracked.returncode == 0:
+            return "tracked"
+        staged = subprocess.run(
+            ["git", "diff", "--cached", "--name-only", "--", relative.as_posix()],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=3,
+        )
+        return "tracked" if staged.stdout.strip() else "untracked"
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return "unknown"
 
 
 def validate_rules(
@@ -522,6 +653,7 @@ def validate_rules(
     registry: EntityRegistry,
     report: ValidationReport,
     base_dir: Path,
+    source_path: Path | None = None,
 ) -> None:
     reviews = registry.by_type.get("review", {})
 
@@ -536,7 +668,7 @@ def validate_rules(
             and not requirement.get("moduleIds")
             and requirement.get("fulfillmentStatus") != "not_applicable"
         ):
-            report.warning(
+            report.high(
                 "ARCHITECTURE_GAP",
                 f"Confirmed requirement {requirement.get('id')} has no Module coverage.",
             )
@@ -585,18 +717,18 @@ def validate_rules(
         if deployment.get("status") == "active":
             active_release_ids.add(deployment.get("releaseId"))
             if deployment.get("architectureVersionId") != release.get("architectureVersionId"):
-                report.warning(
+                report.high(
                     "DEPLOYMENT_DRIFT",
                     f"Active deployment {deployment.get('id')} architecture does not match its Release.",
                 )
             if deployment.get("releaseId") == data.get("project", {}).get("currentReleaseId") and deployment.get("architectureVersionId") != current_arch_id:
-                report.warning(
+                report.high(
                     "DEPLOYMENT_DRIFT",
                     f"Current deployment {deployment.get('id')} does not use Current Architecture.",
                 )
             missing_from_release = deployed_modules - set(release.get("moduleIds", []))
             if missing_from_release:
-                report.warning(
+                report.high(
                     "IMPLEMENTATION_DRIFT",
                     f"Deployment {deployment.get('id')} runs Modules outside Release scope: {sorted(missing_from_release)}.",
                 )
@@ -607,14 +739,14 @@ def validate_rules(
             }
             missing_from_deployment = required_release_modules - deployed_modules
             if missing_from_deployment:
-                report.warning(
+                report.high(
                     "DEPLOYMENT_DRIFT",
                     f"Active deployment {deployment.get('id')} is missing non-external Release Modules: {sorted(missing_from_deployment)}.",
                 )
             for module_id in deployed_modules:
                 module = modules.get(module_id, {})
                 if module.get("architectureScope") in {"target", "historical"}:
-                    report.warning(
+                    report.high(
                         "IMPLEMENTATION_DRIFT",
                         f"Active deployment {deployment.get('id')} runs non-current Module {module_id}.",
                     )
@@ -629,7 +761,7 @@ def validate_rules(
         }
         undeclared = nested_resources - declared_resources
         if undeclared:
-            report.warning(
+            report.high(
                 "DEPLOYMENT_DRIFT",
                 f"Deployment {deployment.get('id')} uses undeclared Resources: {sorted(undeclared)}.",
             )
@@ -641,7 +773,7 @@ def validate_rules(
         and release_id not in active_release_ids
     }
     for release_id in sorted(deployed_without_active):
-        report.warning(
+        report.high(
             "DEPLOYMENT_DRIFT",
             f"Deployed Release {release_id} has no active Deployment.",
         )
@@ -657,7 +789,8 @@ def validate_rules(
             f"Current Release {current_release} has no active Deployment.",
         )
 
-    # R4 Review Gap
+    # R4 Review Gap. Exploration is informational until it reaches a reviewed
+    # architecture, the current Release, or an active Deployment.
     module_transition_states = {
         transition.get("subjectId"): transition.get("state")
         for transition in _architecture_items(data, "transitions")
@@ -669,6 +802,18 @@ def validate_rules(
                 "REVIEW_GAP",
                 f"Architecture {version.get('id')} is {version.get('status')} without an approved review.",
             )
+    current_release_modules = set(
+        releases.get(data.get("project", {}).get("currentReleaseId", ""), {}).get(
+            "moduleIds", []
+        )
+    )
+    active_deployment_modules = {
+        item.get("moduleId")
+        for deployment in _items(data, "deployments")
+        if deployment.get("status") == "active"
+        for item in deployment.get("moduleDeployments", [])
+        if isinstance(item, dict)
+    }
     for module in _architecture_items(data, "modules"):
         status = module.get("status", {})
         implemented = status.get("implementationMaturity") in {"functional", "stable"}
@@ -677,15 +822,33 @@ def validate_rules(
             "migrating",
             "completed",
         }
-        requires_review = (
-            status.get("designMaturity") == "review_ready" or implemented or migrating
-        )
-        if requires_review and not any(
+        design = status.get("designMaturity")
+        requires_review = design in {"review_ready", "confirmed"} or implemented or migrating
+        approved = any(
             review_approved(review_id) for review_id in module.get("reviewIds", [])
-        ):
+        )
+        if not requires_review or approved:
+            continue
+        module_id = module.get("id")
+        controls_runtime = (
+            module_id in current_release_modules
+            or module_id in active_deployment_modules
+            or (module.get("architectureScope") in {"current", "both"} and design in {"review_ready", "confirmed"})
+        )
+        if design == "experimental" and implemented and not controls_runtime:
+            report.info(
+                "REVIEW_GAP",
+                f"Module {module_id} is an implemented experiment not yet design-confirmed.",
+            )
+        elif controls_runtime or design == "confirmed" or migrating:
+            report.high(
+                "REVIEW_GAP",
+                f"Module {module_id} is confirmed, current, released, deployed, or migrating without an approved review.",
+            )
+        else:
             report.warning(
                 "REVIEW_GAP",
-                f"Module {module.get('id')} is implemented, migrating, or review_ready without an approved Module/Architecture review.",
+                f"Module {module_id} is ready for design review.",
             )
     for decision in _items(data, "decisions"):
         if decision.get("status") == "review_pending" and not review_approved(decision.get("reviewId")):
@@ -734,20 +897,43 @@ def validate_rules(
         module_gates = [
             gates[item_id] for item_id in module.get("gateIds", []) if item_id in gates
         ]
-        if not module_gates:
-            reasons.append("no Gate is mapped")
-        elif any(item.get("status") in {"not_configured", "ready", "running", "failed"} for item in module_gates):
-            reasons.append("required Gate is incomplete")
+        required_gates = [item for item in module_gates if item.get("required") is True]
+        if not required_gates:
+            reasons.append("no required Gate is mapped")
+        else:
+            incomplete_required = [
+                item.get("id")
+                for item in required_gates
+                if item.get("status")
+                in {"not_configured", "ready", "running", "failed"}
+            ]
+            if incomplete_required:
+                reasons.append(
+                    f"required Gate is incomplete: {sorted(incomplete_required)}"
+                )
         if any(
-            item.get("status") == "passed" and not item.get("evidenceReferenceIds")
-            for item in module_gates
+            item.get("required") is True
+            and item.get("status") == "passed"
+            and not item.get("evidenceReferenceIds")
+            for item in required_gates
         ):
             reasons.append("passed Gate has no evidence")
+        for item in module_gates:
+            if item.get("required") is False and item.get("status") == "failed":
+                report.info(
+                    "OPTIONAL_GATE_FAILED",
+                    f"Optional Gate {item.get('id')} failed and does not block Module {module.get('id')} verification.",
+                )
         if reasons:
-            report.warning(
-                "VERIFICATION_GAP",
-                f"Module {module.get('id')}: " + "; ".join(dict.fromkeys(reasons)) + ".",
-            )
+            message = f"Module {module.get('id')}: " + "; ".join(dict.fromkeys(reasons)) + "."
+            if (
+                status.get("implementationMaturity") == "stable"
+                or module.get("id") in current_release_modules
+                or module.get("id") in active_deployment_modules
+            ):
+                report.high("VERIFICATION_GAP", message)
+            else:
+                report.warning("VERIFICATION_GAP", message)
 
     # R6 Baseline Drift
     for baseline in _architecture_items(data, "baselines"):
@@ -806,17 +992,19 @@ def validate_rules(
                 )
         for transition in transitions:
             if transition.get("state") == "blocked":
-                report.warning(
+                report.high(
                     "TRANSITION_RISK",
                     f"Transition {transition.get('id')} is blocked.",
                 )
 
     # R9 Resource Risk and credential warnings
+    has_embedded_credentials = False
     for resource in _items(data, "resources"):
         resource_id = resource.get("id")
         credentials = resource.get("access", {}).get("credentials", {})
         mode = credentials.get("mode")
         if mode == "embedded":
+            has_embedded_credentials = True
             report.warning(
                 "EMBEDDED_SECRET_PRESENT",
                 f"Resource {resource_id} contains Embedded credentials; masking is not encryption.",
@@ -825,6 +1013,7 @@ def validate_rules(
                 report.warning(
                     "EMBEDDED_SECRET_IN_PRODUCTION",
                     f"Production Resource {resource_id} contains Embedded credentials.",
+                    severity="high",
                 )
         if mode == "external_file":
             secret_path = credentials.get("path", "")
@@ -863,13 +1052,54 @@ def validate_rules(
                 "RESOURCE_RISK", f"Active Resource {resource_id} is not tied to a Deployment."
             )
 
-    # R10 Stage Exit Gap
+    if has_embedded_credentials:
+        git_state = _git_file_state(source_path)
+        if git_state == "tracked":
+            report.high(
+                "GIT_SECRET_RISK",
+                "This Panorama contains Embedded credentials and is tracked or staged by Git. Use a *.local.html private copy or an External credential mode before sharing.",
+            )
+        elif git_state == "unknown":
+            report.warning(
+                "GIT_SECRET_RISK",
+                "This Panorama contains Embedded credentials; Git tracked/staged state could not be determined.",
+            )
+
+    # R10 Stage Entry / Exit Gap
+    current_stage_for_entry = registry.by_type.get("stage", {}).get(
+        data.get("project", {}).get("currentStageId", ""), {}
+    )
+    entry_ids = current_stage_for_entry.get("entryAcceptanceIds", [])
+    require_entry = bool(
+        current_stage_for_entry.get("extensions", {}).get("requireEntryAcceptance")
+        if isinstance(current_stage_for_entry.get("extensions"), dict)
+        else False
+    )
+    if require_entry and not entry_ids:
+        report.high(
+            "STAGE_ENTRY_GAP",
+            f"Current Stage {current_stage_for_entry.get('id')} requires Entry Acceptance but none is defined.",
+        )
+    incomplete_entry = [
+        item_id
+        for item_id in entry_ids
+        if registry.by_type.get("acceptance", {})
+        .get(item_id, {})
+        .get("verificationStatus")
+        not in {"passed", "waived"}
+    ]
+    if incomplete_entry:
+        report.warning(
+            "STAGE_ENTRY_GAP",
+            f"Current Stage {current_stage_for_entry.get('id')} has incomplete Entry Acceptance: {incomplete_entry}.",
+        )
+
     for stage in _items(data, "stages"):
         if stage.get("status") != "completed":
             continue
         exit_ids = stage.get("exitAcceptanceIds", [])
         if not exit_ids:
-            report.warning(
+            report.high(
                 "STAGE_EXIT_GAP",
                 f"Completed Stage {stage.get('id')} has no Exit Acceptance.",
             )
@@ -881,7 +1111,7 @@ def validate_rules(
             not in {"passed", "waived"}
         ]
         if incomplete:
-            report.warning(
+            report.high(
                 "STAGE_EXIT_GAP",
                 f"Completed Stage {stage.get('id')} has incomplete Exit Acceptance: {incomplete}.",
             )
@@ -917,7 +1147,7 @@ def validate_rules(
             not in {"passed", "waived"}
         ]
         if blocked_core_modules:
-            report.warning(
+            report.high(
                 "STAGE_EXIT_GAP",
                 f"Current Stage {current_stage.get('id')} has passed Exit Acceptance but core Modules still have Verification blockers: {sorted(blocked_core_modules)}.",
             )
@@ -942,14 +1172,37 @@ def validate_data(
     schema_path: str | Path,
     *,
     base_dir: str | Path = ".",
+    source_path: str | Path | None = None,
 ) -> ValidationReport:
     report = ValidationReport()
+    schema_version = str(data.get("schemaVersion", ""))
+    template_version = str(data.get("meta", {}).get("templateVersion", ""))
+    if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
+        report.error(
+            "UNSUPPORTED_SCHEMA_VERSION",
+            f"Validator supports {sorted(SUPPORTED_SCHEMA_VERSIONS)}, got {schema_version!r}.",
+            "/schemaVersion",
+        )
+        return report
+    if template_version not in SUPPORTED_TEMPLATE_VERSIONS:
+        report.error(
+            "UNSUPPORTED_TEMPLATE_VERSION",
+            f"Validator supports {sorted(SUPPORTED_TEMPLATE_VERSIONS)}, got {template_version!r}.",
+            "/meta/templateVersion",
+        )
+        return report
     validate_schema(data, schema_path, report)
     if report.errors:
         return report
     registry = build_registry(data, report)
     validate_cross_references(data, registry, report)
-    validate_rules(data, registry, report, Path(base_dir))
+    validate_rules(
+        data,
+        registry,
+        report,
+        Path(base_dir),
+        Path(source_path) if source_path is not None else None,
+    )
     if not report.errors:
         report.info(
             "VALID",
@@ -981,6 +1234,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("input", type=Path, help="Panorama JSON or Single HTML")
     parser.add_argument("--schema", type=Path, default=default_schema)
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit a structured validation report as JSON.",
+    )
     return parser
 
 
@@ -988,12 +1246,20 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         data, base_dir = load_panorama(args.input)
-        report = validate_data(data, args.schema, base_dir=base_dir)
+        report = validate_data(
+            data,
+            args.schema,
+            base_dir=base_dir,
+            source_path=args.input,
+        )
     except ValidationRuntimeError as exc:
         print(f"ERROR FILE: {exc}", file=sys.stderr)
         return 2
-    for issue in report.issues:
-        print(issue.render())
+    if args.json:
+        print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+    else:
+        for issue in report.issues:
+            print(issue.render())
     return 1 if report.errors else 0
 
 

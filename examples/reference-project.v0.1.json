@@ -1757,7 +1757,8 @@
       "createdAt": "2026-08-08T10:00:00+08:00",
       "releasedAt": null,
       "deploymentIds": [
-        "DEP-PROD"
+        "DEP-PROD",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-ARCH"
@@ -1864,6 +1865,59 @@
       "extensions": {}
     },
     {
+      "id": "DEP-DEV-NEXT",
+      "name": "Development Target Deployment",
+      "environment": "development",
+      "status": "deploying",
+      "releaseId": "REL-V10",
+      "architectureVersionId": "ARCH-V04",
+      "deployedAt": "2026-08-08T11:30:00+08:00",
+      "resourceIds": [
+        "RES-DEV-HOST",
+        "RES-DEV-DB",
+        "RES-DEV-VECTOR",
+        "RES-OPENAI"
+      ],
+      "moduleDeployments": [
+        {
+          "moduleId": "MOD-CONSOLE",
+          "artifactVersion": "1.0.0-rc1",
+          "status": "deploying",
+          "resourceIds": ["RES-DEV-HOST"],
+          "endpoints": ["http://localhost:9080"],
+          "notes": "Target release preview."
+        },
+        {
+          "moduleId": "MOD-ORCHESTRATOR",
+          "artifactVersion": "1.0.0-rc1",
+          "status": "deploying",
+          "resourceIds": ["RES-DEV-HOST", "RES-OPENAI"],
+          "endpoints": ["http://localhost:9000"],
+          "notes": "Target release preview."
+        },
+        {
+          "moduleId": "MOD-RETRIEVAL",
+          "artifactVersion": "0.6.0-rc1",
+          "status": "deploying",
+          "resourceIds": ["RES-DEV-HOST", "RES-DEV-VECTOR"],
+          "endpoints": ["http://localhost:9010/retrieve"],
+          "notes": "Target metadata path enabled."
+        },
+        {
+          "moduleId": "MOD-METADATA",
+          "artifactVersion": "0.1.0-rc1",
+          "status": "deploying",
+          "resourceIds": ["RES-DEV-HOST", "RES-DEV-DB"],
+          "endpoints": ["http://localhost:9020/metadata"],
+          "notes": "New target-only module."
+        }
+      ],
+      "externalResourceIds": ["RES-OPENAI"],
+      "configReferenceIds": ["REF-DEPLOY-DEV", "REF-DEV-SECRETS"],
+      "notes": "Parallel target deployment demonstrates multiple deployments in one environment.",
+      "extensions": {}
+    },
+    {
       "id": "DEP-PROD",
       "name": "Production Deployment",
       "environment": "production",
@@ -1966,7 +2020,8 @@
         "MOD-WORKSPACE"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-DEPLOY-DEV"
@@ -2002,7 +2057,8 @@
         "MOD-METADATA"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-DEV-SECRETS"
@@ -2036,7 +2092,8 @@
         "MOD-VECTORSTORE"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [],
       "notes": "",
@@ -2105,6 +2162,7 @@
       ],
       "usedByDeploymentIds": [
         "DEP-DEV",
+        "DEP-DEV-NEXT",
         "DEP-PROD"
       ],
       "referenceIds": [

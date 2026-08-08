@@ -211,7 +211,7 @@
       border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; position: relative; min-height: 590px; background: #fff;
     }
     .connection-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
-    .connection-path { fill: none; stroke: #67738f; stroke-width: 1.5; opacity: .72; }
+    .connection-path { fill: none; stroke: #67738f; stroke-width: 1.5; opacity: .72; pointer-events: stroke; cursor: pointer; }
     .connection-path.is-target { stroke: var(--primary); stroke-dasharray: 6 5; }
     .connection-path.is-deprecated { stroke: var(--critical); stroke-dasharray: 5 5; }
     .connection-label { fill: var(--muted); font: 600 10px var(--mono); paint-order: stroke; stroke: white; stroke-width: 4px; stroke-linejoin: round; }
@@ -272,6 +272,10 @@
     .key-value dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
     .entity-links { display: flex; flex-wrap: wrap; gap: 6px 12px; }
     .entity-link { color: var(--primary); font: 650 12px/1.4 var(--mono); }
+    button.entity-link { border: 0; padding: 0; background: transparent; cursor: pointer; text-align: left; }
+    .connection-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .connection-list .entity-link { border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; background: #fff; }
+    .unsafe-link { color: var(--muted); text-decoration: line-through; text-decoration-style: dotted; }
     .copy-row { display: flex; align-items: center; gap: 8px; }
     .copy-value { flex: 1; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; padding: 8px; overflow: auto; white-space: nowrap; }
 
@@ -287,6 +291,9 @@
     .runtime-flow { color: var(--ink); font-weight: 760; padding: 11px 13px; border-bottom: 1px solid var(--rule); }
     .runtime-flow span { color: var(--primary); padding: 0 8px; }
     .runtime-grid { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(350px,.95fr); gap: 14px; align-items: start; }
+    .deployment-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+    .deployment-chip { border: 1px solid var(--rule); background: #fff; padding: 8px 10px; border-radius: 6px; color: var(--ink); cursor: pointer; }
+    .deployment-chip[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-tint); }
     .clickable-row { cursor: pointer; }
     .resource-inspector { margin-top: 14px; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; }
     .inspector-head { padding: 13px 16px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
@@ -2198,7 +2205,8 @@
       "createdAt": "2026-08-08T10:00:00+08:00",
       "releasedAt": null,
       "deploymentIds": [
-        "DEP-PROD"
+        "DEP-PROD",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-ARCH"
@@ -2305,6 +2313,83 @@
       "extensions": {}
     },
     {
+      "id": "DEP-DEV-NEXT",
+      "name": "Development Target Deployment",
+      "environment": "development",
+      "status": "deploying",
+      "releaseId": "REL-V10",
+      "architectureVersionId": "ARCH-V04",
+      "deployedAt": "2026-08-08T11:30:00+08:00",
+      "resourceIds": [
+        "RES-DEV-HOST",
+        "RES-DEV-DB",
+        "RES-DEV-VECTOR",
+        "RES-OPENAI"
+      ],
+      "moduleDeployments": [
+        {
+          "moduleId": "MOD-CONSOLE",
+          "artifactVersion": "1.0.0-rc1",
+          "status": "deploying",
+          "resourceIds": [
+            "RES-DEV-HOST"
+          ],
+          "endpoints": [
+            "http://localhost:9080"
+          ],
+          "notes": "Target release preview."
+        },
+        {
+          "moduleId": "MOD-ORCHESTRATOR",
+          "artifactVersion": "1.0.0-rc1",
+          "status": "deploying",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-OPENAI"
+          ],
+          "endpoints": [
+            "http://localhost:9000"
+          ],
+          "notes": "Target release preview."
+        },
+        {
+          "moduleId": "MOD-RETRIEVAL",
+          "artifactVersion": "0.6.0-rc1",
+          "status": "deploying",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-DEV-VECTOR"
+          ],
+          "endpoints": [
+            "http://localhost:9010/retrieve"
+          ],
+          "notes": "Target metadata path enabled."
+        },
+        {
+          "moduleId": "MOD-METADATA",
+          "artifactVersion": "0.1.0-rc1",
+          "status": "deploying",
+          "resourceIds": [
+            "RES-DEV-HOST",
+            "RES-DEV-DB"
+          ],
+          "endpoints": [
+            "http://localhost:9020/metadata"
+          ],
+          "notes": "New target-only module."
+        }
+      ],
+      "externalResourceIds": [
+        "RES-OPENAI"
+      ],
+      "configReferenceIds": [
+        "REF-DEPLOY-DEV",
+        "REF-DEV-SECRETS"
+      ],
+      "notes": "Parallel target deployment demonstrates multiple deployments in one environment.",
+      "extensions": {}
+    },
+    {
       "id": "DEP-PROD",
       "name": "Production Deployment",
       "environment": "production",
@@ -2407,7 +2492,8 @@
         "MOD-WORKSPACE"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-DEPLOY-DEV"
@@ -2443,7 +2529,8 @@
         "MOD-METADATA"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [
         "REF-DEV-SECRETS"
@@ -2477,7 +2564,8 @@
         "MOD-VECTORSTORE"
       ],
       "usedByDeploymentIds": [
-        "DEP-DEV"
+        "DEP-DEV",
+        "DEP-DEV-NEXT"
       ],
       "referenceIds": [],
       "notes": "",
@@ -2546,6 +2634,7 @@
       ],
       "usedByDeploymentIds": [
         "DEP-DEV",
+        "DEP-DEV-NEXT",
         "DEP-PROD"
       ],
       "referenceIds": [
@@ -4436,6 +4525,10 @@
   (function () {
     "use strict";
 
+    var RENDERER_VERSION = "0.1.1";
+    var SUPPORTED_SCHEMA_VERSIONS = ["0.1"];
+    var SUPPORTED_TEMPLATE_VERSIONS = ["0.1.0", "0.1.1"];
+
     var rootDataElement = document.getElementById("project-panorama-data");
     var data;
     try {
@@ -4446,6 +4539,14 @@
     }
     if (!data || !data.project || !data.architecture) {
       document.getElementById("main-content").innerHTML = "<div class='empty-state' style='margin:24px'>模板尚未嵌入 Panorama 数据。请使用 scripts/init_panorama.py 生成项目 HTML。</div>";
+      return;
+    }
+    if (SUPPORTED_SCHEMA_VERSIONS.indexOf(String(data.schemaVersion)) < 0) {
+      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>Unsupported Panorama Schema</strong><br>Current Renderer: " + escapeHtml(RENDERER_VERSION) + " · Data Schema: " + escapeHtml(data.schemaVersion) + "</div>";
+      return;
+    }
+    if (!data.meta || SUPPORTED_TEMPLATE_VERSIONS.indexOf(String(data.meta.templateVersion)) < 0) {
+      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>Unsupported Panorama Template</strong><br>Current Renderer: " + escapeHtml(RENDERER_VERSION) + " · Data Template: " + escapeHtml(data.meta && data.meta.templateVersion) + "</div>";
       return;
     }
 
@@ -4461,7 +4562,10 @@
       selectedStageId: data.project.currentStageId,
       selectedVersionId: data.architecture.currentVersionId,
       selectedEnvironment: preferredEnvironment(),
+      selectedDeploymentId: null,
       selectedResourceId: null,
+      runtimeMode: "deployment",
+      resourcePoolFilters: { environment: "all", type: "all", status: "all" },
       revealedSecrets: {},
       attentionExpanded: false,
       requirementFilters: { type: "all", definition: "all", fulfillment: "all" }
@@ -4501,6 +4605,21 @@
 
     function e(value) { return escapeHtml(value); }
     function arr(value) { return Array.isArray(value) ? value : []; }
+    function safeHref(value) {
+      var raw = String(value == null ? "" : value).trim();
+      if (!raw || /[\u0000-\u001F\u007F]/.test(raw)) return null;
+      if (/^(javascript:|vbscript:|data:)/i.test(raw)) return null;
+      if (/^[a-zA-Z]:[\\/]/.test(raw)) return "file:///" + raw.replace(/\\/g, "/");
+      var scheme = raw.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):/);
+      if (scheme && ["http", "https", "file"].indexOf(scheme[1].toLowerCase()) < 0) return null;
+      if (/^\/\//.test(raw)) return "https:" + raw;
+      return raw;
+    }
+    function safeAnchor(label, value, suffix) {
+      var href = safeHref(value);
+      if (!href) return "<span class='unsafe-link' title='Unsafe or unsupported link was not activated'>" + e(label) + "</span>" + (suffix || "");
+      return "<a href='" + e(href) + "' target='_blank' rel='noreferrer'>" + e(label) + "</a>" + (suffix || "");
+    }
     function byId(type, id) {
       if (type === "project") return data.project && data.project.id === id ? data.project : null;
       if (type === "intent") return id === data.project.id ? data.intent : null;
@@ -4546,7 +4665,7 @@
     function entityLinks(type, ids) {
       if (!arr(ids).length) return "<span class='cell-sub'>None</span>";
       return "<div class='entity-links'>" + ids.map(function (id) {
-        return "<span class='entity-link' title='" + e(id) + "'>" + e(entityName(type, id)) + "</span>";
+        return "<button class='entity-link' type='button' data-open-entity='" + e(id) + "' data-entity-type='" + e(type) + "' title='" + e(id) + "'>" + e(entityName(type, id)) + "</button>";
       }).join("") + "</div>";
     }
     function pendingReview(module) {
@@ -4569,11 +4688,24 @@
       var active = arr(data.deployments).find(function (deployment) { return deployment.status === "active"; });
       return active ? active.environment : (arr(data.deployments)[0] ? data.deployments[0].environment : "development");
     }
+    function deploymentsForEnvironment(environment) {
+      return arr(data.deployments).filter(function (deployment) { return deployment.environment === environment; });
+    }
     function currentUpdate() {
       return byId("update_batch", data.meta.latestUpdateBatchId) || arr(data.updateBatches).slice(-1)[0] || null;
     }
     function selectedDeployment() {
-      return arr(data.deployments).find(function (deployment) { return deployment.environment === state.selectedEnvironment; }) || null;
+      var deployments = deploymentsForEnvironment(state.selectedEnvironment).slice().sort(function (a, b) {
+        var rank = { active: 0, deploying: 1, degraded: 2, planned: 3, stopped: 4, retired: 5 };
+        var statusOrder = (rank[a.status] == null ? 9 : rank[a.status]) - (rank[b.status] == null ? 9 : rank[b.status]);
+        return statusOrder || String(b.deployedAt || "").localeCompare(String(a.deployedAt || ""));
+      });
+      var selected = deployments.find(function (deployment) { return deployment.id === state.selectedDeploymentId; });
+      if (!selected) {
+        selected = deployments[0] || null;
+        state.selectedDeploymentId = selected ? selected.id : null;
+      }
+      return selected;
     }
     function resourceForId(id) { return byId("resource", id); }
     function deploymentForModule(moduleId) {
@@ -4605,8 +4737,14 @@
       var currentRelease = byId("release", data.project.currentReleaseId);
       var update = currentUpdate();
       var environmentHtml = ["development", "staging", "production"].map(function (environment) {
-        var deployment = arr(data.deployments).find(function (item) { return item.environment === environment; });
-        return status(deployment ? deployment.status : "unknown", environment === "development" ? "Dev" : humanize(environment));
+        var deployments = deploymentsForEnvironment(environment);
+        if (!deployments.length) return status("unknown", environment === "development" ? "Dev · none" : humanize(environment) + " · none");
+        var counts = {};
+        deployments.forEach(function (item) { counts[item.status] = (counts[item.status] || 0) + 1; });
+        var order = ["active", "deploying", "degraded", "planned", "stopped", "retired"];
+        var summary = Object.keys(counts).sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); }).map(function (key) { return counts[key] + " " + key; }).join(" / ");
+        var tone = counts.degraded ? "degraded" : (counts.active ? "active" : (counts.deploying ? "deploying" : deployments[0].status));
+        return status(tone, (environment === "development" ? "Dev" : humanize(environment)) + " · " + summary);
       }).join("");
       var summaryItems = update ? arr(update.summaryItems).slice(0, 6) : [];
       var updateHtml = summaryItems.length ? summaryItems.map(function (item, index) {
@@ -4691,6 +4829,10 @@
     function renderLogical() {
       var layers = arr(data.architecture.layers).slice().sort(function (a,b) { return a.order - b.order; });
       var visibleModules = logicalModules();
+      var visibleModuleIds = new Set(visibleModules.map(function (module) { return module.id; }));
+      var connectionButtons = arr(data.architecture.connections).filter(function (connection) { return connectionVisible(connection, visibleModuleIds); }).map(function (connection) {
+        return "<button class='entity-link' type='button' data-open-entity='" + e(connection.id) + "' data-entity-type='connection'>" + e(connection.name) + " · " + e(connection.protocol || connection.communicationMode) + "</button>";
+      }).join("");
       var laneHtml = layers.map(function (layer) {
         var modules = visibleModules.filter(function (module) {
           var effectiveLayer = state.architectureMode === "target" && module.targetLayerId ? module.targetLayerId : module.layerId;
@@ -4709,7 +4851,8 @@
         "<div class='segmented' aria-label='Architecture mode'>" + ["current","target","transition"].map(function (mode) {
           return "<button class='segment' type='button' data-architecture-mode='" + mode + "' aria-pressed='" + (state.architectureMode === mode) + "'>" + mode.toUpperCase() + "</button>";
         }).join("") + "</div></div>" +
-        "<div class='architecture-board' id='architecture-board'><svg class='connection-svg' id='connection-svg' aria-label='Architecture connections'></svg>" + (laneHtml || "<div class='empty-state'>No modules match the filters.</div>") + "</div>";
+        "<div class='architecture-board' id='architecture-board'><svg class='connection-svg' id='connection-svg' aria-label='Architecture connections'></svg>" + (laneHtml || "<div class='empty-state'>No modules match the filters.</div>") + "</div>" +
+        "<div class='connection-list' aria-label='Visible connections'>" + connectionButtons + "</div>";
       window.requestAnimationFrame(drawConnections);
       bindNodeHover();
     }
@@ -4870,6 +5013,44 @@
         }).join("") : "<span class='cell-sub'>Not deployed.</span>");
       openDrawer();
     }
+    function renderEntityInspector(type, id) {
+      if (type === "module") { renderDrawer(id); return; }
+      var item = byId(type, id);
+      if (!item) return;
+      document.getElementById("drawer-title").textContent = item.title || item.name || item.id;
+      document.getElementById("drawer-subtitle").textContent = item.id + " · " + humanize(type);
+      var body = "";
+      switch (type) {
+        case "decision":
+          body = drawerSection("Decision Context", "<dl class='key-value'>" + kvRow("Question", item.question) + kvRow("Trigger", item.trigger) + kvRow("Context", item.context) + kvRow("Impact", humanize(item.impactLevel)) + kvRow("Required By", item.requiredBy || "—") + kvRow("Status", humanize(item.status)) + "</dl>") +
+            drawerSection("Related", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds)) +
+            drawerSection("Options", arr(item.options).map(function (option) { return "<div class='inspector-pane'><h4>" + e(option.title) + (option.id === item.recommendedOptionId ? " · Recommended" : "") + (option.id === item.selectedOptionId ? " · Selected" : "") + "</h4><p>" + e(option.summary) + "</p><strong>Benefits</strong>" + list(option.benefits) + "<strong>Drawbacks</strong>" + list(option.drawbacks) + "<strong>Impacts</strong>" + list(option.impacts) + "<strong>Risks</strong>" + list(option.risks) + "<p>Reversibility: " + e(humanize(option.reversibility)) + " · Cost: " + e(humanize(option.estimatedCost)) + "</p></div>"; }).join("") + "<p><strong>Selection rationale:</strong> " + e(item.selectionRationale || "—") + "</p>") +
+            drawerSection("Review / References", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.referenceIds));
+          break;
+        case "acceptance":
+          body = drawerSection("Acceptance", "<dl class='key-value'>" + kvRow("Scope", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("Category", humanize(item.category)) + kvRow("Description", item.description) + kvRow("Expected Evidence", item.expectedEvidence) + kvRow("Defined By", humanize(item.definedBy)) + kvRow("Status", humanize(item.status)) + kvRow("Verification", humanize(item.verificationStatus)) + "</dl>") + drawerSection("Review / Evidence", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.evidenceReferenceIds));
+          break;
+        case "gate":
+          body = drawerSection("Gate", "<dl class='key-value'>" + kvRow("Type", humanize(item.gateType)) + kvRow("Scope", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("Required", item.required ? "Yes" : "No") + kvRow("Automation", humanize(item.automation)) + kvRow("Status", humanize(item.status)) + kvRow("Last Run", dateTime(item.lastRunAt)) + kvRow("Result", item.resultSummary || item.summary) + "</dl>") + drawerSection("Acceptance / Evidence / Review", entityLinks("acceptance", item.acceptanceCriteriaIds) + entityLinks("reference", arr(item.evidenceReferenceIds).concat(arr(item.referenceIds))) + entityLinks("review", item.reviewId ? [item.reviewId] : []));
+          break;
+        case "risk":
+          body = drawerSection("Risk", "<dl class='key-value'>" + kvRow("Category", humanize(item.category)) + kvRow("Severity", humanize(item.severity)) + kvRow("Status", humanize(item.status)) + kvRow("Description", item.description) + kvRow("Impact", item.impact) + kvRow("Mitigation", item.mitigation) + kvRow("Source", humanize(item.source)) + "</dl>") + drawerSection("Related", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds) + entityLinks("reference", item.referenceIds));
+          break;
+        case "connection":
+          body = drawerSection("Connection", "<dl class='key-value'>" + kvRow("From / To", entityName("module", item.fromModuleId) + " → " + entityName("module", item.toModuleId)) + kvRow("Protocol", item.protocol) + kvRow("Communication", humanize(item.communicationMode)) + kvRow("Flow", humanize(item.flowDirection)) + kvRow("Data", item.dataSummary) + kvRow("Auth", item.authSummary) + kvRow("Reliability", item.reliabilitySummary) + kvRow("Rationale", item.rationale) + "</dl>") + drawerSection("Contract / Transition", entityLinks("reference", item.contractReferenceIds) + entityLinks("transition", item.transitionId ? [item.transitionId] : []));
+          break;
+        case "reference":
+          body = drawerSection("Reference", "<dl class='key-value'>" + kvRow("Type", humanize(item.type)) + kvRow("Location Type", humanize(item.locationType)) + kvRow("Sensitive", item.sensitive ? "Yes" : "No") + kvRow("Status", humanize(item.status)) + kvRow("Notes", item.notes || "—") + "</dl><p>" + referenceLink(item) + "</p>") + drawerSection("Related Entities", arr(item.relatedEntities).map(function (ref) { return entityLinks(ref.type, [ref.id]); }).join(""));
+          break;
+        default:
+          body = drawerSection("Entity", "<pre class='mono'>" + e(JSON.stringify(item, null, 2)) + "</pre>");
+      }
+      document.getElementById("drawer-body").innerHTML = body;
+      openDrawer();
+    }
+    function kvRow(label, value) {
+      return "<dt>" + e(label) + "</dt><dd>" + e(value == null || value === "" ? "—" : value) + "</dd>";
+    }
     function drawerSection(title, body) {
       return "<section class='drawer-section'><h3>" + e(title) + "</h3>" + body + "</section>";
     }
@@ -4884,12 +5065,12 @@
       if (!items.length) return "<span class='cell-sub'>None</span>";
       return items.map(function (item) {
         var stateValue = item.status || item.verificationStatus || "unknown";
-        return "<p><span class='entity-link'>" + e(item.id) + "</span><br>" + e(item.title || item.name) + " · " + status(stateValue) + "</p>";
+        return "<p><button class='entity-link' type='button' data-open-entity='" + e(item.id) + "' data-entity-type='" + e(type) + "'>" + e(item.id) + "</button><br>" + e(item.title || item.name) + " · " + status(stateValue) + "</p>";
       }).join("");
     }
     function referenceLink(reference) {
       var href = reference.locationType === "inline_note" ? "" : reference.location;
-      return href ? "<a href='" + e(href) + "' target='_blank' rel='noreferrer'>" + e(reference.title) + " ↗</a> <span class='cell-sub mono'>" + e(reference.location) + "</span>" : "<span>" + e(reference.title) + "</span>";
+      return href ? safeAnchor(reference.title + " ↗", href, " <span class='cell-sub mono'>" + e(reference.location) + "</span>") : "<span>" + e(reference.title) + "</span>";
     }
     function openDrawer() {
       var drawer = document.getElementById("module-drawer");
@@ -4907,31 +5088,57 @@
 
     function renderRuntime() {
       var environments = ["development","test","staging","production"];
+      var environmentDeployments = deploymentsForEnvironment(state.selectedEnvironment);
       var deployment = selectedDeployment();
       var release = deployment ? byId("release", deployment.releaseId) : null;
       var architecture = deployment ? byId("architecture_version", deployment.architectureVersionId) : null;
       var deploymentResources = deployment ? Array.from(new Set(arr(deployment.resourceIds).concat(arr(deployment.externalResourceIds)))) : [];
       var resources = deploymentResources.map(resourceForId).filter(Boolean);
+      var modeToolbar = "<div class='toolbar'><div class='segmented' aria-label='Runtime mode'>" + [
+        ["deployment", "Deployment View"], ["resources", "Resource Pool"]
+      ].map(function (mode) { return "<button class='segment' type='button' data-runtime-mode='" + mode[0] + "' aria-pressed='" + (state.runtimeMode === mode[0]) + "'>" + mode[1] + "</button>"; }).join("") + "</div><div class='segmented' aria-label='Environment'>" + environments.map(function (environment) {
+        var exists = arr(data.deployments).some(function (item) { return item.environment === environment; }) || arr(data.resources).some(function (item) { return item.environment === environment; });
+        return "<button class='segment' type='button' data-environment='" + environment + "' aria-pressed='" + (state.selectedEnvironment === environment) + "' " + (!exists ? "title='No deployment or resource recorded'" : "") + ">" + humanize(environment) + "</button>";
+      }).join("") + "</div></div>";
+      if (state.runtimeMode === "resources") {
+        renderResourcePool(modeToolbar);
+        return;
+      }
       if (!state.selectedResourceId || !resources.some(function (resource) { return resource.id === state.selectedResourceId; })) {
         state.selectedResourceId = resources[0] ? resources[0].id : null;
       }
       var selectedResource = resourceForId(state.selectedResourceId);
       var moduleRows = deployment ? arr(deployment.moduleDeployments).map(function (item) {
-        return "<tr><td><div class='cell-title'>" + e(entityName("module", item.moduleId)) + "</div><div class='cell-sub mono'>" + e(item.artifactVersion) + "</div></td><td>" + status(item.status) + "</td><td>" + (item.endpoints.length ? item.endpoints.map(function (endpoint) { return "<a href='" + e(endpoint) + "' target='_blank' rel='noreferrer'>" + e(endpoint) + "</a> <button class='text-btn' type='button' data-copy-value='" + e(endpoint) + "'>Copy</button>"; }).join("<br>") : "—") + "</td><td>" + item.resourceIds.map(function (id) { return e(entityName("resource", id)); }).join(", ") + "</td></tr>";
+        return "<tr><td><button class='entity-link cell-title' type='button' data-open-entity='" + e(item.moduleId) + "' data-entity-type='module'>" + e(entityName("module", item.moduleId)) + "</button><div class='cell-sub mono'>" + e(item.artifactVersion) + "</div></td><td>" + status(item.status) + "</td><td>" + (item.endpoints.length ? item.endpoints.map(function (endpoint) { return safeAnchor(endpoint, endpoint) + " <button class='text-btn' type='button' data-copy-value='" + e(endpoint) + "'>Copy</button>"; }).join("<br>") : "—") + "</td><td>" + item.resourceIds.map(function (id) { return e(entityName("resource", id)); }).join(", ") + "</td></tr>";
       }).join("") : "";
       var resourceRows = resources.map(function (resource) {
         return "<tr class='clickable-row " + (resource.id === state.selectedResourceId ? "selected-row" : "") + "' data-resource-id='" + e(resource.id) + "'><td><div class='cell-title'>" + e(resource.name) + "</div><div class='cell-sub mono'>" + e(resource.id) + "</div></td><td>" + e(humanize(resource.type)) + "</td><td>" + e(humanize(resource.environment)) + "</td><td>" + e(resource.provider) + "</td><td>" + e(resource.usedByModuleIds.length) + "</td></tr>";
       }).join("");
       document.getElementById("system-content").innerHTML =
         "<div class='security-notice'><span aria-hidden='true'>△</span> Masked values remain readable in HTML source. Masking is not encryption.</div>" +
-        "<div class='toolbar'><div class='segmented' aria-label='Environment'>" + environments.map(function (environment) {
-          var exists = arr(data.deployments).some(function (item) { return item.environment === environment; });
-          return "<button class='segment' type='button' data-environment='" + environment + "' aria-pressed='" + (state.selectedEnvironment === environment) + "' " + (!exists ? "title='No deployment recorded'" : "") + ">" + humanize(environment) + "</button>";
-        }).join("") + "</div></div>" +
+        modeToolbar +
+        "<div class='deployment-list'>" + (environmentDeployments.length ? environmentDeployments.map(function (item) { return "<button class='deployment-chip' type='button' data-deployment-id='" + e(item.id) + "' aria-pressed='" + (deployment && item.id === deployment.id) + "'><strong>" + e(item.name) + "</strong><br>" + status(item.status) + " · <span class='mono'>" + e(item.id) + "</span></button>"; }).join("") : "<span class='cell-sub'>No deployment recorded.</span>") + "</div>" +
         (deployment ? "<div class='runtime-header'><div><h2 style='margin:0'>" + e(deployment.name) + "</h2></div><div class='runtime-header-meta'><span>Release <strong class='mono'>" + e(release ? release.version : deployment.releaseId) + "</strong></span><span>→ Architecture <strong>" + e(architecture ? architecture.label : deployment.architectureVersionId) + "</strong></span>" + status(deployment.status) + "<span>Deployed " + e(dateTime(deployment.deployedAt)) + "</span></div></div>" : "<div class='empty-state'>No " + e(state.selectedEnvironment) + " Deployment is recorded.</div>") +
         (deployment ? "<div class='runtime-grid'><section class='framed'><div class='runtime-flow'>Release <span>→</span> Deployment <span>→</span> Module <span class='mono'>artifactVersion</span> <span>→</span> Resource <span>→</span> Access</div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>Module / artifactVersion</th><th>Status</th><th>Endpoint</th><th>Linked Resource</th></tr></thead><tbody>" + moduleRows + "</tbody></table></div></section>" +
         "<section class='framed'><div class='runtime-flow'>Resources <span class='count'>(" + resources.length + ")</span></div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>Resource</th><th>Type</th><th>Environment</th><th>Provider</th><th>Modules</th></tr></thead><tbody>" + resourceRows + "</tbody></table></div></section></div>" +
         (selectedResource ? resourceInspector(selectedResource) : "") : "");
+    }
+    function renderResourcePool(modeToolbar) {
+      var filters = state.resourcePoolFilters;
+      var resources = arr(data.resources).filter(function (resource) {
+        return (filters.environment === "all" || resource.environment === filters.environment) &&
+          (filters.type === "all" || resource.type === filters.type) &&
+          (filters.status === "all" || resource.status === filters.status);
+      });
+      if (!state.selectedResourceId || !resources.some(function (resource) { return resource.id === state.selectedResourceId; })) state.selectedResourceId = resources[0] ? resources[0].id : null;
+      var rows = resources.map(function (resource) {
+        var credentials = (resource.access || {}).credentials || { mode: "none" };
+        return "<tr class='clickable-row " + (resource.id === state.selectedResourceId ? "selected-row" : "") + "' data-resource-id='" + e(resource.id) + "'><td><div class='cell-title'>" + e(resource.name) + "</div><div class='cell-sub mono'>" + e(resource.id) + "</div></td><td>" + e(humanize(resource.environment)) + "</td><td>" + e(humanize(resource.type)) + "</td><td>" + e(resource.provider || "—") + "</td><td>" + e(resource.location || "—") + "</td><td>" + status(resource.status) + "</td><td>" + e(arr(resource.usedByModuleIds).map(function (id) { return entityName("module", id); }).join(", ") || "—") + "</td><td>" + e(arr(resource.usedByDeploymentIds).map(function (id) { return entityName("deployment", id); }).join(", ") || "—") + "</td><td>" + e(humanize(credentials.mode)) + "</td></tr>";
+      }).join("");
+      document.getElementById("system-content").innerHTML = "<div class='security-notice'><span aria-hidden='true'>△</span> Resource Pool never reveals External File or External Store values. Embedded values remain masked by default.</div>" + modeToolbar +
+        "<div class='toolbar'>" + selectControl("resource-environment", optionsFor(arr(data.resources).map(function (item) { return item.environment; })), filters.environment, "Environment") + selectControl("resource-type", optionsFor(arr(data.resources).map(function (item) { return item.type; })), filters.type, "Type") + selectControl("resource-status", optionsFor(arr(data.resources).map(function (item) { return item.status; })), filters.status, "Status") + "</div>" +
+        "<div class='table-wrap'><table><thead><tr><th>Resource</th><th>Environment</th><th>Type</th><th>Provider</th><th>Location</th><th>Status</th><th>Used By Modules</th><th>Deployments</th><th>Credential</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+        (state.selectedResourceId ? resourceInspector(resourceForId(state.selectedResourceId)) : "<div class='empty-state'>No resources match the filters.</div>");
     }
     function resourceInspector(resource) {
       var access = resource.access || {};
@@ -5056,15 +5263,19 @@
     }
 
     document.addEventListener("click", function (event) {
-      var target = event.target.closest("button, tr[data-resource-id], tr[data-open-module]");
+      var target = event.target.closest("button, tr[data-resource-id], tr[data-open-module], [data-open-entity], [data-connection-id]");
       if (!target) return;
       if (target.dataset.view) { state.view = target.dataset.view; updateVisibleView(); if (state.view === "system") renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.systemView) { state.systemView = target.dataset.systemView; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.architectureMode) { state.architectureMode = target.dataset.architectureMode; renderLogical(); return; }
       if (target.dataset.moduleId) { renderDrawer(target.dataset.moduleId); return; }
       if (target.dataset.openModule) { renderDrawer(target.dataset.openModule); return; }
+      if (target.dataset.openEntity) { renderEntityInspector(target.dataset.entityType, target.dataset.openEntity); return; }
+      if (target.dataset.connectionId) { renderEntityInspector("connection", target.dataset.connectionId); return; }
       if (target.dataset.resourceId) { state.selectedResourceId = target.dataset.resourceId; renderRuntime(); return; }
-      if (target.dataset.environment) { state.selectedEnvironment = target.dataset.environment; state.selectedResourceId = null; renderRuntime(); return; }
+      if (target.dataset.environment) { state.selectedEnvironment = target.dataset.environment; state.selectedDeploymentId = null; state.selectedResourceId = null; if (state.runtimeMode === "resources") state.resourcePoolFilters.environment = target.dataset.environment; renderRuntime(); return; }
+      if (target.dataset.deploymentId) { state.selectedDeploymentId = target.dataset.deploymentId; state.selectedResourceId = null; renderRuntime(); return; }
+      if (target.dataset.runtimeMode) { state.runtimeMode = target.dataset.runtimeMode; state.selectedResourceId = null; renderRuntime(); return; }
       if (target.dataset.stageId) { state.selectedStageId = target.dataset.stageId; renderEvolution(); return; }
       if (target.dataset.versionId) { state.selectedVersionId = target.dataset.versionId; renderEvolution(); return; }
       if (target.dataset.action === "close-drawer") { closeDrawer(); return; }
@@ -5094,7 +5305,12 @@
       if (filter === "requirement-type") state.requirementFilters.type = event.target.value;
       if (filter === "requirement-definition") state.requirementFilters.definition = event.target.value;
       if (filter === "requirement-fulfillment") state.requirementFilters.fulfillment = event.target.value;
-      if (filter.indexOf("requirement-") === 0) renderControl(); else renderLogical();
+      if (filter === "resource-environment") state.resourcePoolFilters.environment = event.target.value;
+      if (filter === "resource-type") state.resourcePoolFilters.type = event.target.value;
+      if (filter === "resource-status") state.resourcePoolFilters.status = event.target.value;
+      if (filter.indexOf("requirement-") === 0) renderControl();
+      else if (filter.indexOf("resource-") === 0) { state.selectedResourceId = null; renderRuntime(); }
+      else renderLogical();
     });
     document.addEventListener("input", function (event) {
       if (event.target.dataset.filter === "module-search") {

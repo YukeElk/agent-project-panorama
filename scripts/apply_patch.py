@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -35,6 +36,91 @@ class RevisionConflictError(ApplyPatchError):
 
 class PatchOperationError(ApplyPatchError):
     """A minimal JSON Patch operation is invalid or cannot be applied."""
+
+
+PROPOSAL_FIELDS = (
+    "baseRevision",
+    "baseDataHash",
+    "operations",
+    "changeRecords",
+    "reviewDraft",
+    "updateBatchDraft",
+    "guidanceDraft",
+)
+
+
+def proposal_semantics(package: dict[str, Any]) -> dict[str, Any]:
+    """Return the exact stable semantics covered by user approval."""
+
+    if not isinstance(package, dict):
+        raise ApplyPatchError("Update package must be a JSON object.")
+    defaults: dict[str, Any] = {
+        "operations": [],
+        "changeRecords": [],
+        "reviewDraft": {},
+        "updateBatchDraft": {},
+        "guidanceDraft": {},
+    }
+    return {
+        field: copy.deepcopy(package.get(field, defaults.get(field)))
+        for field in PROPOSAL_FIELDS
+    }
+
+
+def compute_proposal_hash(package: dict[str, Any]) -> str:
+    """Hash every mutable proposal field that the user reviews."""
+
+    canonical = json.dumps(
+        proposal_semantics(package),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def validate_package_approval(package: dict[str, Any]) -> None:
+    """Enforce that approval is bound to the package's current semantics."""
+
+    proposal_hash = package.get("proposalHash")
+    actual_hash = compute_proposal_hash(package)
+    if not isinstance(proposal_hash, str) or proposal_hash != actual_hash:
+        raise ApplyPatchError(
+            "Proposal hash is missing or does not match the current update package."
+        )
+    approval = package.get("approval")
+    if not isinstance(approval, dict) or approval.get("status") != "approved":
+        raise ApplyPatchError("Package approval.status must be 'approved'.")
+    if approval.get("proposalHash") != actual_hash:
+        raise ApplyPatchError("Package approval hash does not match the proposal hash.")
+    if not str(approval.get("approvedBy", "")).strip():
+        raise ApplyPatchError("Package approval.approvedBy is required.")
+    if not str(approval.get("approvedAt", "")).strip():
+        raise ApplyPatchError("Package approval.approvedAt is required.")
+
+    review = package.get("reviewDraft")
+    batch = package.get("updateBatchDraft")
+    if batch not in (None, {}):
+        if not isinstance(review, dict) or not review.get("id"):
+            raise ApplyPatchError(
+                "An applied Update Batch requires an approved reviewDraft."
+            )
+        if review.get("status") not in {"approved", "waived"}:
+            raise ApplyPatchError(
+                "reviewDraft.status must be approved or waived before Apply."
+            )
+        if batch.get("reviewId") != review.get("id"):
+            raise ApplyPatchError(
+                "updateBatchDraft.reviewId must match reviewDraft.id."
+            )
+        for change in package.get("changeRecords", []):
+            if isinstance(change, dict) and change.get("reviewId") not in {
+                None,
+                review.get("id"),
+            }:
+                raise ApplyPatchError(
+                    "A Change reviewId must match the package reviewDraft.id."
+                )
 
 
 def _timestamp() -> str:
@@ -181,14 +267,53 @@ def compose_updated_data(
         update_batch["revisionFrom"] = base_revision
         update_batch["revisionTo"] = next_revision
         update_batch.setdefault("createdAt", now)
-        update_batch.setdefault("status", "applied")
+        update_batch["status"] = "applied"
         updated.setdefault("updateBatches", []).append(update_batch)
         updated.setdefault("meta", {})["latestUpdateBatchId"] = update_batch.get("id")
 
     if "guidanceDraft" in package and package.get("guidanceDraft") not in (None, {}):
         if not isinstance(package["guidanceDraft"], dict):
             raise ApplyPatchError("guidanceDraft must be an object.")
-        updated["guidance"] = copy.deepcopy(package["guidanceDraft"])
+        next_guidance = copy.deepcopy(package["guidanceDraft"])
+        next_extensions = next_guidance.setdefault("extensions", {})
+        if not isinstance(next_extensions, dict):
+            raise ApplyPatchError("guidanceDraft.extensions must be an object.")
+
+        historical_by_id: dict[str, dict[str, Any]] = {}
+        current_guidance = current.get("guidance", {})
+        current_extensions = current_guidance.get("extensions", {})
+        for record in current_extensions.get("historicalOptions", []) if isinstance(current_extensions, dict) else []:
+            option = record.get("option", {}) if isinstance(record, dict) else {}
+            if isinstance(option, dict) and isinstance(option.get("id"), str):
+                historical_by_id[option["id"]] = copy.deepcopy(record)
+
+        referenced_ids = {
+            option_id
+            for batch in current.get("updateBatches", [])
+            if isinstance(batch, dict)
+            for option_id in batch.get("nextFocusOptionIds", [])
+            if isinstance(option_id, str)
+        }
+        next_ids = {
+            option.get("id")
+            for option in next_guidance.get("options", [])
+            if isinstance(option, dict)
+        }
+        for option in current_guidance.get("options", []):
+            if (
+                isinstance(option, dict)
+                and option.get("id") in referenced_ids
+                and option.get("id") not in next_ids
+            ):
+                historical_by_id[option["id"]] = {
+                    "option": copy.deepcopy(option),
+                    "lifecycle": "historical",
+                    "active": False,
+                    "supersededAt": now,
+                }
+        if historical_by_id:
+            next_extensions["historicalOptions"] = list(historical_by_id.values())
+        updated["guidance"] = next_guidance
 
     updated.setdefault("meta", {})["revision"] = next_revision
     updated["meta"]["updatedAt"] = now
@@ -229,6 +354,7 @@ def _apply_update_package_locked(
     source = Path(html_path)
     if not isinstance(package, dict):
         raise ApplyPatchError("Update package must be a JSON object.")
+    validate_package_approval(package)
     original_text = _read_exact(source)
     original_presentation_hash = compute_presentation_hash(original_text)
     current = extract_data(source)
@@ -249,7 +375,12 @@ def _apply_update_package_locked(
     # even if a later patch or validation step fails.
     backup = create_backup(source)
     updated = compose_updated_data(current, package)
-    report = validate_data(updated, schema_path, base_dir=source.parent)
+    report = validate_data(
+        updated,
+        schema_path,
+        base_dir=source.parent,
+        source_path=source,
+    )
     if report.errors:
         messages = "\n".join(issue.render() for issue in report.errors)
         raise ApplyPatchError(f"Updated data failed validation:\n{messages}")
