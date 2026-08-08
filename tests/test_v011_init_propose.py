@@ -64,6 +64,9 @@ def test_proposal_contains_hash_facts_findings_and_attention(
     proposal = result["proposal"]
     assert proposal["proposalHash"] == proposal["approval"]["proposalHash"]
     assert proposal["approval"]["status"] == "pending"
+    assert proposal["reviewDraft"]["status"] == "pending"
+    assert proposal["reviewDraft"]["reviewedBy"] == ""
+    assert proposal["reviewDraft"]["reviewedAt"] is None
     assert result["facts"]["operationCount"] == 1
     assert any(item["code"] == "ARCHITECTURE_GAP" for item in result["validation"]["findings"])
     assert any(item["type"] == "architecture_gap" for item in proposal["updateBatchDraft"]["attentionItems"])
@@ -86,4 +89,7 @@ def test_exact_proposal_can_be_user_approved_and_applied(
     }
     _, updated, _ = apply_update_package(html, package, schema_path)
     assert updated["intent"]["currentFocus"] == "Proposal lifecycle"
+    assert updated["reviews"][-1]["status"] == "approved"
+    assert updated["reviews"][-1]["reviewedBy"] == "user"
+    assert updated["reviews"][-1]["reviewedAt"] == "2026-08-08T12:00:00Z"
     assert updated["updateBatches"][-1]["attentionItems"] == package["updateBatchDraft"]["attentionItems"]

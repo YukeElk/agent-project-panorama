@@ -57,7 +57,9 @@ python scripts/init_panorama.py `
   --output project-panorama.local.html
 ```
 
-`--allow-invalid` 只用于显式调试，不应生成正式 Panorama。
+`--allow-invalid` 只用于显式调试，不应生成正式 Panorama。若输出已存在，INIT 默认拒绝覆盖；
+只有显式增加 `--overwrite-existing` 才会在同目录创建时间戳备份并原子替换。输出路径始终
+不得与模板路径相同。
 
 ## Reference Project
 
@@ -109,7 +111,8 @@ python scripts/validate_panorama.py examples/reference-project.html --json
 ```
 
 文本输出保持 `ERROR / WARNING / INFO`；`--json` 输出包含 `level`、`severity`、`code`、
-`message`、`path` 的结构化 Findings。退出码：
+`message`、`path`、`relatedEntities` 的结构化 Findings。规则 Finding 会尽可能绑定具体需求、
+模块、连接、部署、发布、资源、阶段或验收实体。退出码：
 
 - `0`：无 Schema/Cross-reference Error；
 - `1`：Schema、跨引用或数据一致性 Error；
@@ -156,6 +159,11 @@ python scripts/propose_update.py `
 不得在批准后继续修改 `baseRevision`、`baseDataHash`、`operations`、`changeRecords`、
 `reviewDraft`、`updateBatchDraft` 或 `guidanceDraft`。任一字段变化都会使 Approval Hash 失效，
 必须重新 Proposal 和 Review。
+
+Proposal 中 `reviewDraft` 保持 `pending`，`reviewedBy` 为空且 `reviewedAt` 为 `null`。用户只填写
+`approval`；Apply 再把实际 `approvedBy` / `approvedAt` 确定性写入最终 Review，避免把提案生成
+时间伪装成批准时间。新增、删除与修改实体均通过 JSON Pointer、结构化 value 及前后状态注册表
+计算 Affected Entities，不通过自由文本字符串碰撞推断。
 
 Apply：
 

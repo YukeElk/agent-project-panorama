@@ -130,7 +130,7 @@ def test_validator_json_output_is_structured(reference_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["valid"] is True
     assert payload["findings"]
-    assert {"level", "severity", "code", "message", "path"} <= set(
+    assert {"level", "severity", "code", "message", "path", "relatedEntities"} <= set(
         payload["findings"][0]
     )
 

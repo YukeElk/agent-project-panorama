@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from apply_patch import compose_updated_data, compute_proposal_hash
+from apply_patch import apply_operations, compose_updated_data, compute_proposal_hash
 from panorama_cli import ChineseArgumentParser
 from panorama_io import compute_data_hash, extract_data
 from validate_panorama import ValidationIssue, validate_data
@@ -77,41 +77,107 @@ def _stable_suffix(candidate: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:10].upper()
 
 
-def _all_ids(data: dict[str, Any]) -> dict[str, str]:
-    result: dict[str, str] = {data.get("project", {}).get("id", ""): "project"}
-    collections = {
-        "requirement": data.get("requirements", []),
-        "module": data.get("architecture", {}).get("modules", []),
-        "connection": data.get("architecture", {}).get("connections", []),
-        "architecture_version": data.get("architecture", {}).get("versions", []),
-        "stage": data.get("stages", []),
-        "release": data.get("releases", []),
-        "deployment": data.get("deployments", []),
-        "resource": data.get("resources", []),
-        "decision": data.get("decisions", []),
-        "risk": data.get("risks", []),
-        "acceptance": data.get("acceptanceCriteria", []),
-        "gate": data.get("gates", []),
-        "reference": data.get("references", []),
-    }
-    for entity_type, items in collections.items():
-        for item in items:
-            if isinstance(item, dict) and isinstance(item.get("id"), str):
-                result[item["id"]] = entity_type
-    return result
+ENTITY_COLLECTIONS: dict[str, tuple[str, ...]] = {
+    "requirement": ("requirements",),
+    "module": ("architecture", "modules"),
+    "connection": ("architecture", "connections"),
+    "architecture_version": ("architecture", "versions"),
+    "stage": ("stages",),
+    "release": ("releases",),
+    "deployment": ("deployments",),
+    "resource": ("resources",),
+    "decision": ("decisions",),
+    "risk": ("risks",),
+    "acceptance": ("acceptanceCriteria",),
+    "gate": ("gates",),
+    "reference": ("references",),
+}
+
+
+def _collection(data: dict[str, Any], path: tuple[str, ...]) -> list[Any]:
+    value: Any = data
+    for token in path:
+        if not isinstance(value, dict):
+            return []
+        value = value.get(token, [])
+    return value if isinstance(value, list) else []
+
+
+def _entity_registry(data: dict[str, Any]) -> dict[str, dict[str, dict[str, Any]]]:
+    registry: dict[str, dict[str, dict[str, Any]]] = {}
+    for entity_type, collection_path in ENTITY_COLLECTIONS.items():
+        registry[entity_type] = {
+            item["id"]: item
+            for item in _collection(data, collection_path)
+            if isinstance(item, dict) and isinstance(item.get("id"), str)
+        }
+    return registry
+
+
+def _pointer_parts(pointer: Any) -> list[str]:
+    if not isinstance(pointer, str) or not pointer.startswith("/"):
+        return []
+    return [part.replace("~1", "/").replace("~0", "~") for part in pointer[1:].split("/")]
+
+
+def _path_entity_refs(
+    data: dict[str, Any], operation: dict[str, Any]
+) -> set[tuple[str, str]]:
+    """Resolve entity identities from a JSON Pointer and structured value."""
+
+    parts = _pointer_parts(operation.get("path"))
+    refs: set[tuple[str, str]] = set()
+    for entity_type, collection_path in ENTITY_COLLECTIONS.items():
+        prefix = list(collection_path)
+        if parts[: len(prefix)] != prefix:
+            continue
+        items = _collection(data, collection_path)
+        if len(parts) > len(prefix):
+            try:
+                index = int(parts[len(prefix)])
+            except (TypeError, ValueError):
+                index = -1
+            if 0 <= index < len(items) and isinstance(items[index], dict):
+                entity_id = items[index].get("id")
+                if isinstance(entity_id, str):
+                    refs.add((entity_type, entity_id))
+        if len(parts) > len(prefix):
+            value = operation.get("value")
+            if isinstance(value, dict) and isinstance(value.get("id"), str):
+                refs.add((entity_type, value["id"]))
+        break
+    return refs
 
 
 def affected_entity_refs(
-    current: dict[str, Any], operations: list[dict[str, Any]]
+    current: dict[str, Any], preview: dict[str, Any], operations: list[dict[str, Any]]
 ) -> list[dict[str, str]]:
-    ids = _all_ids(current)
-    serialized = json.dumps(operations, ensure_ascii=False)
-    refs = [
-        {"type": entity_type, "id": entity_id}
-        for entity_id, entity_type in sorted(ids.items())
-        if entity_id and entity_id in serialized
-    ]
-    return refs or [{"type": "project", "id": current["project"]["id"]}]
+    current_registry = _entity_registry(current)
+    preview_registry = _entity_registry(preview)
+    refs: set[tuple[str, str]] = set()
+
+    # Registry comparison detects additions, removals, and modifications without
+    # mistaking an ID-shaped substring in free text for an entity reference.
+    for entity_type in ENTITY_COLLECTIONS:
+        before = current_registry[entity_type]
+        after = preview_registry[entity_type]
+        for entity_id in before.keys() | after.keys():
+            if before.get(entity_id) != after.get(entity_id):
+                refs.add((entity_type, entity_id))
+
+    # Pointer/value resolution preserves the primary entity identity for indexed
+    # operations (especially remove and add /- operations) in both states.
+    for operation in operations:
+        if not isinstance(operation, dict):
+            continue
+        if operation.get("op") in {"remove", "replace"}:
+            refs.update(_path_entity_refs(current, operation))
+        if operation.get("op") in {"add", "replace"}:
+            refs.update(_path_entity_refs(preview, operation))
+
+    if not refs:
+        return [{"type": "project", "id": current["project"]["id"]}]
+    return [{"type": entity_type, "id": entity_id} for entity_type, entity_id in sorted(refs)]
 
 
 def attention_from_findings(findings: list[ValidationIssue]) -> list[dict[str, Any]]:
@@ -127,7 +193,7 @@ def attention_from_findings(findings: list[ValidationIssue]) -> list[dict[str, A
                 "severity": issue.severity,
                 "title": FINDING_TITLES[issue.code],
                 "summary": issue.message,
-                "relatedEntities": [],
+                "relatedEntities": copy.deepcopy(list(issue.related_entities)),
             }
         )
     return result
@@ -151,7 +217,8 @@ def build_proposal(
     timestamp = candidate.get("createdAt") or current.get("meta", {}).get("updatedAt")
     level = candidate.get("changeLevel", "local")
     summary = candidate.get("summary", "评审拟议的 Panorama 数据变更。")
-    refs = affected_entity_refs(current, operations)
+    operation_preview = apply_operations(current, operations)
+    refs = affected_entity_refs(current, operation_preview, operations)
     change_id = f"CHG-PROP-{suffix}"
     review_id = f"REV-PROP-{suffix}"
     update_id = f"UPD-PROP-{suffix}"
@@ -163,12 +230,17 @@ def build_proposal(
         "significant": level != "local", "architectureVersionId": None, "referenceIds": [], "extensions": {},
     }]
     review = copy.deepcopy(supplied.get("reviewDraft")) if "reviewDraft" in supplied else {
-        "id": review_id, "type": "panorama_update", "subjectRefs": refs, "status": "approved",
+        "id": review_id, "type": "panorama_update", "subjectRefs": refs, "status": "pending",
         "impactLevel": level, "requestedBy": "ai", "requestedAt": timestamp,
-        "reviewedBy": "user", "reviewedAt": timestamp, "summary": summary,
+        "reviewedBy": "", "reviewedAt": None, "summary": summary,
         "comments": "只有绑定此 proposalHash 的批准才有效。", "decisionIds": [],
         "changeIds": [item["id"] for item in change_records], "extensions": {},
     }
+    if not isinstance(review, dict):
+        raise ValueError("reviewDraft 必须是 JSON 对象。")
+    review["status"] = "pending"
+    review["reviewedBy"] = ""
+    review["reviewedAt"] = None
     guidance = copy.deepcopy(supplied.get("guidanceDraft", current.get("guidance", {})))
     focus_ids = [item.get("id") for item in guidance.get("options", []) if isinstance(item, dict)]
     batch = copy.deepcopy(supplied.get("updateBatchDraft")) if "updateBatchDraft" in supplied else {

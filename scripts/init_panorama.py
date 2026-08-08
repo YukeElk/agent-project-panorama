@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 from panorama_cli import ChineseArgumentParser
-from panorama_io import compute_data_hash, extract_data, replace_data
+from panorama_io import compute_data_hash, create_backup, extract_data, replace_data
 from validate_panorama import validate_data
 
 
@@ -31,11 +31,33 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="即使校验报告错误也生成调试输出。",
     )
+    parser.add_argument(
+        "--overwrite-existing",
+        action="store_true",
+        help="显式覆盖已存在的输出；覆盖前会创建同目录时间戳备份。",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    template_path = args.template.resolve(strict=False)
+    output_path = args.output.resolve(strict=False)
+    same_file = template_path == output_path
+    if not same_file and args.template.exists() and args.output.exists():
+        same_file = os.path.samefile(args.template, args.output)
+    if same_file:
+        print("初始化错误：输出路径不能与模板路径相同。", file=sys.stderr)
+        return 1
+    if args.output.exists() and not args.overwrite_existing:
+        print(
+            "初始化错误：输出文件已存在；如确需覆盖，请显式使用 "
+            "--overwrite-existing。",
+            file=sys.stderr,
+        )
+        return 1
+
+    original_output = args.output.read_bytes() if args.output.exists() else None
     with args.data.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
@@ -73,11 +95,22 @@ def main(argv: list[str] | None = None) -> int:
             for issue in after.errors:
                 print(issue.render(), file=sys.stderr)
             return 1
+        backup = None
+        if original_output is not None:
+            if not args.output.exists() or args.output.read_bytes() != original_output:
+                print(
+                    "初始化错误：输出文件在校验期间发生变化，未执行覆盖。",
+                    file=sys.stderr,
+                )
+                return 1
+            backup = create_backup(args.output)
         os.replace(staged, args.output)
     finally:
         staged.unlink(missing_ok=True)
     output = args.output
     print(f"已生成：{output}")
+    if backup is not None:
+        print(f"备份：{backup}")
     print(f"数据 SHA-256：{compute_data_hash(data)}")
     for issue in before.warnings:
         print(issue.render())

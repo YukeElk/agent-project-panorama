@@ -1,6 +1,6 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1/V0.1.1 Single HTML，执行 INIT、INSPECT、PROPOSE UPDATE、APPLY UPDATE、VALIDATE 和 Renderer 升级。Use when Codex needs to create, inspect, validate, preview, migrate, or apply a controlled architecture-centric project panorama update with secret redaction, approval-hash binding, revision guards, and Presentation Layer preservation."
+description: "操作 Agent Project Panorama V0.1/V0.1.1/V0.1.2 Single HTML，执行 INIT、INSPECT、PROPOSE UPDATE、APPLY UPDATE、VALIDATE 和 Renderer 升级。Use when Codex needs to create, inspect, validate, preview, migrate, or apply a controlled architecture-centric project panorama update with secret redaction, approval-hash binding, revision guards, and Presentation Layer preservation."
 ---
 
 # Agent 项目全景
@@ -46,7 +46,9 @@ python scripts/init_panorama.py `
   --output project-panorama.local.html
 ```
 
-初始化脚本在生成前后都执行校验。`--allow-invalid` 仅用于显式调试，不得用于正式交付。
+初始化脚本在生成前后都执行校验。输出已存在时默认停止；只有用户明确授权覆盖时才增加
+`--overwrite-existing`，脚本会先生成同目录时间戳备份再原子替换。输出不得与模板路径相同。
+`--allow-invalid` 仅用于显式调试，不得用于正式交付。
 
 ## INSPECT
 
@@ -81,11 +83,11 @@ python scripts/init_panorama.py `
      --output pending-update.json
    ```
 
-4. 使用其事实生成 Revision/Hash、Operations、Affected Entities、Validation、结构化 Findings、审计草稿、Attention 与 Proposal Hash；不得解析终端字符串。
+4. 使用其事实生成 Revision/Hash、Operations、Affected Entities、Validation、结构化 Findings、审计草稿、Attention 与 Proposal Hash；Affected Entities 必须来自 Pointer/value 和 current/preview 注册表，不得解析终端字符串或依赖自由文本碰撞。Finding 的 `relatedEntities` 必须原样进入对应 Attention。
 5. Preview 与 UpdateBatch Attention 必须包含全部 High/Critical Finding；可以解释，但不得隐藏。
 6. 向用户展示语义上的 What/Why/Impact、Change Level、Review Requirement、不确定项、Next Focus 与准确更新包，然后停止等待批准。
 
-用户批准时只填写 `approval.status`、`approvedBy`、`approvedAt`，并保留准确的 `proposalHash`。任何 Base、Operation、Change、Review、UpdateBatch 或 Guidance 变化都要求重新 Proposal 与批准。
+Proposal 的 `reviewDraft` 保持 pending，`reviewedBy` 为空、`reviewedAt` 为 null。用户批准时只填写 `approval.status`、`approvedBy`、`approvedAt`，并保留准确的 `proposalHash`。任何 Base、Operation、Change、Review、UpdateBatch 或 Guidance 变化都要求重新 Proposal 与批准。
 
 ## APPLY UPDATE
 
@@ -97,7 +99,7 @@ python scripts/apply_patch.py `
   pending-update.json
 ```
 
-让脚本强制执行 Approval/Hash 绑定、Review/UpdateBatch 关系、Base Revision/Data Hash、独占锁、备份、校验、Presentation Hash 不变、提交时并发检测和原子替换。
+让脚本强制执行 Approval/Hash 绑定、Review/UpdateBatch 关系、Base Revision/Data Hash、独占锁、备份、校验、Presentation Hash 不变、提交时并发检测和原子替换。Apply 必须用 Approval 的 `approvedBy` / `approvedAt` 确定性物化最终 approved/waived Review，不得沿用提案生成时间。
 
 失败时不得静默修复、rebase 或重新批准；重新执行 INSPECT 与 PROPOSE UPDATE。成功后执行 VALIDATE 与 INSPECT，并汇报新 Revision、语义结果、剩余 High/Critical、备份和 HTML 路径。
 

@@ -90,8 +90,11 @@ def validate_package_approval(package: dict[str, Any]) -> None:
             "Proposal Hash 缺失，或与当前更新包不匹配。"
         )
     approval = package.get("approval")
-    if not isinstance(approval, dict) or approval.get("status") != "approved":
-        raise ApplyPatchError("更新包 approval.status 必须为 'approved'。")
+    if not isinstance(approval, dict) or approval.get("status") not in {
+        "approved",
+        "waived",
+    }:
+        raise ApplyPatchError("更新包 approval.status 必须为 'approved' 或 'waived'。")
     if approval.get("proposalHash") != actual_hash:
         raise ApplyPatchError("更新包的批准 Hash 与 Proposal Hash 不一致。")
     if not str(approval.get("approvedBy", "")).strip():
@@ -104,11 +107,11 @@ def validate_package_approval(package: dict[str, Any]) -> None:
     if batch not in (None, {}):
         if not isinstance(review, dict) or not review.get("id"):
             raise ApplyPatchError(
-                "应用 Update Batch 前必须提供已批准的 reviewDraft。"
+                "应用 Update Batch 前必须提供 reviewDraft。"
             )
-        if review.get("status") not in {"approved", "waived"}:
+        if review.get("status") not in {"pending", "approved", "waived"}:
             raise ApplyPatchError(
-                "Apply 前 reviewDraft.status 必须为 approved 或 waived。"
+                "reviewDraft.status 必须为 pending、approved 或 waived。"
             )
         if batch.get("reviewId") != review.get("id"):
             raise ApplyPatchError(
@@ -236,16 +239,6 @@ def apply_operations(
     return result
 
 
-def _append_if_present(
-    target: list[dict[str, Any]], value: Any, field_name: str
-) -> None:
-    if value in (None, {}):
-        return
-    if not isinstance(value, dict):
-        raise ApplyPatchError(f"提供 {field_name} 时，其值必须是对象。")
-    target.append(copy.deepcopy(value))
-
-
 def compose_updated_data(
     current: dict[str, Any], package: dict[str, Any]
 ) -> dict[str, Any]:
@@ -258,7 +251,20 @@ def compose_updated_data(
     if not isinstance(change_records, list):
         raise ApplyPatchError("changeRecords 必须是数组。")
     updated.setdefault("changes", []).extend(copy.deepcopy(change_records))
-    _append_if_present(updated.setdefault("reviews", []), package.get("reviewDraft"), "reviewDraft")
+    review_draft = package.get("reviewDraft")
+    if review_draft not in (None, {}):
+        if not isinstance(review_draft, dict):
+            raise ApplyPatchError("reviewDraft 必须是对象。")
+        review = copy.deepcopy(review_draft)
+        approval = package.get("approval")
+        if isinstance(approval, dict) and approval.get("status") in {
+            "approved",
+            "waived",
+        }:
+            review["status"] = approval["status"]
+            review["reviewedBy"] = approval.get("approvedBy", "")
+            review["reviewedAt"] = approval.get("approvedAt")
+        updated.setdefault("reviews", []).append(review)
 
     update_batch = package.get("updateBatchDraft")
     if update_batch not in (None, {}):

@@ -63,6 +63,7 @@ class ValidationIssue:
     message: str
     path: str = ""
     severity: str = "warning"
+    related_entities: tuple[dict[str, str], ...] = ()
 
     def render(self) -> str:
         location = f" [{self.path}]" if self.path else ""
@@ -76,13 +77,14 @@ class ValidationIssue:
         )
         return f"{level_label} {self.code}{severity}{location}: {self.message}"
 
-    def to_dict(self) -> dict[str, str]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "level": self.level,
             "severity": self.severity,
             "code": self.code,
             "message": self.message,
             "path": self.path,
+            "relatedEntities": [dict(item) for item in self.related_entities],
         }
 
 
@@ -98,6 +100,7 @@ class ValidationReport:
         path: str = "",
         *,
         severity: str | None = None,
+        related_entities: Iterable[dict[str, str]] = (),
     ) -> None:
         default_severity = {"ERROR": "error", "WARNING": "warning", "INFO": "info"}
         self.issues.append(
@@ -107,11 +110,21 @@ class ValidationReport:
                 message,
                 path,
                 severity or default_severity.get(level, "warning"),
+                tuple(dict(item) for item in related_entities),
             )
         )
 
-    def error(self, code: str, message: str, path: str = "") -> None:
-        self.add("ERROR", code, message, path)
+    def error(
+        self,
+        code: str,
+        message: str,
+        path: str = "",
+        *,
+        related_entities: Iterable[dict[str, str]] = (),
+    ) -> None:
+        self.add(
+            "ERROR", code, message, path, related_entities=related_entities
+        )
 
     def warning(
         self,
@@ -120,14 +133,42 @@ class ValidationReport:
         path: str = "",
         *,
         severity: str = "warning",
+        related_entities: Iterable[dict[str, str]] = (),
     ) -> None:
-        self.add("WARNING", code, message, path, severity=severity)
+        self.add(
+            "WARNING",
+            code,
+            message,
+            path,
+            severity=severity,
+            related_entities=related_entities,
+        )
 
-    def high(self, code: str, message: str, path: str = "") -> None:
-        self.warning(code, message, path, severity="high")
+    def high(
+        self,
+        code: str,
+        message: str,
+        path: str = "",
+        *,
+        related_entities: Iterable[dict[str, str]] = (),
+    ) -> None:
+        self.warning(
+            code,
+            message,
+            path,
+            severity="high",
+            related_entities=related_entities,
+        )
 
-    def info(self, code: str, message: str, path: str = "") -> None:
-        self.add("INFO", code, message, path)
+    def info(
+        self,
+        code: str,
+        message: str,
+        path: str = "",
+        *,
+        related_entities: Iterable[dict[str, str]] = (),
+    ) -> None:
+        self.add("INFO", code, message, path, related_entities=related_entities)
 
     @property
     def errors(self) -> list[ValidationIssue]:
@@ -665,6 +706,18 @@ def validate_rules(
         review = reviews.get(review_id or "")
         return bool(review and review.get("status") in {"approved", "waived"})
 
+    def related(*pairs: tuple[str, Any]) -> list[dict[str, str]]:
+        seen: set[tuple[str, str]] = set()
+        result: list[dict[str, str]] = []
+        for entity_type, entity_id in pairs:
+            if not isinstance(entity_id, str) or not entity_id:
+                continue
+            key = (entity_type, entity_id)
+            if key not in seen:
+                seen.add(key)
+                result.append({"type": entity_type, "id": entity_id})
+        return result
+
     # R1 Architecture Gap
     for requirement in _items(data, "requirements"):
         if (
@@ -675,6 +728,7 @@ def validate_rules(
             report.high(
                 "ARCHITECTURE_GAP",
                 f"已确认需求 {requirement.get('id')} 没有模块覆盖。",
+                related_entities=related(("requirement", requirement.get("id"))),
             )
 
     # R2 Scope Drift
@@ -683,12 +737,14 @@ def validate_rules(
             report.warning(
                 "SCOPE_DRIFT",
                 f"模块 {module.get('id')} 既没有需求映射，也没有设计理由。",
+                related_entities=related(("module", module.get("id"))),
             )
     for work_item in _items(data, "workItems"):
         if not work_item.get("stageId") and not work_item.get("moduleIds") and not work_item.get("requirementIds"):
             report.warning(
                 "SCOPE_DRIFT",
                 f"工作项 {work_item.get('id')} 未关联阶段、模块或需求。",
+                related_entities=related(("work_item", work_item.get("id"))),
             )
         current_stage = registry.by_type.get("stage", {}).get(
             data.get("project", {}).get("currentStageId", ""), {}
@@ -705,6 +761,11 @@ def validate_rules(
             report.warning(
                 "SCOPE_DRIFT",
                 f"活跃工作项 {work_item.get('id')} 被分配到未来阶段 {work_stage.get('id')}，而不是当前阶段 {current_stage.get('id')}。",
+                related_entities=related(
+                    ("work_item", work_item.get("id")),
+                    ("stage", work_stage.get("id")),
+                    ("stage", current_stage.get("id")),
+                ),
             )
 
     # R3 Implementation Drift and R7 Deployment Drift
@@ -724,17 +785,31 @@ def validate_rules(
                 report.high(
                     "DEPLOYMENT_DRIFT",
                     f"活跃部署 {deployment.get('id')} 的架构与其发布不一致。",
+                    related_entities=related(
+                        ("deployment", deployment.get("id")),
+                        ("release", release.get("id")),
+                        ("architecture_version", deployment.get("architectureVersionId")),
+                    ),
                 )
             if deployment.get("releaseId") == data.get("project", {}).get("currentReleaseId") and deployment.get("architectureVersionId") != current_arch_id:
                 report.high(
                     "DEPLOYMENT_DRIFT",
                     f"当前部署 {deployment.get('id')} 未使用当前架构。",
+                    related_entities=related(
+                        ("deployment", deployment.get("id")),
+                        ("architecture_version", current_arch_id),
+                    ),
                 )
             missing_from_release = deployed_modules - set(release.get("moduleIds", []))
             if missing_from_release:
                 report.high(
                     "IMPLEMENTATION_DRIFT",
                     f"部署 {deployment.get('id')} 运行了发布范围外的模块：{sorted(missing_from_release)}。",
+                    related_entities=related(
+                        ("deployment", deployment.get("id")),
+                        ("release", release.get("id")),
+                        *(("module", item) for item in sorted(missing_from_release)),
+                    ),
                 )
             required_release_modules = {
                 module_id
@@ -746,6 +821,11 @@ def validate_rules(
                 report.high(
                     "DEPLOYMENT_DRIFT",
                     f"活跃部署 {deployment.get('id')} 缺少发布声明的非外部模块：{sorted(missing_from_deployment)}。",
+                    related_entities=related(
+                        ("deployment", deployment.get("id")),
+                        ("release", release.get("id")),
+                        *(("module", item) for item in sorted(missing_from_deployment)),
+                    ),
                 )
             for module_id in deployed_modules:
                 module = modules.get(module_id, {})
@@ -753,6 +833,10 @@ def validate_rules(
                     report.high(
                         "IMPLEMENTATION_DRIFT",
                         f"活跃部署 {deployment.get('id')} 正在运行非当前模块 {module_id}。",
+                        related_entities=related(
+                            ("deployment", deployment.get("id")),
+                            ("module", module_id),
+                        ),
                     )
 
         declared_resources = set(deployment.get("resourceIds", [])) | set(
@@ -768,6 +852,10 @@ def validate_rules(
             report.high(
                 "DEPLOYMENT_DRIFT",
                 f"部署 {deployment.get('id')} 使用了未声明资源：{sorted(undeclared)}。",
+                related_entities=related(
+                    ("deployment", deployment.get("id")),
+                    *(("resource", item) for item in sorted(undeclared)),
+                ),
             )
 
     deployed_without_active = {
@@ -780,6 +868,7 @@ def validate_rules(
         report.high(
             "DEPLOYMENT_DRIFT",
             f"已部署发布 {release_id} 没有活跃部署。",
+            related_entities=related(("release", release_id)),
         )
 
     current_release = data.get("project", {}).get("currentReleaseId")
@@ -791,6 +880,7 @@ def validate_rules(
         report.warning(
             "DEPLOYMENT_DRIFT",
             f"当前发布 {current_release} 没有活跃部署。",
+            related_entities=related(("release", current_release)),
         )
 
     # R4 Review Gap. Exploration is informational until it reaches a reviewed
@@ -805,6 +895,10 @@ def validate_rules(
             report.warning(
                 "REVIEW_GAP",
                 f"架构 {version.get('id')} 状态为 {version.get('status')}，但没有已批准评审。",
+                related_entities=related(
+                    ("architecture_version", version.get("id")),
+                    ("review", version.get("reviewId")),
+                ),
             )
     current_release_modules = set(
         releases.get(data.get("project", {}).get("currentReleaseId", ""), {}).get(
@@ -843,31 +937,49 @@ def validate_rules(
             report.info(
                 "REVIEW_GAP",
                 f"模块 {module_id} 是已实现但尚未确认设计的实验模块。",
+                related_entities=related(("module", module_id)),
             )
         elif controls_runtime or design == "confirmed" or migrating:
             report.high(
                 "REVIEW_GAP",
                 f"模块 {module_id} 已确认、属于当前范围、已发布、已部署或正在迁移，但没有已批准评审。",
+                related_entities=related(("module", module_id)),
             )
         else:
             report.warning(
                 "REVIEW_GAP",
                 f"模块 {module_id} 已可进入设计评审。",
+                related_entities=related(("module", module_id)),
             )
     for decision in _items(data, "decisions"):
         if decision.get("status") == "review_pending" and not review_approved(decision.get("reviewId")):
-            report.warning("REVIEW_GAP", f"决策 {decision.get('id')} 正在等待评审。")
+            report.warning(
+                "REVIEW_GAP",
+                f"决策 {decision.get('id')} 正在等待评审。",
+                related_entities=related(
+                    ("decision", decision.get("id")),
+                    ("review", decision.get("reviewId")),
+                ),
+            )
     for acceptance in _items(data, "acceptanceCriteria"):
         if acceptance.get("status") == "review_pending" and not review_approved(acceptance.get("reviewId")):
             report.warning(
                 "REVIEW_GAP",
                 f"验收标准 {acceptance.get('id')} 正在等待评审。",
+                related_entities=related(
+                    ("acceptance", acceptance.get("id")),
+                    ("review", acceptance.get("reviewId")),
+                ),
             )
     for change in _items(data, "changes"):
         if change.get("impactLevel") in {"module", "architecture", "deployment", "project"} and not review_approved(change.get("reviewId")):
             report.warning(
                 "REVIEW_GAP",
                 f"{change.get('impactLevel')} 级变更 {change.get('id')} 缺少已批准评审。",
+                related_entities=related(
+                    ("change", change.get("id")),
+                    ("review", change.get("reviewId")),
+                ),
             )
 
     # R5 Verification Gap
@@ -927,17 +1039,34 @@ def validate_rules(
                 report.info(
                     "OPTIONAL_GATE_FAILED",
                     f"可选门禁 {item.get('id')} 失败，但不会阻断模块 {module.get('id')} 的验证。",
+                    related_entities=related(
+                        ("module", module.get("id")),
+                        ("gate", item.get("id")),
+                    ),
                 )
         if reasons:
             message = f"模块 {module.get('id')}：" + "；".join(dict.fromkeys(reasons)) + "。"
+            verification_entities = related(
+                ("module", module.get("id")),
+                *(("acceptance", item.get("id")) for item in module_acceptance),
+                *(("gate", item.get("id")) for item in module_gates),
+            )
             if (
                 status.get("implementationMaturity") == "stable"
                 or module.get("id") in current_release_modules
                 or module.get("id") in active_deployment_modules
             ):
-                report.high("VERIFICATION_GAP", message)
+                report.high(
+                    "VERIFICATION_GAP",
+                    message,
+                    related_entities=verification_entities,
+                )
             else:
-                report.warning("VERIFICATION_GAP", message)
+                report.warning(
+                    "VERIFICATION_GAP",
+                    message,
+                    related_entities=verification_entities,
+                )
 
     # R6 Baseline Drift
     for baseline in _architecture_items(data, "baselines"):
@@ -945,11 +1074,13 @@ def validate_rules(
             report.warning(
                 "BASELINE_DRIFT",
                 f"基线 {baseline.get('id')} 的偏离程度为 high。",
+                related_entities=related(("baseline", baseline.get("id"))),
             )
         if not str(baseline.get("upgradeStrategy", "")).strip():
             report.warning(
                 "BASELINE_DRIFT",
                 f"基线 {baseline.get('id')} 缺少升级策略。",
+                related_entities=related(("baseline", baseline.get("id"))),
             )
     for module in _architecture_items(data, "modules"):
         source = module.get("source", {})
@@ -958,11 +1089,13 @@ def validate_rules(
                 report.warning(
                     "BASELINE_DRIFT",
                     f"OSS 模块 {module.get('id')} 被修改但没有记录理由。",
+                    related_entities=related(("module", module.get("id"))),
                 )
             if not source.get("changedAreas"):
                 report.warning(
                     "BASELINE_DRIFT",
                     f"OSS 模块 {module.get('id')} 被修改但没有记录变更区域。",
+                    related_entities=related(("module", module.get("id"))),
                 )
 
     # R8 Transition Risk
@@ -980,6 +1113,7 @@ def validate_rules(
                 report.warning(
                     "TRANSITION_RISK",
                     f"模块 {module.get('id')} 在当前与目标架构间存在差异，但没有模块迁移记录。",
+                    related_entities=related(("module", module.get("id"))),
                 )
         for connection in _architecture_items(data, "connections"):
             has_transition = bool(connection.get("transitionId")) or (
@@ -993,12 +1127,21 @@ def validate_rules(
                 report.warning(
                     "TRANSITION_RISK",
                     f"连接 {connection.get('id')} 在当前与目标架构间存在差异，但没有迁移记录。",
+                    related_entities=related(
+                        ("connection", connection.get("id")),
+                        ("module", connection.get("fromModuleId")),
+                        ("module", connection.get("toModuleId")),
+                    ),
                 )
         for transition in transitions:
             if transition.get("state") == "blocked":
                 report.high(
                     "TRANSITION_RISK",
                     f"迁移 {transition.get('id')} 处于阻塞状态。",
+                    related_entities=related(
+                        ("transition", transition.get("id")),
+                        (transition.get("subjectType", "transition"), transition.get("subjectId")),
+                    ),
                 )
 
     # R9 Resource Risk and credential warnings
@@ -1012,12 +1155,14 @@ def validate_rules(
             report.warning(
                 "EMBEDDED_SECRET_PRESENT",
                 f"资源 {resource_id} 包含内嵌凭据；遮罩不等于加密。",
+                related_entities=related(("resource", resource_id)),
             )
             if resource.get("environment") == "production":
                 report.warning(
                     "EMBEDDED_SECRET_IN_PRODUCTION",
                     f"生产资源 {resource_id} 包含内嵌凭据。",
                     severity="high",
+                    related_entities=related(("resource", resource_id)),
                 )
         if mode == "external_file":
             secret_path = credentials.get("path", "")
@@ -1026,6 +1171,7 @@ def validate_rules(
                 report.warning(
                     "RESOURCE_RISK",
                     f"资源 {resource_id} 的外部凭据文件缺失：{secret_path!r}。",
+                    related_entities=related(("resource", resource_id)),
                 )
         if mode == "external_store" and (
             not str(credentials.get("provider", "")).strip()
@@ -1035,38 +1181,52 @@ def validate_rules(
             report.warning(
                 "RESOURCE_RISK",
                 f"资源 {resource_id} 的外部凭据存储缺少提供方、引用或键列表。",
+                related_entities=related(("resource", resource_id)),
             )
         if resource.get("type") in {"external_api", "mcp_server"}:
             if not resource.get("usedByModuleIds"):
                 report.warning(
                     "RESOURCE_RISK",
                     f"外部资源 {resource_id} 没有依赖模块。",
+                    related_entities=related(("resource", resource_id)),
                 )
             if not str(resource.get("notes", "")).strip():
                 report.warning(
                     "RESOURCE_RISK",
                     f"外部资源 {resource_id} 没有记录用途或使用说明。",
+                    related_entities=related(("resource", resource_id)),
                 )
         if resource.get("environment") == "unknown":
             report.warning(
-                "RESOURCE_RISK", f"资源 {resource_id} 的环境未知。"
+                "RESOURCE_RISK",
+                f"资源 {resource_id} 的环境未知。",
+                related_entities=related(("resource", resource_id)),
             )
         if resource.get("status") == "active" and not resource.get("usedByDeploymentIds"):
             report.warning(
-                "RESOURCE_RISK", f"活跃资源 {resource_id} 未关联部署。"
+                "RESOURCE_RISK",
+                f"活跃资源 {resource_id} 未关联部署。",
+                related_entities=related(("resource", resource_id)),
             )
 
     if has_embedded_credentials:
+        embedded_resources = related(
+            *(("resource", item.get("id")) for item in _items(data, "resources")
+              if item.get("access", {}).get("credentials", {}).get("mode") == "embedded"),
+            ("project", data.get("project", {}).get("id")),
+        )
         git_state = _git_file_state(source_path)
         if git_state == "tracked":
             report.high(
                 "GIT_SECRET_RISK",
                 "此 Panorama 包含内嵌凭据，并已被 Git 跟踪或暂存。分享前请改用 *.local.html 私有副本或外部凭据模式。",
+                related_entities=embedded_resources,
             )
         elif git_state == "unknown":
             report.warning(
                 "GIT_SECRET_RISK",
                 "此 Panorama 包含内嵌凭据；无法确定其 Git 跟踪或暂存状态。",
+                related_entities=embedded_resources,
             )
 
     # R10 Stage Entry / Exit Gap
@@ -1083,6 +1243,7 @@ def validate_rules(
         report.high(
             "STAGE_ENTRY_GAP",
             f"当前阶段 {current_stage_for_entry.get('id')} 要求进入验收，但没有定义进入条件。",
+            related_entities=related(("stage", current_stage_for_entry.get("id"))),
         )
     incomplete_entry = [
         item_id
@@ -1096,6 +1257,10 @@ def validate_rules(
         report.warning(
             "STAGE_ENTRY_GAP",
             f"当前阶段 {current_stage_for_entry.get('id')} 的进入验收尚未完成：{incomplete_entry}。",
+            related_entities=related(
+                ("stage", current_stage_for_entry.get("id")),
+                *(("acceptance", item) for item in incomplete_entry),
+            ),
         )
 
     for stage in _items(data, "stages"):
@@ -1106,6 +1271,7 @@ def validate_rules(
             report.high(
                 "STAGE_EXIT_GAP",
                 f"已完成阶段 {stage.get('id')} 没有退出验收。",
+                related_entities=related(("stage", stage.get("id"))),
             )
             continue
         incomplete = [
@@ -1118,6 +1284,10 @@ def validate_rules(
             report.high(
                 "STAGE_EXIT_GAP",
                 f"已完成阶段 {stage.get('id')} 的退出验收尚未完成：{incomplete}。",
+                related_entities=related(
+                    ("stage", stage.get("id")),
+                    *(("acceptance", item) for item in incomplete),
+                ),
             )
 
     current_stage = registry.by_type.get("stage", {}).get(
@@ -1154,6 +1324,10 @@ def validate_rules(
             report.high(
                 "STAGE_EXIT_GAP",
                 f"当前阶段 {current_stage.get('id')} 已通过退出验收，但核心模块仍有验证阻塞：{sorted(blocked_core_modules)}。",
+                related_entities=related(
+                    ("stage", current_stage.get("id")),
+                    *(("module", item) for item in sorted(blocked_core_modules)),
+                ),
             )
 
     # Filesystem Reference warnings are intentionally warnings: browsers cannot
