@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
+from panorama_cli import ChineseArgumentParser
 from panorama_io import PanoramaIOError, extract_data
 
 
@@ -65,12 +66,15 @@ class ValidationIssue:
 
     def render(self) -> str:
         location = f" [{self.path}]" if self.path else ""
+        level_label = {"ERROR": "错误", "WARNING": "警告", "INFO": "信息"}.get(
+            self.level, self.level
+        )
         severity = (
-            f" [severity={self.severity}]"
+            f" [严重程度={self.severity}]"
             if self.severity not in {"error", self.level.lower()}
             else ""
         )
-        return f"{self.level} {self.code}{severity}{location}: {self.message}"
+        return f"{level_label} {self.code}{severity}{location}: {self.message}"
 
     def to_dict(self) -> dict[str, str]:
         return {
@@ -225,7 +229,7 @@ def build_registry(data: dict[str, Any], report: ValidationReport) -> EntityRegi
             if entity_id in all_ids:
                 report.error(
                     "DUPLICATE_ID",
-                    f"{entity_id} is used by both {all_ids[entity_id]} and {entity_type}.",
+                    f"ID {entity_id} 同时被 {all_ids[entity_id]} 与 {entity_type} 使用。",
                 )
             else:
                 all_ids[entity_id] = entity_type
@@ -248,8 +252,8 @@ def validate_schema(
         import jsonschema
     except ModuleNotFoundError as exc:
         raise ValidationRuntimeError(
-            "jsonschema is required for Draft 2020-12 validation. "
-            "Install it with: python -m pip install jsonschema"
+            "Draft 2020-12 校验需要 jsonschema。请执行："
+            "python -m pip install jsonschema"
         ) from exc
 
     path = Path(schema_path)
@@ -257,19 +261,19 @@ def validate_schema(
         with path.open("r", encoding="utf-8") as handle:
             schema = json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
-        raise ValidationRuntimeError(f"Cannot read schema {path}: {exc}") from exc
+        raise ValidationRuntimeError(f"无法读取 Schema {path}：{exc}") from exc
 
     try:
         jsonschema.Draft202012Validator.check_schema(schema)
     except jsonschema.SchemaError as exc:
-        report.error("SCHEMA_INVALID", exc.message, _path(exc.path))
+        report.error("SCHEMA_INVALID", f"Schema 定义无效：{exc.message}", _path(exc.path))
         return
 
     validator = jsonschema.Draft202012Validator(
         schema, format_checker=jsonschema.FormatChecker()
     )
     for error in sorted(validator.iter_errors(data), key=lambda item: list(item.path)):
-        report.error("SCHEMA", error.message, _path(error.absolute_path))
+        report.error("SCHEMA", f"Schema 校验失败：{error.message}", _path(error.absolute_path))
 
 
 def validate_cross_references(
@@ -287,7 +291,7 @@ def validate_cross_references(
         if not isinstance(entity_id, str) or not registry.has(entity_type, entity_id):
             report.error(
                 "BROKEN_REFERENCE",
-                f"Expected existing {entity_type} id, got {entity_id!r}.",
+                f"应引用已存在的 {entity_type} ID，实际为 {entity_id!r}。",
                 owner_path,
             )
 
@@ -307,7 +311,7 @@ def validate_cross_references(
             if entity_type not in ENTITY_REF_TYPES:
                 report.error(
                     "BROKEN_ENTITY_REF",
-                    f"Unsupported entityRef type {entity_type!r}.",
+                    f"不支持的 entityRef 类型：{entity_type!r}。",
                     f"{owner_path}/{index}/type",
                 )
                 continue
@@ -335,13 +339,13 @@ def validate_cross_references(
     if len(current_stages) != 1:
         report.error(
             "CURRENT_STAGE_COUNT",
-            f"Exactly one Stage must be current; found {len(current_stages)}.",
+            f"必须且只能有一个当前阶段，实际找到 {len(current_stages)} 个。",
             "/stages",
         )
     elif current_stages[0].get("id") != project.get("currentStageId"):
         report.error(
             "CURRENT_STAGE_MISMATCH",
-            "project.currentStageId does not match the Stage marked current.",
+            "project.currentStageId 与标记为 current 的阶段不一致。",
             "/project/currentStageId",
         )
 
@@ -435,7 +439,7 @@ def validate_cross_references(
             if subject_id not in registry.all_ids:
                 report.error(
                     "BROKEN_REFERENCE",
-                    f"Data-flow transition subject {subject_id!r} has no resolvable entity.",
+                    f"数据流迁移对象 {subject_id!r} 无法解析到实体。",
                     f"{base}/subjectId",
                 )
         require(transition.get("fromVersionId"), "architecture_version", f"{base}/fromVersionId")
@@ -478,7 +482,7 @@ def validate_cross_references(
             if option_id is not None and option_id not in option_ids:
                 report.error(
                     "BROKEN_DECISION_OPTION",
-                    f"{option_id!r} is not an option of decision {decision.get('id')}.",
+                    f"{option_id!r} 不是决策 {decision.get('id')} 的有效选项。",
                     f"{base}/{field_name}",
                 )
         require(decision.get("reviewId"), "review", f"{base}/reviewId", optional=True)
@@ -562,7 +566,7 @@ def validate_cross_references(
             if option_id not in focus_ids:
                 report.error(
                     "BROKEN_GUIDANCE_OPTION",
-                    f"Unknown Next Focus option {option_id!r}.",
+                    f"未知的下一步焦点选项：{option_id!r}。",
                     f"{base}/nextFocusOptionIds/{option_index}",
                 )
         require(batch.get("projectStageBefore"), "stage", f"{base}/projectStageBefore")
@@ -576,7 +580,7 @@ def validate_cross_references(
         if option_id is not None and option_id not in focus_ids:
             report.error(
                 "BROKEN_GUIDANCE_OPTION",
-                f"Unknown Next Focus option {option_id!r}.",
+                f"未知的下一步焦点选项：{option_id!r}。",
                 f"/guidance/{field_name}",
             )
     for option_index, option in enumerate(guidance.get("options", [])):
@@ -589,7 +593,7 @@ def validate_cross_references(
         if not isinstance(record, dict) or record.get("lifecycle") != "historical" or record.get("active") is not False:
             report.error(
                 "INVALID_GUIDANCE_HISTORY",
-                "Historical Next Focus records must be marked historical and inactive.",
+                "历史下一步焦点记录必须标记为 historical 且 inactive。",
                 f"/guidance/extensions/historicalOptions/{option_index}",
             )
             continue
@@ -670,7 +674,7 @@ def validate_rules(
         ):
             report.high(
                 "ARCHITECTURE_GAP",
-                f"Confirmed requirement {requirement.get('id')} has no Module coverage.",
+                f"已确认需求 {requirement.get('id')} 没有模块覆盖。",
             )
 
     # R2 Scope Drift
@@ -678,13 +682,13 @@ def validate_rules(
         if not module.get("requirementIds") and not str(module.get("rationale", "")).strip():
             report.warning(
                 "SCOPE_DRIFT",
-                f"Module {module.get('id')} has neither Requirement mapping nor rationale.",
+                f"模块 {module.get('id')} 既没有需求映射，也没有设计理由。",
             )
     for work_item in _items(data, "workItems"):
         if not work_item.get("stageId") and not work_item.get("moduleIds") and not work_item.get("requirementIds"):
             report.warning(
                 "SCOPE_DRIFT",
-                f"Work Item {work_item.get('id')} is unrelated to Stage, Module, and Requirement.",
+                f"工作项 {work_item.get('id')} 未关联阶段、模块或需求。",
             )
         current_stage = registry.by_type.get("stage", {}).get(
             data.get("project", {}).get("currentStageId", ""), {}
@@ -700,7 +704,7 @@ def validate_rules(
         ):
             report.warning(
                 "SCOPE_DRIFT",
-                f"Active Work Item {work_item.get('id')} is assigned to future Stage {work_stage.get('id')} instead of Current Stage {current_stage.get('id')}.",
+                f"活跃工作项 {work_item.get('id')} 被分配到未来阶段 {work_stage.get('id')}，而不是当前阶段 {current_stage.get('id')}。",
             )
 
     # R3 Implementation Drift and R7 Deployment Drift
@@ -719,18 +723,18 @@ def validate_rules(
             if deployment.get("architectureVersionId") != release.get("architectureVersionId"):
                 report.high(
                     "DEPLOYMENT_DRIFT",
-                    f"Active deployment {deployment.get('id')} architecture does not match its Release.",
+                    f"活跃部署 {deployment.get('id')} 的架构与其发布不一致。",
                 )
             if deployment.get("releaseId") == data.get("project", {}).get("currentReleaseId") and deployment.get("architectureVersionId") != current_arch_id:
                 report.high(
                     "DEPLOYMENT_DRIFT",
-                    f"Current deployment {deployment.get('id')} does not use Current Architecture.",
+                    f"当前部署 {deployment.get('id')} 未使用当前架构。",
                 )
             missing_from_release = deployed_modules - set(release.get("moduleIds", []))
             if missing_from_release:
                 report.high(
                     "IMPLEMENTATION_DRIFT",
-                    f"Deployment {deployment.get('id')} runs Modules outside Release scope: {sorted(missing_from_release)}.",
+                    f"部署 {deployment.get('id')} 运行了发布范围外的模块：{sorted(missing_from_release)}。",
                 )
             required_release_modules = {
                 module_id
@@ -741,14 +745,14 @@ def validate_rules(
             if missing_from_deployment:
                 report.high(
                     "DEPLOYMENT_DRIFT",
-                    f"Active deployment {deployment.get('id')} is missing non-external Release Modules: {sorted(missing_from_deployment)}.",
+                    f"活跃部署 {deployment.get('id')} 缺少发布声明的非外部模块：{sorted(missing_from_deployment)}。",
                 )
             for module_id in deployed_modules:
                 module = modules.get(module_id, {})
                 if module.get("architectureScope") in {"target", "historical"}:
                     report.high(
                         "IMPLEMENTATION_DRIFT",
-                        f"Active deployment {deployment.get('id')} runs non-current Module {module_id}.",
+                        f"活跃部署 {deployment.get('id')} 正在运行非当前模块 {module_id}。",
                     )
 
         declared_resources = set(deployment.get("resourceIds", [])) | set(
@@ -763,7 +767,7 @@ def validate_rules(
         if undeclared:
             report.high(
                 "DEPLOYMENT_DRIFT",
-                f"Deployment {deployment.get('id')} uses undeclared Resources: {sorted(undeclared)}.",
+                f"部署 {deployment.get('id')} 使用了未声明资源：{sorted(undeclared)}。",
             )
 
     deployed_without_active = {
@@ -775,7 +779,7 @@ def validate_rules(
     for release_id in sorted(deployed_without_active):
         report.high(
             "DEPLOYMENT_DRIFT",
-            f"Deployed Release {release_id} has no active Deployment.",
+            f"已部署发布 {release_id} 没有活跃部署。",
         )
 
     current_release = data.get("project", {}).get("currentReleaseId")
@@ -786,7 +790,7 @@ def validate_rules(
     ):
         report.warning(
             "DEPLOYMENT_DRIFT",
-            f"Current Release {current_release} has no active Deployment.",
+            f"当前发布 {current_release} 没有活跃部署。",
         )
 
     # R4 Review Gap. Exploration is informational until it reaches a reviewed
@@ -800,7 +804,7 @@ def validate_rules(
         if version.get("status") in {"review_pending", "accepted"} and not review_approved(version.get("reviewId")):
             report.warning(
                 "REVIEW_GAP",
-                f"Architecture {version.get('id')} is {version.get('status')} without an approved review.",
+                f"架构 {version.get('id')} 状态为 {version.get('status')}，但没有已批准评审。",
             )
     current_release_modules = set(
         releases.get(data.get("project", {}).get("currentReleaseId", ""), {}).get(
@@ -838,32 +842,32 @@ def validate_rules(
         if design == "experimental" and implemented and not controls_runtime:
             report.info(
                 "REVIEW_GAP",
-                f"Module {module_id} is an implemented experiment not yet design-confirmed.",
+                f"模块 {module_id} 是已实现但尚未确认设计的实验模块。",
             )
         elif controls_runtime or design == "confirmed" or migrating:
             report.high(
                 "REVIEW_GAP",
-                f"Module {module_id} is confirmed, current, released, deployed, or migrating without an approved review.",
+                f"模块 {module_id} 已确认、属于当前范围、已发布、已部署或正在迁移，但没有已批准评审。",
             )
         else:
             report.warning(
                 "REVIEW_GAP",
-                f"Module {module_id} is ready for design review.",
+                f"模块 {module_id} 已可进入设计评审。",
             )
     for decision in _items(data, "decisions"):
         if decision.get("status") == "review_pending" and not review_approved(decision.get("reviewId")):
-            report.warning("REVIEW_GAP", f"Decision {decision.get('id')} is awaiting review.")
+            report.warning("REVIEW_GAP", f"决策 {decision.get('id')} 正在等待评审。")
     for acceptance in _items(data, "acceptanceCriteria"):
         if acceptance.get("status") == "review_pending" and not review_approved(acceptance.get("reviewId")):
             report.warning(
                 "REVIEW_GAP",
-                f"Acceptance {acceptance.get('id')} is awaiting review.",
+                f"验收标准 {acceptance.get('id')} 正在等待评审。",
             )
     for change in _items(data, "changes"):
         if change.get("impactLevel") in {"module", "architecture", "deployment", "project"} and not review_approved(change.get("reviewId")):
             report.warning(
                 "REVIEW_GAP",
-                f"{change.get('impactLevel').title()} Change {change.get('id')} lacks approved review.",
+                f"{change.get('impactLevel')} 级变更 {change.get('id')} 缺少已批准评审。",
             )
 
     # R5 Verification Gap
@@ -875,31 +879,31 @@ def validate_rules(
             continue
         reasons: list[str] = []
         if status.get("verificationStatus") not in {"passed", "waived"}:
-            reasons.append(f"module verification is {status.get('verificationStatus')}")
+            reasons.append(f"模块验证状态为 {status.get('verificationStatus')}")
         module_acceptance = [
             acceptance[item_id]
             for item_id in module.get("acceptanceCriteriaIds", [])
             if item_id in acceptance
         ]
         if not module_acceptance:
-            reasons.append("no Acceptance is mapped")
+            reasons.append("未映射验收标准")
         else:
             if any(item.get("status") != "accepted" for item in module_acceptance):
-                reasons.append("mapped Acceptance is not accepted")
+                reasons.append("已映射验收标准尚未接受")
             if any(item.get("verificationStatus") not in {"passed", "waived"} for item in module_acceptance):
-                reasons.append("Acceptance evidence is incomplete")
+                reasons.append("验收证据不完整")
         if any(
             item.get("verificationStatus") == "passed"
             and not item.get("evidenceReferenceIds")
             for item in module_acceptance
         ):
-            reasons.append("passed Acceptance has no evidence")
+            reasons.append("已通过验收标准没有证据")
         module_gates = [
             gates[item_id] for item_id in module.get("gateIds", []) if item_id in gates
         ]
         required_gates = [item for item in module_gates if item.get("required") is True]
         if not required_gates:
-            reasons.append("no required Gate is mapped")
+            reasons.append("未映射必需门禁")
         else:
             incomplete_required = [
                 item.get("id")
@@ -909,7 +913,7 @@ def validate_rules(
             ]
             if incomplete_required:
                 reasons.append(
-                    f"required Gate is incomplete: {sorted(incomplete_required)}"
+                    f"必需门禁尚未完成：{sorted(incomplete_required)}"
                 )
         if any(
             item.get("required") is True
@@ -917,15 +921,15 @@ def validate_rules(
             and not item.get("evidenceReferenceIds")
             for item in required_gates
         ):
-            reasons.append("passed Gate has no evidence")
+            reasons.append("已通过门禁没有证据")
         for item in module_gates:
             if item.get("required") is False and item.get("status") == "failed":
                 report.info(
                     "OPTIONAL_GATE_FAILED",
-                    f"Optional Gate {item.get('id')} failed and does not block Module {module.get('id')} verification.",
+                    f"可选门禁 {item.get('id')} 失败，但不会阻断模块 {module.get('id')} 的验证。",
                 )
         if reasons:
-            message = f"Module {module.get('id')}: " + "; ".join(dict.fromkeys(reasons)) + "."
+            message = f"模块 {module.get('id')}：" + "；".join(dict.fromkeys(reasons)) + "。"
             if (
                 status.get("implementationMaturity") == "stable"
                 or module.get("id") in current_release_modules
@@ -940,12 +944,12 @@ def validate_rules(
         if baseline.get("divergence") == "high":
             report.warning(
                 "BASELINE_DRIFT",
-                f"Baseline {baseline.get('id')} divergence is high.",
+                f"基线 {baseline.get('id')} 的偏离程度为 high。",
             )
         if not str(baseline.get("upgradeStrategy", "")).strip():
             report.warning(
                 "BASELINE_DRIFT",
-                f"Baseline {baseline.get('id')} lacks an Upgrade Strategy.",
+                f"基线 {baseline.get('id')} 缺少升级策略。",
             )
     for module in _architecture_items(data, "modules"):
         source = module.get("source", {})
@@ -953,12 +957,12 @@ def validate_rules(
             if not str(source.get("rationale", "")).strip():
                 report.warning(
                     "BASELINE_DRIFT",
-                    f"OSS Module {module.get('id')} is modified without rationale.",
+                    f"OSS 模块 {module.get('id')} 被修改但没有记录理由。",
                 )
             if not source.get("changedAreas"):
                 report.warning(
                     "BASELINE_DRIFT",
-                    f"OSS Module {module.get('id')} is modified without changed areas.",
+                    f"OSS 模块 {module.get('id')} 被修改但没有记录变更区域。",
                 )
 
     # R8 Transition Risk
@@ -975,7 +979,7 @@ def validate_rules(
             if differs and ("module", module.get("id")) not in transition_subjects:
                 report.warning(
                     "TRANSITION_RISK",
-                    f"Module {module.get('id')} differs between Current and Target but has no Module Transition.",
+                    f"模块 {module.get('id')} 在当前与目标架构间存在差异，但没有模块迁移记录。",
                 )
         for connection in _architecture_items(data, "connections"):
             has_transition = bool(connection.get("transitionId")) or (
@@ -988,13 +992,13 @@ def validate_rules(
             ):
                 report.warning(
                     "TRANSITION_RISK",
-                    f"Connection {connection.get('id')} differs between Current and Target but has no Transition.",
+                    f"连接 {connection.get('id')} 在当前与目标架构间存在差异，但没有迁移记录。",
                 )
         for transition in transitions:
             if transition.get("state") == "blocked":
                 report.high(
                     "TRANSITION_RISK",
-                    f"Transition {transition.get('id')} is blocked.",
+                    f"迁移 {transition.get('id')} 处于阻塞状态。",
                 )
 
     # R9 Resource Risk and credential warnings
@@ -1007,12 +1011,12 @@ def validate_rules(
             has_embedded_credentials = True
             report.warning(
                 "EMBEDDED_SECRET_PRESENT",
-                f"Resource {resource_id} contains Embedded credentials; masking is not encryption.",
+                f"资源 {resource_id} 包含内嵌凭据；遮罩不等于加密。",
             )
             if resource.get("environment") == "production":
                 report.warning(
                     "EMBEDDED_SECRET_IN_PRODUCTION",
-                    f"Production Resource {resource_id} contains Embedded credentials.",
+                    f"生产资源 {resource_id} 包含内嵌凭据。",
                     severity="high",
                 )
         if mode == "external_file":
@@ -1021,7 +1025,7 @@ def validate_rules(
             if not resolved or not resolved.exists():
                 report.warning(
                     "RESOURCE_RISK",
-                    f"External credential file for Resource {resource_id} is missing: {secret_path!r}.",
+                    f"资源 {resource_id} 的外部凭据文件缺失：{secret_path!r}。",
                 )
         if mode == "external_store" and (
             not str(credentials.get("provider", "")).strip()
@@ -1030,26 +1034,26 @@ def validate_rules(
         ):
             report.warning(
                 "RESOURCE_RISK",
-                f"External credential store for Resource {resource_id} has an incomplete provider, reference, or key list.",
+                f"资源 {resource_id} 的外部凭据存储缺少提供方、引用或键列表。",
             )
         if resource.get("type") in {"external_api", "mcp_server"}:
             if not resource.get("usedByModuleIds"):
                 report.warning(
                     "RESOURCE_RISK",
-                    f"External Resource {resource_id} has no dependent Module.",
+                    f"外部资源 {resource_id} 没有依赖模块。",
                 )
             if not str(resource.get("notes", "")).strip():
                 report.warning(
                     "RESOURCE_RISK",
-                    f"External Resource {resource_id} has no recorded purpose or usage note.",
+                    f"外部资源 {resource_id} 没有记录用途或使用说明。",
                 )
         if resource.get("environment") == "unknown":
             report.warning(
-                "RESOURCE_RISK", f"Resource {resource_id} has unknown environment."
+                "RESOURCE_RISK", f"资源 {resource_id} 的环境未知。"
             )
         if resource.get("status") == "active" and not resource.get("usedByDeploymentIds"):
             report.warning(
-                "RESOURCE_RISK", f"Active Resource {resource_id} is not tied to a Deployment."
+                "RESOURCE_RISK", f"活跃资源 {resource_id} 未关联部署。"
             )
 
     if has_embedded_credentials:
@@ -1057,12 +1061,12 @@ def validate_rules(
         if git_state == "tracked":
             report.high(
                 "GIT_SECRET_RISK",
-                "This Panorama contains Embedded credentials and is tracked or staged by Git. Use a *.local.html private copy or an External credential mode before sharing.",
+                "此 Panorama 包含内嵌凭据，并已被 Git 跟踪或暂存。分享前请改用 *.local.html 私有副本或外部凭据模式。",
             )
         elif git_state == "unknown":
             report.warning(
                 "GIT_SECRET_RISK",
-                "This Panorama contains Embedded credentials; Git tracked/staged state could not be determined.",
+                "此 Panorama 包含内嵌凭据；无法确定其 Git 跟踪或暂存状态。",
             )
 
     # R10 Stage Entry / Exit Gap
@@ -1078,7 +1082,7 @@ def validate_rules(
     if require_entry and not entry_ids:
         report.high(
             "STAGE_ENTRY_GAP",
-            f"Current Stage {current_stage_for_entry.get('id')} requires Entry Acceptance but none is defined.",
+            f"当前阶段 {current_stage_for_entry.get('id')} 要求进入验收，但没有定义进入条件。",
         )
     incomplete_entry = [
         item_id
@@ -1091,7 +1095,7 @@ def validate_rules(
     if incomplete_entry:
         report.warning(
             "STAGE_ENTRY_GAP",
-            f"Current Stage {current_stage_for_entry.get('id')} has incomplete Entry Acceptance: {incomplete_entry}.",
+            f"当前阶段 {current_stage_for_entry.get('id')} 的进入验收尚未完成：{incomplete_entry}。",
         )
 
     for stage in _items(data, "stages"):
@@ -1101,7 +1105,7 @@ def validate_rules(
         if not exit_ids:
             report.high(
                 "STAGE_EXIT_GAP",
-                f"Completed Stage {stage.get('id')} has no Exit Acceptance.",
+                f"已完成阶段 {stage.get('id')} 没有退出验收。",
             )
             continue
         incomplete = [
@@ -1113,7 +1117,7 @@ def validate_rules(
         if incomplete:
             report.high(
                 "STAGE_EXIT_GAP",
-                f"Completed Stage {stage.get('id')} has incomplete Exit Acceptance: {incomplete}.",
+                f"已完成阶段 {stage.get('id')} 的退出验收尚未完成：{incomplete}。",
             )
 
     current_stage = registry.by_type.get("stage", {}).get(
@@ -1149,7 +1153,7 @@ def validate_rules(
         if blocked_core_modules:
             report.high(
                 "STAGE_EXIT_GAP",
-                f"Current Stage {current_stage.get('id')} has passed Exit Acceptance but core Modules still have Verification blockers: {sorted(blocked_core_modules)}.",
+                f"当前阶段 {current_stage.get('id')} 已通过退出验收，但核心模块仍有验证阻塞：{sorted(blocked_core_modules)}。",
             )
 
     # Filesystem Reference warnings are intentionally warnings: browsers cannot
@@ -1163,7 +1167,7 @@ def validate_rules(
         if not location or not resolved.exists():
             report.warning(
                 "MISSING_REFERENCE_PATH",
-                f"Reference {reference.get('id')} path is not available: {location!r}.",
+                f"参考资料 {reference.get('id')} 的路径不可用：{location!r}。",
             )
 
 
@@ -1180,14 +1184,14 @@ def validate_data(
     if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
         report.error(
             "UNSUPPORTED_SCHEMA_VERSION",
-            f"Validator supports {sorted(SUPPORTED_SCHEMA_VERSIONS)}, got {schema_version!r}.",
+            f"Validator 支持 {sorted(SUPPORTED_SCHEMA_VERSIONS)}，实际为 {schema_version!r}。",
             "/schemaVersion",
         )
         return report
     if template_version not in SUPPORTED_TEMPLATE_VERSIONS:
         report.error(
             "UNSUPPORTED_TEMPLATE_VERSION",
-            f"Validator supports {sorted(SUPPORTED_TEMPLATE_VERSIONS)}, got {template_version!r}.",
+            f"Validator 支持 {sorted(SUPPORTED_TEMPLATE_VERSIONS)}，实际为 {template_version!r}。",
             "/meta/templateVersion",
         )
         return report
@@ -1206,7 +1210,7 @@ def validate_data(
     if not report.errors:
         report.info(
             "VALID",
-            f"Validation completed with {len(report.warnings)} warning(s).",
+            f"校验完成，共有 {len(report.warnings)} 个警告。",
         )
     return report
 
@@ -1214,30 +1218,30 @@ def validate_data(
 def load_panorama(path: str | Path) -> tuple[dict[str, Any], Path]:
     source = Path(path)
     if not source.is_file():
-        raise ValidationRuntimeError(f"Input file does not exist: {source}")
+        raise ValidationRuntimeError(f"输入文件不存在：{source}")
     try:
         if source.suffix.lower() in {".html", ".htm"}:
             return extract_data(source), source.parent
         with source.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
     except (OSError, UnicodeError, json.JSONDecodeError, PanoramaIOError) as exc:
-        raise ValidationRuntimeError(f"Cannot read {source}: {exc}") from exc
+        raise ValidationRuntimeError(f"无法读取 {source}：{exc}") from exc
     if not isinstance(data, dict):
-        raise ValidationRuntimeError("Panorama input must be a JSON object.")
+        raise ValidationRuntimeError("Panorama 输入必须是 JSON 对象。")
     return data, source.parent
 
 
 def build_parser() -> argparse.ArgumentParser:
     default_schema = Path(__file__).resolve().parents[1] / "schema" / "panorama.schema.v0.1.json"
-    parser = argparse.ArgumentParser(
-        description="Validate Panorama Schema, cross-references, and engineering rules."
+    parser = ChineseArgumentParser(
+        description="校验 Panorama Schema、跨实体引用和工程规则。"
     )
-    parser.add_argument("input", type=Path, help="Panorama JSON or Single HTML")
+    parser.add_argument("input", type=Path, help="Panorama JSON 或 Single HTML")
     parser.add_argument("--schema", type=Path, default=default_schema)
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Emit a structured validation report as JSON.",
+        help="以 JSON 输出结构化校验报告。",
     )
     return parser
 
@@ -1253,7 +1257,7 @@ def main(argv: list[str] | None = None) -> int:
             source_path=args.input,
         )
     except ValidationRuntimeError as exc:
-        print(f"ERROR FILE: {exc}", file=sys.stderr)
+        print(f"错误 FILE：{exc}", file=sys.stderr)
         return 2
     if args.json:
         print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))

@@ -1,15 +1,15 @@
-# Agent Project Panorama V0.1.1
+# Agent Project Panorama V0.1.2（中文 Renderer）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.1.1 能力
+## V0.1.2 能力
 
 - 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
-- `CONTROL / SYSTEM / EVOLUTION` 三主视图；
-- Current / Target / Transition、Native SVG Connection 与通用 Entity Inspector；
-- 同环境多 Deployment、Deployment View 与完整 Resource Pool；
+- `控制台 / 系统 / 演进` 三主视图；
+- 当前 / 目标 / 迁移、原生 SVG 连接与通用实体详情；
+- 同环境多 Deployment、部署视图与完整资源池；
 - Module、Decision、Acceptance、Gate、Risk、Connection、Reference 详情；
 - Embedded / External File / External Store / None 四种凭据模式；
 - JSON Schema、全局 ID、跨实体引用、结构化 Findings 和工程规则校验；
@@ -30,6 +30,9 @@ python -m pip install jsonschema pytest
 ```
 
 Renderer 不需要 Python；生成后的 HTML 可直接在桌面浏览器打开。
+
+用户可见界面、CLI 帮助、Validator 说明与 Skill 工作流使用简体中文。Schema Key、枚举原值、
+ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文稳定，以兼容现有数据与自动化工具。
 
 ## 最小项目初始化
 
@@ -67,6 +70,19 @@ python scripts/init_panorama.py `
 
 直接打开 `examples/reference-project.html`。Reference 的 development 环境同时包含 Active
 与 Deploying Deployment，用于验证并行迁移和同环境多版本显示。
+
+## 升级已有 HTML 到中文 Renderer
+
+Renderer 中文化属于 Presentation Layer 升级，不是普通数据 Patch。默认生成新文件：
+
+```powershell
+python scripts/upgrade_renderer.py `
+  path/to/project-panorama.html `
+  --output path/to/project-panorama.zh-CN.html
+```
+
+只有明确要替换原文件时才使用 `--in-place`；脚本会先创建时间戳备份。升级前后完整 JSON 与
+Data Hash 必须一致，输出的 Presentation Hash 必须与目标模板一致。
 
 ## 读取与脱敏
 
@@ -163,21 +179,21 @@ record，当前 UI 只显示当前 Guidance。
 - Renderer 的所有动态链接统一经过 `safeHref()`；允许 HTTP、HTTPS、file 和相对路径，
   拒绝 JavaScript、VBScript、data 和其他未批准 Scheme。
 
-## Runtime 与 Inspector
+## 运行时与实体详情
 
-`SYSTEM → Runtime & Resources` 包含：
+`系统 → 运行时与资源` 包含：
 
-- Deployment View：Environment → Deployment List → Release → Module artifactVersion → Resource → Access；
-- Resource Pool：按 Environment / Type / Status 过滤所有项目资源，包括未绑定当前 Deployment 的资源；
-- Resource Access 与 Credential Mode；Embedded 默认遮蔽；
-- 通用右侧 Inspector：Module、Decision、Acceptance、Gate、Risk、Connection、Reference。
+- 部署视图：环境 → 部署列表 → 发布 → 模块 artifactVersion → 资源 → 访问；
+- 资源池：按环境 / 类型 / 状态过滤所有项目资源，包括未绑定当前 Deployment 的资源；
+- 资源访问与凭据模式；Embedded 默认遮蔽；
+- 通用右侧实体详情：Module、Decision、Acceptance、Gate、Risk、Connection、Reference。
 
-CONTROL 环境状态聚合同环境全部 Deployment，例如 `1 active / 1 deploying`。
+控制台环境状态聚合同环境全部 Deployment，例如“1 个运行中 / 1 个部署中”。
 
 ## 兼容性
 
 - Data Schema：`0.1`
-- Renderer：`0.1.1`
+- Renderer：`0.1.2`（zh-CN）
 - 支持 Template：`0.1.0`、`0.1.1`
 - Skill 支持 Schema：`0.1`
 
@@ -190,7 +206,7 @@ python -m pytest -q
 ```
 
 CI 在 Python 3.10 / 3.12 上运行测试、Node URL Sanitizer、校验 Reference JSON、生成并校验
-Reference HTML，以及检查 Presentation Hash。
+Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentation Hash。
 
 ## Presentation Compatibility Contract
 

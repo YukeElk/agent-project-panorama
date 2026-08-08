@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from panorama_cli import ChineseArgumentParser
 from panorama_io import extract_data
 
 
@@ -23,14 +24,14 @@ def _by_id(items: list[dict[str, Any]], entity_id: str | None) -> dict[str, Any]
 
 def _display(entity: dict[str, Any] | None, *fields: str) -> str:
     if entity is None:
-        return "Unknown"
+        return "未知"
     for field in fields:
         value = entity.get(field)
         if value:
             if field == "id":
                 return str(value)
-            return f"{value} ({entity.get('id', 'no-id')})"
-    return str(entity.get("id", "Unknown"))
+            return f"{value} ({entity.get('id', '无 ID')})"
+    return str(entity.get("id", "未知"))
 
 
 def _contains_embedded_secret(data: dict[str, Any]) -> bool:
@@ -64,7 +65,7 @@ def load_data(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
-        raise ValueError("Panorama data must be a JSON object.")
+        raise ValueError("Panorama 数据必须是 JSON 对象。")
     return data
 
 
@@ -84,33 +85,33 @@ def orientation_summary(data: dict[str, Any]) -> list[tuple[str, str]]:
     )
 
     return [
-        ("Schema Version", str(data.get("schemaVersion", "Unknown"))),
-        ("Revision", str(data.get("meta", {}).get("revision", "Unknown"))),
-        ("Project", _display(project, "name")),
-        ("Current Stage", _display(stage, "name")),
-        ("Current Architecture", _display(current_arch, "label")),
-        ("Target Architecture", _display(target_arch, "label")),
-        ("Current Release", _display(release, "version", "name")),
-        ("Latest Update Batch", _display(latest_update, "id")),
+        ("Schema 版本", str(data.get("schemaVersion", "未知"))),
+        ("修订号", str(data.get("meta", {}).get("revision", "未知"))),
+        ("项目", _display(project, "name")),
+        ("当前阶段", _display(stage, "name")),
+        ("当前架构", _display(current_arch, "label")),
+        ("目标架构", _display(target_arch, "label")),
+        ("当前发布", _display(release, "version", "name")),
+        ("最近更新批次", _display(latest_update, "id")),
         (
-            "Embedded Secret",
-            "Present" if _contains_embedded_secret(data) else "Not present",
+            "内嵌凭据",
+            "存在" if _contains_embedded_secret(data) else "不存在",
         ),
     ]
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Inspect a Project Panorama HTML.")
-    parser.add_argument("html", type=Path, help="Panorama HTML path")
+    parser = ChineseArgumentParser(description="检查 Project Panorama HTML。")
+    parser.add_argument("html", type=Path, help="Panorama HTML 路径")
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Print the complete embedded JSON instead of the orientation summary.",
+        help="输出完整内嵌 JSON，而不是项目定位摘要。",
     )
     parser.add_argument(
         "--unsafe-include-secrets",
         action="store_true",
-        help="Emit Embedded credential values in plaintext (requires --json).",
+        help="以明文输出内嵌凭据值（必须同时使用 --json）。",
     )
     return parser
 
@@ -119,12 +120,12 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     data = load_data(args.html)
     if args.unsafe_include_secrets and not args.json:
-        print("ERROR: --unsafe-include-secrets requires --json.", file=sys.stderr)
+        print("错误：--unsafe-include-secrets 必须与 --json 同时使用。", file=sys.stderr)
         return 2
     if args.json:
         if args.unsafe_include_secrets:
             print(
-                "WARNING: Embedded secrets are being emitted in plaintext.",
+                "警告：正在以明文输出内嵌凭据。",
                 file=sys.stderr,
             )
             output = data

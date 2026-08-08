@@ -17,8 +17,8 @@ def test_all_dynamic_links_use_safe_anchor(template_path):
 def test_runtime_supports_deployment_list_and_resource_pool(template_path):
     source = template_path.read_text(encoding="utf-8")
     assert "selectedDeploymentId" in source
-    assert "Deployment View" in source
-    assert "Resource Pool" in source
+    assert "部署视图" in source
+    assert "资源池" in source
     assert "resourcePoolFilters" in source
 
 
@@ -32,4 +32,4 @@ def test_generic_entity_inspector_contract(template_path):
 def test_renderer_declares_compatibility_contract(template_path):
     source = template_path.read_text(encoding="utf-8")
     assert "SUPPORTED_SCHEMA_VERSIONS" in source
-    assert "Unsupported Panorama Schema" in source
+    assert "不支持的 Panorama Schema" in source

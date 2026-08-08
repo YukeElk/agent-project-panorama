@@ -43,7 +43,7 @@ def _read_text(path: Path) -> str:
         with path.open("r", encoding="utf-8", newline="") as handle:
             return handle.read()
     except UnicodeDecodeError as exc:
-        raise PanoramaIOError(f"Panorama is not valid UTF-8: {path}") from exc
+        raise PanoramaIOError(f"Panorama 不是有效 UTF-8 文件：{path}") from exc
 
 
 def _locate_payload(html_text: str) -> tuple[int, int]:
@@ -51,28 +51,28 @@ def _locate_payload(html_text: str) -> tuple[int, int]:
 
     if html_text.count(DATA_START_MARKER) != 1:
         raise PanoramaIOError(
-            f"Expected exactly one {DATA_START_MARKER!r} marker."
+            f"必须且只能有一个 {DATA_START_MARKER!r} 标记。"
         )
     if html_text.count(DATA_END_MARKER) != 1:
-        raise PanoramaIOError(f"Expected exactly one {DATA_END_MARKER!r} marker.")
+        raise PanoramaIOError(f"必须且只能有一个 {DATA_END_MARKER!r} 标记。")
 
     start_marker_at = html_text.index(DATA_START_MARKER)
     end_marker_at = html_text.index(DATA_END_MARKER)
     if end_marker_at <= start_marker_at:
-        raise PanoramaIOError("Panorama data markers are out of order.")
+        raise PanoramaIOError("Panorama 数据标记顺序错误。")
 
     anchor_start = start_marker_at + len(DATA_START_MARKER)
     anchor_text = html_text[anchor_start:end_marker_at]
     matches = list(_SCRIPT_RE.finditer(anchor_text))
     if len(matches) != 1:
         raise PanoramaIOError(
-            "The data anchor must contain exactly one "
-            '<script id="project-panorama-data" type="application/json"> block.'
+            "数据锚点中必须且只能有一个 "
+            '<script id="project-panorama-data" type="application/json"> 区块。'
         )
 
     match = matches[0]
     if anchor_text[: match.start()].strip() or anchor_text[match.end() :].strip():
-        raise PanoramaIOError("Unexpected content exists inside the Panorama data markers.")
+        raise PanoramaIOError("Panorama 数据标记内部存在非预期内容。")
 
     payload_start = anchor_start + match.start("payload")
     payload_end = anchor_start + match.end("payload")
@@ -97,16 +97,16 @@ def extract_data(html_path: str | os.PathLike[str]) -> dict[str, Any]:
     payload_start, payload_end = _locate_payload(html_text)
     payload = html_text[payload_start:payload_end].strip()
     if not payload:
-        raise PanoramaIOError("The Panorama data payload is empty.")
+        raise PanoramaIOError("Panorama 数据 payload 为空。")
     try:
         data = json.loads(payload)
     except json.JSONDecodeError as exc:
         raise PanoramaIOError(
-            f"Invalid JSON in {DATA_SCRIPT_ID} at line {exc.lineno}, "
-            f"column {exc.colno}: {exc.msg}"
+            f"{DATA_SCRIPT_ID} 中的 JSON 无效，位于第 {exc.lineno} 行、"
+            f"第 {exc.colno} 列：{exc.msg}"
         ) from exc
     if not isinstance(data, dict):
-        raise PanoramaIOError("The Panorama data payload must be a JSON object.")
+        raise PanoramaIOError("Panorama 数据 payload 必须是 JSON 对象。")
     return data
 
 
@@ -114,7 +114,7 @@ def compute_data_hash(data: dict[str, Any]) -> str:
     """Return a deterministic SHA-256 hash of the logical JSON data."""
 
     if not isinstance(data, dict):
-        raise TypeError("Panorama data must be a dictionary.")
+        raise TypeError("Panorama 数据必须是字典。")
     canonical = json.dumps(
         data,
         ensure_ascii=False,
@@ -169,7 +169,7 @@ def replace_data(
     """Replace only the embedded JSON payload and preserve presentation exactly."""
 
     if not isinstance(data, dict):
-        raise TypeError("Panorama data must be a dictionary.")
+        raise TypeError("Panorama 数据必须是字典。")
 
     source = Path(html_path)
     target = Path(output_path) if output_path is not None else source
@@ -184,10 +184,10 @@ def replace_data(
     new_start, new_end = _locate_payload(updated)
     decoded = json.loads(updated[new_start:new_end])
     if decoded != data:
-        raise PanoramaIOError("Serialized Panorama data did not round-trip exactly.")
+        raise PanoramaIOError("序列化后的 Panorama 数据无法精确往返。")
     after_hash = compute_presentation_hash(updated)
     if after_hash != before_hash:
-        raise PanoramaIOError("Presentation Layer changed during data replacement.")
+        raise PanoramaIOError("数据替换过程中 Presentation Layer 发生变化。")
 
     atomic_write(target, updated)
     return target

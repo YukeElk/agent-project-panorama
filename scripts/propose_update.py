@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from apply_patch import compose_updated_data, compute_proposal_hash
+from panorama_cli import ChineseArgumentParser
 from panorama_io import compute_data_hash, extract_data
 from validate_panorama import ValidationIssue, validate_data
 
@@ -28,6 +29,21 @@ RULE_TO_ATTENTION = {
     "STAGE_ENTRY_GAP": "stage_exit_gap",
     "STAGE_EXIT_GAP": "stage_exit_gap",
     "GIT_SECRET_RISK": "other",
+}
+
+FINDING_TITLES = {
+    "ARCHITECTURE_GAP": "架构缺口",
+    "SCOPE_DRIFT": "范围漂移",
+    "IMPLEMENTATION_DRIFT": "实现漂移",
+    "REVIEW_GAP": "评审缺口",
+    "VERIFICATION_GAP": "验证缺口",
+    "BASELINE_DRIFT": "基线漂移",
+    "DEPLOYMENT_DRIFT": "部署漂移",
+    "TRANSITION_RISK": "迁移风险",
+    "RESOURCE_RISK": "资源风险",
+    "STAGE_ENTRY_GAP": "阶段准入缺口",
+    "STAGE_EXIT_GAP": "阶段退出缺口",
+    "GIT_SECRET_RISK": "Git 凭据风险",
 }
 
 
@@ -52,7 +68,7 @@ def json_diff(before: Any, after: Any, path: str = "") -> list[dict[str, Any]]:
             operations.extend(json_diff(before[key], after[key], f"{path}/{_pointer(key)}"))
         return operations
     if not path:
-        raise ValueError("Root replacement is not supported for Panorama proposals.")
+        raise ValueError("Panorama 提案不支持替换根对象。")
     return [{"op": "replace", "path": path, "value": copy.deepcopy(after)}]
 
 
@@ -109,7 +125,7 @@ def attention_from_findings(findings: list[ValidationIssue]) -> list[dict[str, A
             {
                 "type": RULE_TO_ATTENTION[issue.code],
                 "severity": issue.severity,
-                "title": issue.code.replace("_", " ").title(),
+                "title": FINDING_TITLES[issue.code],
                 "summary": issue.message,
                 "relatedEntities": [],
             }
@@ -134,15 +150,15 @@ def build_proposal(
     suffix = _stable_suffix(candidate)
     timestamp = candidate.get("createdAt") or current.get("meta", {}).get("updatedAt")
     level = candidate.get("changeLevel", "local")
-    summary = candidate.get("summary", "Review the proposed Panorama data change.")
+    summary = candidate.get("summary", "评审拟议的 Panorama 数据变更。")
     refs = affected_entity_refs(current, operations)
     change_id = f"CHG-PROP-{suffix}"
     review_id = f"REV-PROP-{suffix}"
     update_id = f"UPD-PROP-{suffix}"
     change_records = copy.deepcopy(supplied.get("changeRecords")) if "changeRecords" in supplied else [{
         "id": change_id, "occurredAt": timestamp, "category": "other", "impactLevel": level,
-        "summary": summary, "reason": candidate.get("reason", "Candidate update supplied for review."),
-        "source": "ai", "entityRefs": refs, "beforeSummary": candidate.get("beforeSummary", "Current Panorama state"),
+        "summary": summary, "reason": candidate.get("reason", "候选更新已提交评审。"),
+        "source": "ai", "entityRefs": refs, "beforeSummary": candidate.get("beforeSummary", "当前 Panorama 状态"),
         "afterSummary": candidate.get("afterSummary", summary), "reviewId": review_id,
         "significant": level != "local", "architectureVersionId": None, "referenceIds": [], "extensions": {},
     }]
@@ -150,7 +166,7 @@ def build_proposal(
         "id": review_id, "type": "panorama_update", "subjectRefs": refs, "status": "approved",
         "impactLevel": level, "requestedBy": "ai", "requestedAt": timestamp,
         "reviewedBy": "user", "reviewedAt": timestamp, "summary": summary,
-        "comments": "Approval is valid only when bound to this proposalHash.", "decisionIds": [],
+        "comments": "只有绑定此 proposalHash 的批准才有效。", "decisionIds": [],
         "changeIds": [item["id"] for item in change_records], "extensions": {},
     }
     guidance = copy.deepcopy(supplied.get("guidanceDraft", current.get("guidance", {})))
@@ -193,7 +209,7 @@ def build_proposal(
 
 def build_parser() -> argparse.ArgumentParser:
     root = Path(__file__).resolve().parents[1]
-    parser = argparse.ArgumentParser(description="Create a non-mutating Panorama update proposal.")
+    parser = ChineseArgumentParser(description="创建不修改源文件的 Panorama 更新提案。")
     parser.add_argument("panorama", type=Path)
     parser.add_argument("candidate", type=Path)
     parser.add_argument("--schema", type=Path, default=root / "schema" / "panorama.schema.v0.1.json")
@@ -207,17 +223,17 @@ def main(argv: list[str] | None = None) -> int:
         current = extract_data(args.panorama)
         candidate = json.loads(args.candidate.read_text(encoding="utf-8"))
         if not isinstance(candidate, dict):
-            raise ValueError("Candidate update must be a JSON object.")
+            raise ValueError("候选更新必须是 JSON 对象。")
         result = build_proposal(current, candidate, args.schema, base_dir=args.panorama.parent, source_path=args.panorama)
         rendered = json.dumps(result, ensure_ascii=False, indent=2)
         if args.output:
             args.output.write_text(rendered + "\n", encoding="utf-8")
-            print(f"Proposal written: {args.output}")
+            print(f"提案已写入：{args.output}")
         else:
             print(rendered)
         return 1 if not result["validation"]["valid"] else 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"ERROR PROPOSAL: {exc}", file=sys.stderr)
+        print(f"提案错误：{exc}", file=sys.stderr)
         return 2
 
 

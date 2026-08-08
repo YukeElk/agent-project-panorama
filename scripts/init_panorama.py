@@ -9,17 +9,18 @@ import sys
 import tempfile
 from pathlib import Path
 
+from panorama_cli import ChineseArgumentParser
 from panorama_io import compute_data_hash, extract_data, replace_data
 from validate_panorama import validate_data
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Generate a local-first Single-HTML Project Panorama."
+    parser = ChineseArgumentParser(
+        description="生成 local-first 的 Single-HTML Project Panorama。"
     )
-    parser.add_argument("--template", required=True, type=Path, help="HTML template")
-    parser.add_argument("--data", required=True, type=Path, help="Panorama JSON data")
-    parser.add_argument("--output", required=True, type=Path, help="Output HTML path")
+    parser.add_argument("--template", required=True, type=Path, help="HTML 模板")
+    parser.add_argument("--data", required=True, type=Path, help="Panorama JSON 数据")
+    parser.add_argument("--output", required=True, type=Path, help="输出 HTML 路径")
     parser.add_argument(
         "--schema",
         type=Path,
@@ -28,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--allow-invalid",
         action="store_true",
-        help="Generate debug output even when validation reports errors.",
+        help="即使校验报告错误也生成调试输出。",
     )
     return parser
 
@@ -38,7 +39,7 @@ def main(argv: list[str] | None = None) -> int:
     with args.data.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
     if not isinstance(data, dict):
-        raise ValueError("Panorama data must be a JSON object.")
+        raise ValueError("Panorama 数据必须是 JSON 对象。")
     before = validate_data(
         data,
         args.schema,
@@ -76,8 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         staged.unlink(missing_ok=True)
     output = args.output
-    print(f"Generated: {output}")
-    print(f"Data SHA-256: {compute_data_hash(data)}")
+    print(f"已生成：{output}")
+    print(f"数据 SHA-256：{compute_data_hash(data)}")
     for issue in before.warnings:
         print(issue.render())
     return 0

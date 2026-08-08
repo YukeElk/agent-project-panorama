@@ -50,4 +50,4 @@ def test_invalid_utf8_json_returns_cli_exit_2(tmp_path, capsys):
     exit_code = validate_main([str(source)])
 
     assert exit_code == 2
-    assert "ERROR FILE" in capsys.readouterr().err
+    assert "错误 FILE" in capsys.readouterr().err

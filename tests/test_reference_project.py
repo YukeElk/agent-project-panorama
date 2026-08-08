@@ -38,12 +38,12 @@ def test_reference_current_target_and_transition_semantics(reference_data):
 
 def test_reference_control_orientation(reference_data):
     summary = dict(orientation_summary(reference_data))
-    assert summary["Current Stage"].startswith("MVP 实现")
-    assert summary["Current Architecture"].startswith("0.3 MVP Current")
-    assert summary["Target Architecture"].startswith("0.4 Target Metadata Split")
-    assert summary["Current Release"].startswith("0.8-dev")
-    assert summary["Latest Update Batch"] == "UPD-003"
-    assert summary["Embedded Secret"] == "Present"
+    assert summary["当前阶段"].startswith("MVP 实现")
+    assert summary["当前架构"].startswith("0.3 MVP Current")
+    assert summary["目标架构"].startswith("0.4 Target Metadata Split")
+    assert summary["当前发布"].startswith("0.8-dev")
+    assert summary["最近更新批次"] == "UPD-003"
+    assert summary["内嵌凭据"] == "存在"
 
 
 def test_reference_latest_update_and_guidance(reference_data):
@@ -107,7 +107,7 @@ def test_verification_gap_for_passed_acceptance_without_evidence(
     assert any(
         issue.code == "VERIFICATION_GAP"
         and "MOD-CONSOLE" in issue.message
-        and "Acceptance" in issue.message
+        and "验收" in issue.message
         for issue in report.warnings
     )
 
@@ -158,7 +158,7 @@ def test_verification_gap_for_unaccepted_acceptance(
     assert any(
         issue.code == "VERIFICATION_GAP"
         and "MOD-CONSOLE" in issue.message
-        and "not accepted" in issue.message
+        and "尚未接受" in issue.message
         for issue in report.warnings
     )
 

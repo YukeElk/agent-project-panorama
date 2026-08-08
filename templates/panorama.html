@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'">
-  <title>Agent Project Panorama</title>
+  <title>Agent 项目全景</title>
   <style>
     :root {
       --page: #fff;
@@ -410,22 +410,22 @@
 <body>
   <a class="skip-link" href="#main-content">跳到主要内容</a>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">AP</span><span>Agent Project Panorama</span></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true">AP</span><span>Agent 项目全景</span></div>
     <nav class="primary-nav" aria-label="主视图">
-      <button class="nav-btn" type="button" data-view="control" aria-selected="true">CONTROL</button>
-      <button class="nav-btn" type="button" data-view="system" aria-selected="false">SYSTEM</button>
-      <button class="nav-btn" type="button" data-view="evolution" aria-selected="false">EVOLUTION</button>
+      <button class="nav-btn" type="button" data-view="control" aria-selected="true">控制台</button>
+      <button class="nav-btn" type="button" data-view="system" aria-selected="false">系统</button>
+      <button class="nav-btn" type="button" data-view="evolution" aria-selected="false">演进</button>
     </nav>
-    <div class="topbar-meta"><span class="revision-label" id="revision-label">REV —</span></div>
+    <div class="topbar-meta"><span class="revision-label" id="revision-label">修订 —</span></div>
   </header>
 
   <main id="main-content">
     <section class="view" id="view-control" data-view-panel="control"></section>
     <section class="system-shell" id="view-system" data-view-panel="system" hidden>
       <nav class="subnav" aria-label="系统子视图">
-        <button class="subnav-btn" type="button" data-system-view="logical" aria-selected="true">Logical Architecture</button>
-        <button class="subnav-btn" type="button" data-system-view="runtime" aria-selected="false">Runtime &amp; Resources</button>
-        <button class="subnav-btn" type="button" data-system-view="source" aria-selected="false">Architecture Source</button>
+        <button class="subnav-btn" type="button" data-system-view="logical" aria-selected="true">逻辑架构</button>
+        <button class="subnav-btn" type="button" data-system-view="runtime" aria-selected="false">运行时与资源</button>
+        <button class="subnav-btn" type="button" data-system-view="source" aria-selected="false">架构来源</button>
       </nav>
       <div class="system-content" id="system-content"></div>
     </section>
@@ -433,10 +433,10 @@
   </main>
 
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
-  <aside class="module-drawer" id="module-drawer" role="dialog" aria-modal="true" aria-label="Module details" aria-hidden="true">
+  <aside class="module-drawer" id="module-drawer" role="dialog" aria-modal="true" aria-label="实体详情" aria-hidden="true">
     <div class="drawer-head">
-      <div><h2 id="drawer-title">Module</h2><p class="mono" id="drawer-subtitle"></p></div>
-      <button class="icon-btn" type="button" data-action="close-drawer" aria-label="关闭 Module Drawer">
+      <div><h2 id="drawer-title">实体</h2><p class="mono" id="drawer-subtitle"></p></div>
+      <button class="icon-btn" type="button" data-action="close-drawer" aria-label="关闭详情">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
       </button>
     </div>
@@ -454,7 +454,8 @@
   (function () {
     "use strict";
 
-    var RENDERER_VERSION = "0.1.1";
+    var RENDERER_VERSION = "0.1.2";
+    var UI_LOCALE = "zh-CN";
     var SUPPORTED_SCHEMA_VERSIONS = ["0.1"];
     var SUPPORTED_TEMPLATE_VERSIONS = ["0.1.0", "0.1.1"];
 
@@ -471,11 +472,11 @@
       return;
     }
     if (SUPPORTED_SCHEMA_VERSIONS.indexOf(String(data.schemaVersion)) < 0) {
-      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>Unsupported Panorama Schema</strong><br>Current Renderer: " + escapeHtml(RENDERER_VERSION) + " · Data Schema: " + escapeHtml(data.schemaVersion) + "</div>";
+      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>不支持的 Panorama Schema</strong><br>当前 Renderer：" + escapeHtml(RENDERER_VERSION) + " · 数据 Schema：" + escapeHtml(data.schemaVersion) + "</div>";
       return;
     }
     if (!data.meta || SUPPORTED_TEMPLATE_VERSIONS.indexOf(String(data.meta.templateVersion)) < 0) {
-      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>Unsupported Panorama Template</strong><br>Current Renderer: " + escapeHtml(RENDERER_VERSION) + " · Data Template: " + escapeHtml(data.meta && data.meta.templateVersion) + "</div>";
+      document.getElementById("main-content").innerHTML = "<div class='error-banner'><strong>不支持的 Panorama Template</strong><br>当前 Renderer：" + escapeHtml(RENDERER_VERSION) + " · 数据 Template：" + escapeHtml(data.meta && data.meta.templateVersion) + "</div>";
       return;
     }
 
@@ -523,8 +524,7 @@
       update_batch: data.updateBatches || []
     };
 
-    document.getElementById("revision-label").textContent = "REV " + String(data.meta.revision) + " · " + String(data.schemaVersion);
-    renderAll();
+    document.getElementById("revision-label").textContent = "修订 " + String(data.meta.revision) + " · Schema " + String(data.schemaVersion);
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -546,7 +546,7 @@
     }
     function safeAnchor(label, value, suffix) {
       var href = safeHref(value);
-      if (!href) return "<span class='unsafe-link' title='Unsafe or unsupported link was not activated'>" + e(label) + "</span>" + (suffix || "");
+      if (!href) return "<span class='unsafe-link' title='链接协议不安全或不受支持，未激活'>" + e(label) + "</span>" + (suffix || "");
       return "<a href='" + e(href) + "' target='_blank' rel='noreferrer'>" + e(label) + "</a>" + (suffix || "");
     }
     function byId(type, id) {
@@ -554,9 +554,36 @@
       if (type === "intent") return id === data.project.id ? data.intent : null;
       return arr(entityCollections[type]).find(function (item) { return item.id === id; }) || null;
     }
+    var ZH_LABELS = {
+      all: "全部", unknown: "未知", none: "无", yes: "是", no: "否",
+      current: "当前", target: "目标", transition: "迁移", historical: "历史", both: "当前与目标",
+      development: "开发", test: "测试", staging: "预发布", production: "生产", shared: "共享",
+      active: "运行中", deploying: "部署中", deployed: "已部署", degraded: "降级", planned: "已计划", reserved: "已预留", stopped: "已停止", retired: "已退役", not_deployed: "未部署",
+      draft: "草稿", proposed: "已提议", pending: "待处理", deferred: "已推迟", review_pending: "待评审", review_ready: "可评审", review_required: "需要评审", approved: "已批准", accepted: "已接受", changes_requested: "要求修改", rejected: "已拒绝", waived: "已豁免",
+      confirmed: "已确认", experimental: "实验性", prototype: "原型", functional: "功能可用", stable: "稳定", deprecated: "已弃用", deprecating: "弃用中",
+      not_started: "未开始", in_progress: "进行中", running: "执行中", ready: "就绪", completed: "已完成", blocked: "受阻", paused: "已暂停", cancelled: "已取消", skipped: "已跳过", archived: "已归档", superseded: "已取代", migrating: "迁移中",
+      not_defined: "未定义", not_configured: "未配置", not_run: "未运行", partial: "部分通过", partially_covered: "部分覆盖", implemented: "已实现", passed: "已通过", failed: "失败", verified: "已验证", delivered: "已交付", available: "可用", outdated: "已过期", missing: "缺失", rework: "需返工",
+      low: "低", medium: "中", high: "高", critical: "严重", info: "信息", warning: "警告",
+      added: "新增", modified: "修改", removed: "移除", retained: "保留", not_applicable: "不适用", inactive: "不活跃", unset: "未设置",
+      custom: "自研", oss: "开源软件", open_source: "开源", external: "外部", internal: "内部", ai: "AI", human: "人工", joint: "联合", mixed: "混合",
+      sync: "同步", async: "异步", one_way: "单向", bidirectional: "双向", event: "事件", stream: "流式", direct: "直接",
+      module: "模块", requirement: "需求", architecture: "架构", architecture_version: "架构版本", baseline: "基线", layer: "层", connection: "连接", stage: "阶段", work_item: "工作项", release: "发布", deployment: "部署", resource: "资源", decision: "决策", risk: "风险", acceptance: "验收标准", gate: "门禁", reference: "参考资料", review: "评审", change: "变更", update_batch: "更新批次", intent: "意图", project: "项目", data_flow: "数据流",
+      business_scenario: "业务场景", idea: "想法", research: "研究", clarifying: "澄清中", candidate: "候选", core: "核心", supporting: "支持", out_of_scope: "范围外",
+      design_spec: "设计规范", module_design: "模块设计", interface_contract: "接口契约", deployment_config: "部署配置", test_report: "测试报告", runbook: "运行手册", source_directory: "源码目录", inline_note: "内联说明", credential_file: "凭据文件", secret_store_ref: "密钥存储引用", url: "URL", absolute_path: "绝对路径", relative_path: "相对路径", artifact: "制品", paper: "论文", conversation: "对话", adr: "架构决策记录", acceptance_spec: "验收规范", reference_architecture: "参考架构", oss_reference: "开源参考",
+      container_host: "容器主机", database: "数据库", vector_store: "向量存储", external_api: "外部 API", external_service: "外部服务", object_store: "对象存储", queue: "队列", cache: "缓存", mcp_server: "MCP 服务", compute: "计算资源", network: "网络", infrastructure: "基础设施", admin_console: "管理控制台", user_account: "用户账号", monitoring: "监控", observability: "可观测性",
+      embedded: "内嵌", external_file: "外部文件", external_store: "外部存储",
+      build: "构建", unit_test: "单元测试", integration_test: "集成测试", integration: "集成", agent_eval: "Agent 评估", lint: "代码检查", type_check: "类型检查", security: "安全检查", performance: "性能", usability: "可用性", manual_review: "人工评审", manual: "手动", script: "脚本", ci: "CI",
+      local: "局部", system: "系统级", migration: "迁移", refactor: "重构", fix: "修复", experiment: "实验", validation: "校验", implementation: "实现", verification: "验证", scope: "范围", reliability: "可靠性", data: "数据", other: "其他",
+      architecture_gap: "架构缺口", scope_drift: "范围漂移", implementation_drift: "实现漂移", verification_gap: "验证缺口", baseline_drift: "基线漂移", deployment_drift: "部署漂移", transition_risk: "迁移风险", resource_risk: "资源风险", stage_exit_gap: "阶段退出缺口", blocking_decision: "阻塞决策", architecture_review: "架构评审", panorama_update: "Panorama 更新", workspace_scan: "工作区扫描", rule: "规则", batch: "批次", applied: "已应用", mitigating: "缓解中", closed: "已关闭", open: "开放"
+    };
     function humanize(value) {
-      return String(value == null ? "unknown" : value).replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); });
+      var key = String(value == null ? "unknown" : value);
+      return ZH_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, function (m) { return m.toUpperCase(); });
     }
+    function requirementTypeLabel(value) {
+      return value === "functional" ? "功能需求" : humanize(value);
+    }
+    renderAll();
     function shortDate(value) {
       if (!value) return "—";
       var parsed = new Date(value);
@@ -584,7 +611,7 @@
       return "<span class='status tone-" + toneFor(value) + "'><span class='status-dot'></span>" + e(label || humanize(value)) + "</span>";
     }
     function list(items, emptyText) {
-      if (!arr(items).length) return "<p class='cell-sub'>" + e(emptyText || "None") + "</p>";
+      if (!arr(items).length) return "<p class='cell-sub'>" + e(emptyText || "无") + "</p>";
       return "<ul>" + items.map(function (item) { return "<li>" + e(item) + "</li>"; }).join("") + "</ul>";
     }
     function entityName(type, id) {
@@ -592,7 +619,7 @@
       return item ? (item.name || item.title || item.label || item.version || item.id) : id;
     }
     function entityLinks(type, ids) {
-      if (!arr(ids).length) return "<span class='cell-sub'>None</span>";
+      if (!arr(ids).length) return "<span class='cell-sub'>无</span>";
       return "<div class='entity-links'>" + ids.map(function (id) {
         return "<button class='entity-link' type='button' data-open-entity='" + e(id) + "' data-entity-type='" + e(type) + "' title='" + e(id) + "'>" + e(entityName(type, id)) + "</button>";
       }).join("") + "</div>";
@@ -667,61 +694,61 @@
       var update = currentUpdate();
       var environmentHtml = ["development", "staging", "production"].map(function (environment) {
         var deployments = deploymentsForEnvironment(environment);
-        if (!deployments.length) return status("unknown", environment === "development" ? "Dev · none" : humanize(environment) + " · none");
+        if (!deployments.length) return status("unknown", humanize(environment) + " · 无部署");
         var counts = {};
         deployments.forEach(function (item) { counts[item.status] = (counts[item.status] || 0) + 1; });
         var order = ["active", "deploying", "degraded", "planned", "stopped", "retired"];
-        var summary = Object.keys(counts).sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); }).map(function (key) { return counts[key] + " " + key; }).join(" / ");
+        var summary = Object.keys(counts).sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); }).map(function (key) { return counts[key] + " 个" + humanize(key); }).join(" / ");
         var tone = counts.degraded ? "degraded" : (counts.active ? "active" : (counts.deploying ? "deploying" : deployments[0].status));
-        return status(tone, (environment === "development" ? "Dev" : humanize(environment)) + " · " + summary);
+        return status(tone, humanize(environment) + " · " + summary);
       }).join("");
       var summaryItems = update ? arr(update.summaryItems).slice(0, 6) : [];
       var updateHtml = summaryItems.length ? summaryItems.map(function (item, index) {
         var barTone = index === 0 ? "var(--primary)" : (index === 1 ? "var(--warning)" : "var(--info)");
         return "<li class='reviewed-item'><span class='semantic-bar' style='background:" + barTone + "'></span><div><p>" + e(item) + "</p>" +
-          "<div class='reviewed-meta'><span class='mono'>" + e(update.id) + "</span><span>Stage " + e(entityName("stage", update.projectStageBefore)) + " → " + e(entityName("stage", update.projectStageAfter)) + "</span><span>" + status(update.changeLevel, humanize(update.changeLevel)) + "</span></div></div></li>";
-      }).join("") : "<li class='empty-state'>No reviewed update.</li>";
+          "<div class='reviewed-meta'><span class='mono'>" + e(update.id) + "</span><span>阶段 " + e(entityName("stage", update.projectStageBefore)) + " → " + e(entityName("stage", update.projectStageAfter)) + "</span><span>" + status(update.changeLevel, humanize(update.changeLevel)) + "</span></div></div></li>";
+      }).join("") : "<li class='empty-state'>暂无已评审更新。</li>";
       var attention = update ? arr(update.attentionItems) : [];
       var shownAttention = state.attentionExpanded ? attention : attention.slice(0, 5);
       var attentionHtml = shownAttention.length ? shownAttention.map(function (item) {
         return "<article class='attention-item is-" + e(item.severity) + "'><h3><span>" + e(item.title) + "</span><span class='attention-type'>" + e(item.type) + "</span></h3><p>" + e(item.summary) + "</p></article>";
-      }).join("") : "<div class='empty-state'>No current attention item.</div>";
+      }).join("") : "<div class='empty-state'>当前没有需要关注的事项。</div>";
       var options = arr(data.guidance && data.guidance.options);
       var recommendedId = data.guidance ? data.guidance.recommendedOptionId : null;
       var focusHtml = options.map(function (option, index) {
         var isRecommended = option.id === recommendedId;
-        return "<details class='focus-option' " + (isRecommended ? "open" : "") + "><summary><span class='focus-rank'>" + (index + 1) + "</span><span class='focus-summary'><span>" + e(option.title) + "</span>" + (isRecommended ? "<span class='recommended'>Recommended</span>" : "") + "</span></summary>" +
-          "<div class='focus-body'><p><strong>Why now — </strong>" + e(option.whyNow) + "</p><p><strong>Recommendation — </strong>" + e(option.recommendationReason) + "</p>" +
-          "<div class='focus-body-grid'><div><strong>Benefits</strong>" + list(option.benefits) + "</div><div><strong>Risks</strong>" + list(option.risks) + "</div><div><strong>Impact</strong><p>" + e(option.impact) + "</p></div><div><strong>Prerequisites</strong>" + list(option.prerequisites) + "</div></div>" +
-          "<p style='margin-top:12px'><strong>Expected outcome — </strong>" + e(option.expectedOutcome) + "</p></div></details>";
+        return "<details class='focus-option' " + (isRecommended ? "open" : "") + "><summary><span class='focus-rank'>" + (index + 1) + "</span><span class='focus-summary'><span>" + e(option.title) + "</span>" + (isRecommended ? "<span class='recommended'>推荐</span>" : "") + "</span></summary>" +
+          "<div class='focus-body'><p><strong>为什么现在做 — </strong>" + e(option.whyNow) + "</p><p><strong>推荐理由 — </strong>" + e(option.recommendationReason) + "</p>" +
+          "<div class='focus-body-grid'><div><strong>收益</strong>" + list(option.benefits) + "</div><div><strong>风险</strong>" + list(option.risks) + "</div><div><strong>影响</strong><p>" + e(option.impact) + "</p></div><div><strong>前置条件</strong>" + list(option.prerequisites) + "</div></div>" +
+          "<p style='margin-top:12px'><strong>预期结果 — </strong>" + e(option.expectedOutcome) + "</p></div></details>";
       }).join("");
 
       document.getElementById("view-control").innerHTML =
         "<div class='project-strip'><div class='project-identity'><h1>" + e(data.project.name) + "</h1><p>" + e(data.project.summary) + "</p></div>" +
-        metaCell("Current Stage", currentStage ? currentStage.name : "Unknown") +
-        metaCell("Current Focus", data.intent.currentFocus, "focus-value") +
-        metaCell("Current Architecture", currentArch ? currentArch.label : "Unknown") +
-        metaCell("Target Architecture", targetArch ? targetArch.label : "None") +
-        metaCell("Current Release", currentRelease ? currentRelease.version : "None") +
-        "<div class='meta-cell'><span class='meta-label'>Runtime / Updated</span><div class='environment-mini'>" + environmentHtml + "</div><div class='cell-sub' style='margin-top:7px'>" + e(dateTime(data.meta.updatedAt)) + "</div>" +
-        (containsEmbeddedSecret() ? "<div class='sensitive-flag'><span aria-hidden='true'>△</span> Contains Sensitive Data</div>" : "") + "</div></div>" +
+        metaCell("当前阶段", currentStage ? currentStage.name : "未知") +
+        metaCell("当前焦点", data.intent.currentFocus, "focus-value") +
+        metaCell("当前架构", currentArch ? currentArch.label : "未知") +
+        metaCell("目标架构", targetArch ? targetArch.label : "无") +
+        metaCell("当前发布", currentRelease ? currentRelease.version : "无") +
+        "<div class='meta-cell'><span class='meta-label'>运行时 / 更新时间</span><div class='environment-mini'>" + environmentHtml + "</div><div class='cell-sub' style='margin-top:7px'>" + e(dateTime(data.meta.updatedAt)) + "</div>" +
+        (containsEmbeddedSecret() ? "<div class='sensitive-flag'><span aria-hidden='true'>△</span> 包含敏感数据</div>" : "") + "</div></div>" +
         "<div class='control-grid'><div class='control-main'>" +
-        sectionHeading("Latest Reviewed Update", update ? update.id : "—") + "<div class='framed'><ul class='reviewed-list'>" + updateHtml + "</ul></div>" +
-        "<div class='section-rule'>" + sectionHeading("Next Focus", options.length + " options") + "<div class='framed'>" + (focusHtml || "<div class='empty-state'>No guidance.</div>") + "</div></div>" +
+        sectionHeading("最近已评审更新", update ? update.id : "—") + "<div class='framed'><ul class='reviewed-list'>" + updateHtml + "</ul></div>" +
+        "<div class='section-rule'>" + sectionHeading("下一步焦点", options.length + " 个选项") + "<div class='framed'>" + (focusHtml || "<div class='empty-state'>暂无建议。</div>") + "</div></div>" +
         "<div class='section-rule'>" + requirementSnapshot() + "</div></div>" +
-        "<aside class='attention-rail'>" + sectionHeading("Attention", attention.length) + "<div class='framed'>" + attentionHtml +
-        (attention.length > 5 ? "<button class='text-btn' type='button' data-action='toggle-attention'>" + (state.attentionExpanded ? "Show top 5" : "View all") + "</button>" : "") + "</div></aside></div>";
+        "<aside class='attention-rail'>" + sectionHeading("关注事项", attention.length) + "<div class='framed'>" + attentionHtml +
+        (attention.length > 5 ? "<button class='text-btn' type='button' data-action='toggle-attention'>" + (state.attentionExpanded ? "只看前 5 项" : "查看全部") + "</button>" : "") + "</div></aside></div>";
     }
 
     function metaCell(label, value, extraClass) {
-      return "<div class='meta-cell'><span class='meta-label'>" + e(label) + "</span><span class='meta-value " + e(extraClass || "") + "'>" + e(value || "Unknown") + "</span></div>";
+      return "<div class='meta-cell'><span class='meta-label'>" + e(label) + "</span><span class='meta-value " + e(extraClass || "") + "'>" + e(value || "未知") + "</span></div>";
     }
     function sectionHeading(title, countValue) {
       return "<div class='section-heading'><h2>" + e(title) + "</h2><span class='count'>" + e(countValue) + "</span></div>";
     }
-    function optionsFor(values) {
+    function optionsFor(values, labeler) {
       return ["all"].concat(Array.from(new Set(values.filter(Boolean)))).map(function (value) {
-        return "<option value='" + e(value) + "'>" + (value === "all" ? "All" : e(humanize(value))) + "</option>";
+        return "<option value='" + e(value) + "'>" + (value === "all" ? "全部" : e((labeler || humanize)(value))) + "</option>";
       }).join("");
     }
     function requirementSnapshot() {
@@ -731,15 +758,15 @@
           (state.requirementFilters.fulfillment === "all" || requirement.fulfillmentStatus === state.requirementFilters.fulfillment);
       });
       var rows = requirements.map(function (requirement) {
-        return "<tr><td><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></td><td>" + e(humanize(requirement.type)) + "</td><td>" + status(requirement.definitionStatus) + "</td><td>" + status(requirement.fulfillmentStatus) + "</td><td>" +
+        return "<tr><td><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></td><td>" + e(requirementTypeLabel(requirement.type)) + "</td><td>" + status(requirement.definitionStatus) + "</td><td>" + status(requirement.fulfillmentStatus) + "</td><td>" +
           arr(requirement.targetReleaseIds).map(function (id) { return "<span class='mono'>" + e(entityName("release", id)) + "</span>"; }).join(", ") +
-          "</td><td>" + (requirement.moduleIds.length ? e(requirement.moduleIds.length + " · " + requirement.moduleIds.map(function (id) { return entityName("module", id); }).join(", ")) : "<span class='severity-text'>Uncovered</span>") + "</td></tr>";
+          "</td><td>" + (requirement.moduleIds.length ? e(requirement.moduleIds.length + " · " + requirement.moduleIds.map(function (id) { return entityName("module", id); }).join(", ")) : "<span class='severity-text'>未覆盖</span>") + "</td></tr>";
       }).join("");
-      return "<div class='section-heading'><h2>Requirement Snapshot</h2><div class='filter-row'>" +
-        selectControl("requirement-type", optionsFor(arr(data.requirements).map(function (r) { return r.type; })), state.requirementFilters.type, "Type") +
-        selectControl("requirement-definition", optionsFor(arr(data.requirements).map(function (r) { return r.definitionStatus; })), state.requirementFilters.definition, "Definition") +
-        selectControl("requirement-fulfillment", optionsFor(arr(data.requirements).map(function (r) { return r.fulfillmentStatus; })), state.requirementFilters.fulfillment, "Fulfillment") +
-        "</div></div><div class='table-wrap'><table><thead><tr><th>ID / Requirement</th><th>Type</th><th>Definition</th><th>Fulfillment</th><th>Target Release</th><th>Module Coverage</th></tr></thead><tbody>" + (rows || "<tr><td colspan='6'>No matching requirement.</td></tr>") + "</tbody></table></div>";
+      return "<div class='section-heading'><h2>需求快照</h2><div class='filter-row'>" +
+        selectControl("requirement-type", optionsFor(arr(data.requirements).map(function (r) { return r.type; }), requirementTypeLabel), state.requirementFilters.type, "类型") +
+        selectControl("requirement-definition", optionsFor(arr(data.requirements).map(function (r) { return r.definitionStatus; })), state.requirementFilters.definition, "定义状态") +
+        selectControl("requirement-fulfillment", optionsFor(arr(data.requirements).map(function (r) { return r.fulfillmentStatus; })), state.requirementFilters.fulfillment, "实现状态") +
+        "</div></div><div class='table-wrap'><table><thead><tr><th>ID / 需求</th><th>类型</th><th>定义状态</th><th>实现状态</th><th>目标发布</th><th>模块覆盖</th></tr></thead><tbody>" + (rows || "<tr><td colspan='6'>没有符合筛选条件的需求。</td></tr>") + "</tbody></table></div>";
     }
     function selectControl(action, options, value, label) {
       return "<label><span class='meta-label' style='position:absolute;clip:rect(0 0 0 0)'>" + e(label) + "</span><select class='filter-control' data-filter='" + e(action) + "'>" +
@@ -769,19 +796,19 @@
         });
         if (state.layerFilter !== "all" && state.layerFilter !== layer.id) return "";
         return "<section class='arch-lane' data-layer-id='" + e(layer.id) + "'><div class='lane-title'><strong>" + e(layer.name) + "</strong><span>" + e(layer.id) + "</span></div><div class='lane-modules'>" +
-          (modules.length ? modules.map(moduleNode).join("") : "<span class='cell-sub'>No visible module</span>") + "</div></section>";
+          (modules.length ? modules.map(moduleNode).join("") : "<span class='cell-sub'>没有可见模块</span>") + "</div></section>";
       }).join("");
       document.getElementById("system-content").innerHTML =
-        "<div class='toolbar'><div class='filter-row'><input class='search-control' type='search' data-filter='module-search' value='" + e(state.moduleSearch) + "' placeholder='Search ID / name' aria-label='Search ID or module name'>" +
-        selectControl("layer-filter", optionsFor(layers.map(function (layer) { return layer.id; })), state.layerFilter, "Layer") +
-        selectControl("source-filter", optionsFor(arr(data.architecture.modules).map(function (module) { return module.source.changeType; })), state.sourceFilter, "Source") +
-        selectControl("status-filter", "<option value='all'>All Status</option><option value='review'>Pending Review</option><option value='risk'>Has Risk</option><option value='gap'>Verification Gap</option><option value='passed'>Verified</option>", state.statusFilter, "Status") +
-        "<button class='clear-btn' type='button' data-action='clear-module-filters'>Clear</button></div>" +
-        "<div class='segmented' aria-label='Architecture mode'>" + ["current","target","transition"].map(function (mode) {
-          return "<button class='segment' type='button' data-architecture-mode='" + mode + "' aria-pressed='" + (state.architectureMode === mode) + "'>" + mode.toUpperCase() + "</button>";
+        "<div class='toolbar'><div class='filter-row'><input class='search-control' type='search' data-filter='module-search' value='" + e(state.moduleSearch) + "' placeholder='搜索 ID / 名称' aria-label='搜索模块 ID 或名称'>" +
+        selectControl("layer-filter", optionsFor(layers.map(function (layer) { return layer.id; })), state.layerFilter, "分层") +
+        selectControl("source-filter", optionsFor(arr(data.architecture.modules).map(function (module) { return module.source.changeType; })), state.sourceFilter, "来源") +
+        selectControl("status-filter", "<option value='all'>全部状态</option><option value='review'>待评审</option><option value='risk'>存在风险</option><option value='gap'>存在验证缺口</option><option value='passed'>已验证</option>", state.statusFilter, "状态") +
+        "<button class='clear-btn' type='button' data-action='clear-module-filters'>清除</button></div>" +
+        "<div class='segmented' aria-label='架构模式'>" + ["current","target","transition"].map(function (mode) {
+          return "<button class='segment' type='button' data-architecture-mode='" + mode + "' aria-pressed='" + (state.architectureMode === mode) + "'>" + humanize(mode) + "</button>";
         }).join("") + "</div></div>" +
-        "<div class='architecture-board' id='architecture-board'><svg class='connection-svg' id='connection-svg' aria-label='Architecture connections'></svg>" + (laneHtml || "<div class='empty-state'>No modules match the filters.</div>") + "</div>" +
-        "<div class='connection-list' aria-label='Visible connections'>" + connectionButtons + "</div>";
+        "<div class='architecture-board' id='architecture-board'><svg class='connection-svg' id='connection-svg' aria-label='架构连接'></svg>" + (laneHtml || "<div class='empty-state'>没有符合筛选条件的模块。</div>") + "</div>" +
+        "<div class='connection-list' aria-label='当前可见连接'>" + connectionButtons + "</div>";
       window.requestAnimationFrame(drawConnections);
       bindNodeHover();
     }
@@ -818,15 +845,15 @@
       if (module.architectureScope === "current" || module.source.changeType === "removed") classes.push("is-deprecating");
       if (module.architectureScope === "target" || module.source.changeType === "added") classes.push("is-adding");
       var flags = "";
-      if (pendingReview(module)) flags += "<span class='flag' title='Pending review'>PR</span>";
-      if (module.riskIds.length) flags += "<span class='flag flag-risk' title='" + e(module.riskIds.length + " risks") + "'>R</span>";
-      if (moduleGap(module)) flags += "<span class='flag' title='Verification gap'>!</span>";
-      return "<button type='button' class='" + classes.join(" ") + "' data-module-id='" + e(module.id) + "'><div class='module-head'><div><div class='module-name'>" + e(module.name) + "</div><span class='source-tag'>" + e(module.source.changeType) + " · " + e(module.source.origin) + "</span></div><div class='module-flags'>" + flags + "</div></div>" +
+      if (pendingReview(module)) flags += "<span class='flag' title='待评审'>评</span>";
+      if (module.riskIds.length) flags += "<span class='flag flag-risk' title='" + e(module.riskIds.length + " 个风险") + "'>险</span>";
+      if (moduleGap(module)) flags += "<span class='flag' title='验证缺口'>!</span>";
+      return "<button type='button' class='" + classes.join(" ") + "' data-module-id='" + e(module.id) + "'><div class='module-head'><div><div class='module-name'>" + e(module.name) + "</div><span class='source-tag'>" + e(humanize(module.source.changeType)) + " · " + e(humanize(module.source.origin)) + "</span></div><div class='module-flags'>" + flags + "</div></div>" +
         "<div class='module-status-grid'>" +
-        moduleStatusRow("Design", module.status.designMaturity) +
-        moduleStatusRow("Implementation", module.status.implementationMaturity) +
-        moduleStatusRow("Verification", module.status.verificationStatus) +
-        moduleStatusRow("Runtime", module.status.runtimeStatus) + "</div>" +
+        moduleStatusRow("设计", module.status.designMaturity) +
+        moduleStatusRow("实现", module.status.implementationMaturity) +
+        moduleStatusRow("验证", module.status.verificationStatus) +
+        moduleStatusRow("运行时", module.status.runtimeStatus) + "</div>" +
         (state.architectureMode === "transition" && transition ? "<div class='module-transition-note'>" + e(humanize(transition.state)) + " · " + e(transition.summary) + "</div>" : "") + "</button>";
     }
     function moduleStatusRow(label, value) {
@@ -919,27 +946,27 @@
       var references = Array.from(referenceIds).map(function (id) { return byId("reference", id); }).filter(Boolean);
       var deployments = deploymentForModule(module.id);
       document.getElementById("drawer-body").innerHTML =
-        drawerSection("Why it exists", "<p><strong>Purpose — </strong>" + e(module.purpose) + "</p><p><strong>Rationale — </strong>" + e(module.rationale) + "</p>") +
-        drawerSection("Current / Target Design", designCompare(module.currentDesign, module.targetDesign)) +
+        drawerSection("存在原因", "<p><strong>用途 — </strong>" + e(module.purpose) + "</p><p><strong>设计理由 — </strong>" + e(module.rationale) + "</p>") +
+        drawerSection("当前 / 目标设计", designCompare(module.currentDesign, module.targetDesign)) +
         "<div class='drawer-two-col'>" +
-          drawerSection("Responsibilities", list((module.currentDesign || module.targetDesign || {}).responsibilities)) +
-          drawerSection("Non-responsibilities", list((module.currentDesign || module.targetDesign || {}).nonResponsibilities)) +
+          drawerSection("职责", list((module.currentDesign || module.targetDesign || {}).responsibilities)) +
+          drawerSection("非职责", list((module.currentDesign || module.targetDesign || {}).nonResponsibilities)) +
         "</div>" +
-        drawerSection("Requirements", entityLinks("requirement", module.requirementIds)) +
-        drawerSection("Source / Baseline", "<dl class='key-value'><dt>Origin</dt><dd>" + e(humanize(module.source.origin)) + "</dd><dt>Change</dt><dd>" + e(humanize(module.source.changeType)) + "</dd><dt>Baseline</dt><dd>" + e(module.source.baselineId ? entityName("baseline", module.source.baselineId) : "None") + "</dd><dt>Changed Areas</dt><dd>" + e(module.source.changedAreas.join(", ") || "None") + "</dd><dt>Upgrade Impact</dt><dd>" + status(module.source.upgradeImpact) + "</dd></dl>") +
+        drawerSection("需求", entityLinks("requirement", module.requirementIds)) +
+        drawerSection("来源 / 基线", "<dl class='key-value'><dt>来源</dt><dd>" + e(humanize(module.source.origin)) + "</dd><dt>变更类型</dt><dd>" + e(humanize(module.source.changeType)) + "</dd><dt>基线</dt><dd>" + e(module.source.baselineId ? entityName("baseline", module.source.baselineId) : "无") + "</dd><dt>变更区域</dt><dd>" + e(module.source.changedAreas.join(", ") || "无") + "</dd><dt>升级影响</dt><dd>" + status(module.source.upgradeImpact) + "</dd></dl>") +
         "<div class='drawer-two-col'>" +
-          drawerSection("Decisions", drawerEntities(decisions, "decision")) +
-          drawerSection("Risks", drawerEntities(risks, "risk")) +
-          drawerSection("Acceptance", drawerEntities(acceptance, "acceptance")) +
-          drawerSection("Gates", drawerEntities(gates, "gate")) +
+          drawerSection("决策", drawerEntities(decisions, "decision")) +
+          drawerSection("风险", drawerEntities(risks, "risk")) +
+          drawerSection("验收标准", drawerEntities(acceptance, "acceptance")) +
+          drawerSection("门禁", drawerEntities(gates, "gate")) +
         "</div>" +
-        drawerSection("Work Items", drawerEntities(workItems, "work_item")) +
-        drawerSection("References", references.length ? references.map(referenceLink).join("<br>") : "<span class='cell-sub'>No linked reference.</span>") +
-        drawerSection("Code Path", "<div class='copy-row'><code class='copy-value'>" + e(module.codePath || "Not recorded") + "</code><button class='small-btn' type='button' data-copy-value='" + e(module.codePath) + "'>Copy</button></div>") +
-        drawerSection("Deployment / Resources", deployments.length ? deployments.map(function (deployment) {
+        drawerSection("工作项", drawerEntities(workItems, "work_item")) +
+        drawerSection("参考资料", references.length ? references.map(referenceLink).join("<br>") : "<span class='cell-sub'>没有关联参考资料。</span>") +
+        drawerSection("代码路径", "<div class='copy-row'><code class='copy-value'>" + e(module.codePath || "未记录") + "</code><button class='small-btn' type='button' data-copy-value='" + e(module.codePath) + "'>复制</button></div>") +
+        drawerSection("部署 / 资源", deployments.length ? deployments.map(function (deployment) {
           var moduleDeployment = arr(deployment.moduleDeployments).find(function (item) { return item.moduleId === module.id; });
-          return "<p><strong>" + e(deployment.name) + "</strong> · " + status(deployment.status) + "<br><span class='mono'>" + e(moduleDeployment ? moduleDeployment.artifactVersion : "—") + "</span> · " + e(moduleDeployment ? moduleDeployment.resourceIds.map(function (id) { return entityName("resource", id); }).join(", ") : "No artifact") + "</p>";
-        }).join("") : "<span class='cell-sub'>Not deployed.</span>");
+          return "<p><strong>" + e(deployment.name) + "</strong> · " + status(deployment.status) + "<br><span class='mono'>" + e(moduleDeployment ? moduleDeployment.artifactVersion : "—") + "</span> · " + e(moduleDeployment ? moduleDeployment.resourceIds.map(function (id) { return entityName("resource", id); }).join(", ") : "无制品") + "</p>";
+        }).join("") : "<span class='cell-sub'>尚未部署。</span>");
       openDrawer();
     }
     function renderEntityInspector(type, id) {
@@ -951,28 +978,28 @@
       var body = "";
       switch (type) {
         case "decision":
-          body = drawerSection("Decision Context", "<dl class='key-value'>" + kvRow("Question", item.question) + kvRow("Trigger", item.trigger) + kvRow("Context", item.context) + kvRow("Impact", humanize(item.impactLevel)) + kvRow("Required By", item.requiredBy || "—") + kvRow("Status", humanize(item.status)) + "</dl>") +
-            drawerSection("Related", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds)) +
-            drawerSection("Options", arr(item.options).map(function (option) { return "<div class='inspector-pane'><h4>" + e(option.title) + (option.id === item.recommendedOptionId ? " · Recommended" : "") + (option.id === item.selectedOptionId ? " · Selected" : "") + "</h4><p>" + e(option.summary) + "</p><strong>Benefits</strong>" + list(option.benefits) + "<strong>Drawbacks</strong>" + list(option.drawbacks) + "<strong>Impacts</strong>" + list(option.impacts) + "<strong>Risks</strong>" + list(option.risks) + "<p>Reversibility: " + e(humanize(option.reversibility)) + " · Cost: " + e(humanize(option.estimatedCost)) + "</p></div>"; }).join("") + "<p><strong>Selection rationale:</strong> " + e(item.selectionRationale || "—") + "</p>") +
-            drawerSection("Review / References", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.referenceIds));
+          body = drawerSection("决策上下文", "<dl class='key-value'>" + kvRow("问题", item.question) + kvRow("触发原因", item.trigger) + kvRow("背景", item.context) + kvRow("影响级别", humanize(item.impactLevel)) + kvRow("要求完成时间", item.requiredBy || "—") + kvRow("状态", humanize(item.status)) + "</dl>") +
+            drawerSection("关联实体", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds)) +
+            drawerSection("选项", arr(item.options).map(function (option) { return "<div class='inspector-pane'><h4>" + e(option.title) + (option.id === item.recommendedOptionId ? " · 推荐" : "") + (option.id === item.selectedOptionId ? " · 已选择" : "") + "</h4><p>" + e(option.summary) + "</p><strong>收益</strong>" + list(option.benefits) + "<strong>缺点</strong>" + list(option.drawbacks) + "<strong>影响</strong>" + list(option.impacts) + "<strong>风险</strong>" + list(option.risks) + "<p>可逆性：" + e(humanize(option.reversibility)) + " · 成本：" + e(humanize(option.estimatedCost)) + "</p></div>"; }).join("") + "<p><strong>选择理由：</strong> " + e(item.selectionRationale || "—") + "</p>") +
+            drawerSection("评审 / 参考资料", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.referenceIds));
           break;
         case "acceptance":
-          body = drawerSection("Acceptance", "<dl class='key-value'>" + kvRow("Scope", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("Category", humanize(item.category)) + kvRow("Description", item.description) + kvRow("Expected Evidence", item.expectedEvidence) + kvRow("Defined By", humanize(item.definedBy)) + kvRow("Status", humanize(item.status)) + kvRow("Verification", humanize(item.verificationStatus)) + "</dl>") + drawerSection("Review / Evidence", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.evidenceReferenceIds));
+          body = drawerSection("验收标准", "<dl class='key-value'>" + kvRow("范围", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("类别", humanize(item.category)) + kvRow("说明", item.description) + kvRow("预期证据", item.expectedEvidence) + kvRow("定义方式", humanize(item.definedBy)) + kvRow("状态", humanize(item.status)) + kvRow("验证状态", humanize(item.verificationStatus)) + "</dl>") + drawerSection("评审 / 证据", entityLinks("review", item.reviewId ? [item.reviewId] : []) + entityLinks("reference", item.evidenceReferenceIds));
           break;
         case "gate":
-          body = drawerSection("Gate", "<dl class='key-value'>" + kvRow("Type", humanize(item.gateType)) + kvRow("Scope", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("Required", item.required ? "Yes" : "No") + kvRow("Automation", humanize(item.automation)) + kvRow("Status", humanize(item.status)) + kvRow("Last Run", dateTime(item.lastRunAt)) + kvRow("Result", item.resultSummary || item.summary) + "</dl>") + drawerSection("Acceptance / Evidence / Review", entityLinks("acceptance", item.acceptanceCriteriaIds) + entityLinks("reference", arr(item.evidenceReferenceIds).concat(arr(item.referenceIds))) + entityLinks("review", item.reviewId ? [item.reviewId] : []));
+          body = drawerSection("门禁", "<dl class='key-value'>" + kvRow("类型", humanize(item.gateType)) + kvRow("范围", humanize(item.scopeType) + " · " + entityName(item.scopeType, item.scopeId)) + kvRow("必须通过", item.required ? "是" : "否") + kvRow("自动化方式", humanize(item.automation)) + kvRow("状态", humanize(item.status)) + kvRow("最近运行", dateTime(item.lastRunAt)) + kvRow("结果", item.resultSummary || item.summary) + "</dl>") + drawerSection("验收 / 证据 / 评审", entityLinks("acceptance", item.acceptanceCriteriaIds) + entityLinks("reference", arr(item.evidenceReferenceIds).concat(arr(item.referenceIds))) + entityLinks("review", item.reviewId ? [item.reviewId] : []));
           break;
         case "risk":
-          body = drawerSection("Risk", "<dl class='key-value'>" + kvRow("Category", humanize(item.category)) + kvRow("Severity", humanize(item.severity)) + kvRow("Status", humanize(item.status)) + kvRow("Description", item.description) + kvRow("Impact", item.impact) + kvRow("Mitigation", item.mitigation) + kvRow("Source", humanize(item.source)) + "</dl>") + drawerSection("Related", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds) + entityLinks("reference", item.referenceIds));
+          body = drawerSection("风险", "<dl class='key-value'>" + kvRow("类别", humanize(item.category)) + kvRow("严重程度", humanize(item.severity)) + kvRow("状态", humanize(item.status)) + kvRow("说明", item.description) + kvRow("影响", item.impact) + kvRow("缓解措施", item.mitigation) + kvRow("来源", humanize(item.source)) + "</dl>") + drawerSection("关联实体", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds) + entityLinks("reference", item.referenceIds));
           break;
         case "connection":
-          body = drawerSection("Connection", "<dl class='key-value'>" + kvRow("From / To", entityName("module", item.fromModuleId) + " → " + entityName("module", item.toModuleId)) + kvRow("Protocol", item.protocol) + kvRow("Communication", humanize(item.communicationMode)) + kvRow("Flow", humanize(item.flowDirection)) + kvRow("Data", item.dataSummary) + kvRow("Auth", item.authSummary) + kvRow("Reliability", item.reliabilitySummary) + kvRow("Rationale", item.rationale) + "</dl>") + drawerSection("Contract / Transition", entityLinks("reference", item.contractReferenceIds) + entityLinks("transition", item.transitionId ? [item.transitionId] : []));
+          body = drawerSection("连接", "<dl class='key-value'>" + kvRow("来源 / 去向", entityName("module", item.fromModuleId) + " → " + entityName("module", item.toModuleId)) + kvRow("协议", item.protocol) + kvRow("通信方式", humanize(item.communicationMode)) + kvRow("流向", humanize(item.flowDirection)) + kvRow("数据", item.dataSummary) + kvRow("鉴权", item.authSummary) + kvRow("可靠性", item.reliabilitySummary) + kvRow("设计理由", item.rationale) + "</dl>") + drawerSection("契约 / 迁移", entityLinks("reference", item.contractReferenceIds) + entityLinks("transition", item.transitionId ? [item.transitionId] : []));
           break;
         case "reference":
-          body = drawerSection("Reference", "<dl class='key-value'>" + kvRow("Type", humanize(item.type)) + kvRow("Location Type", humanize(item.locationType)) + kvRow("Sensitive", item.sensitive ? "Yes" : "No") + kvRow("Status", humanize(item.status)) + kvRow("Notes", item.notes || "—") + "</dl><p>" + referenceLink(item) + "</p>") + drawerSection("Related Entities", arr(item.relatedEntities).map(function (ref) { return entityLinks(ref.type, [ref.id]); }).join(""));
+          body = drawerSection("参考资料", "<dl class='key-value'>" + kvRow("类型", humanize(item.type)) + kvRow("位置类型", humanize(item.locationType)) + kvRow("敏感", item.sensitive ? "是" : "否") + kvRow("状态", humanize(item.status)) + kvRow("备注", item.notes || "—") + "</dl><p>" + referenceLink(item) + "</p>") + drawerSection("关联实体", arr(item.relatedEntities).map(function (ref) { return entityLinks(ref.type, [ref.id]); }).join(""));
           break;
         default:
-          body = drawerSection("Entity", "<pre class='mono'>" + e(JSON.stringify(item, null, 2)) + "</pre>");
+          body = drawerSection("实体", "<pre class='mono'>" + e(JSON.stringify(item, null, 2)) + "</pre>");
       }
       document.getElementById("drawer-body").innerHTML = body;
       openDrawer();
@@ -984,14 +1011,14 @@
       return "<section class='drawer-section'><h3>" + e(title) + "</h3>" + body + "</section>";
     }
     function designCompare(currentDesign, targetDesign) {
-      return "<div class='design-compare'>" + designColumn("Current", currentDesign) + designColumn("Target", targetDesign) + "</div>";
+      return "<div class='design-compare'>" + designColumn("当前", currentDesign) + designColumn("目标", targetDesign) + "</div>";
     }
     function designColumn(label, design) {
-      if (!design) return "<div class='design-column'><h4>" + e(label) + "</h4><p class='cell-sub'>Not present in this architecture.</p></div>";
-      return "<div class='design-column'><h4>" + e(label) + "</h4><dl class='key-value'><dt>State</dt><dd>" + e(design.stateOwnership || "—") + "</dd><dt>Deployment</dt><dd>" + e(design.deploymentRole || "—") + "</dd><dt>Interfaces</dt><dd>" + e(arr(design.interfaceSummary).join(", ") || "—") + "</dd><dt>Technologies</dt><dd>" + e(arr(design.technologies).map(function (technology) { return technology.name; }).join(", ") || "—") + "</dd></dl></div>";
+      if (!design) return "<div class='design-column'><h4>" + e(label) + "</h4><p class='cell-sub'>此架构中不存在。</p></div>";
+      return "<div class='design-column'><h4>" + e(label) + "</h4><dl class='key-value'><dt>状态归属</dt><dd>" + e(design.stateOwnership || "—") + "</dd><dt>部署角色</dt><dd>" + e(design.deploymentRole || "—") + "</dd><dt>接口</dt><dd>" + e(arr(design.interfaceSummary).join(", ") || "—") + "</dd><dt>技术</dt><dd>" + e(arr(design.technologies).map(function (technology) { return technology.name; }).join(", ") || "—") + "</dd></dl></div>";
     }
     function drawerEntities(items, type) {
-      if (!items.length) return "<span class='cell-sub'>None</span>";
+      if (!items.length) return "<span class='cell-sub'>无</span>";
       return items.map(function (item) {
         var stateValue = item.status || item.verificationStatus || "unknown";
         return "<p><button class='entity-link' type='button' data-open-entity='" + e(item.id) + "' data-entity-type='" + e(type) + "'>" + e(item.id) + "</button><br>" + e(item.title || item.name) + " · " + status(stateValue) + "</p>";
@@ -1023,11 +1050,11 @@
       var architecture = deployment ? byId("architecture_version", deployment.architectureVersionId) : null;
       var deploymentResources = deployment ? Array.from(new Set(arr(deployment.resourceIds).concat(arr(deployment.externalResourceIds)))) : [];
       var resources = deploymentResources.map(resourceForId).filter(Boolean);
-      var modeToolbar = "<div class='toolbar'><div class='segmented' aria-label='Runtime mode'>" + [
-        ["deployment", "Deployment View"], ["resources", "Resource Pool"]
-      ].map(function (mode) { return "<button class='segment' type='button' data-runtime-mode='" + mode[0] + "' aria-pressed='" + (state.runtimeMode === mode[0]) + "'>" + mode[1] + "</button>"; }).join("") + "</div><div class='segmented' aria-label='Environment'>" + environments.map(function (environment) {
+      var modeToolbar = "<div class='toolbar'><div class='segmented' aria-label='运行时模式'>" + [
+        ["deployment", "部署视图"], ["resources", "资源池"]
+      ].map(function (mode) { return "<button class='segment' type='button' data-runtime-mode='" + mode[0] + "' aria-pressed='" + (state.runtimeMode === mode[0]) + "'>" + mode[1] + "</button>"; }).join("") + "</div><div class='segmented' aria-label='环境'>" + environments.map(function (environment) {
         var exists = arr(data.deployments).some(function (item) { return item.environment === environment; }) || arr(data.resources).some(function (item) { return item.environment === environment; });
-        return "<button class='segment' type='button' data-environment='" + environment + "' aria-pressed='" + (state.selectedEnvironment === environment) + "' " + (!exists ? "title='No deployment or resource recorded'" : "") + ">" + humanize(environment) + "</button>";
+        return "<button class='segment' type='button' data-environment='" + environment + "' aria-pressed='" + (state.selectedEnvironment === environment) + "' " + (!exists ? "title='未记录部署或资源'" : "") + ">" + humanize(environment) + "</button>";
       }).join("") + "</div></div>";
       if (state.runtimeMode === "resources") {
         renderResourcePool(modeToolbar);
@@ -1038,18 +1065,18 @@
       }
       var selectedResource = resourceForId(state.selectedResourceId);
       var moduleRows = deployment ? arr(deployment.moduleDeployments).map(function (item) {
-        return "<tr><td><button class='entity-link cell-title' type='button' data-open-entity='" + e(item.moduleId) + "' data-entity-type='module'>" + e(entityName("module", item.moduleId)) + "</button><div class='cell-sub mono'>" + e(item.artifactVersion) + "</div></td><td>" + status(item.status) + "</td><td>" + (item.endpoints.length ? item.endpoints.map(function (endpoint) { return safeAnchor(endpoint, endpoint) + " <button class='text-btn' type='button' data-copy-value='" + e(endpoint) + "'>Copy</button>"; }).join("<br>") : "—") + "</td><td>" + item.resourceIds.map(function (id) { return e(entityName("resource", id)); }).join(", ") + "</td></tr>";
+        return "<tr><td><button class='entity-link cell-title' type='button' data-open-entity='" + e(item.moduleId) + "' data-entity-type='module'>" + e(entityName("module", item.moduleId)) + "</button><div class='cell-sub mono'>" + e(item.artifactVersion) + "</div></td><td>" + status(item.status) + "</td><td>" + (item.endpoints.length ? item.endpoints.map(function (endpoint) { return safeAnchor(endpoint, endpoint) + " <button class='text-btn' type='button' data-copy-value='" + e(endpoint) + "'>复制</button>"; }).join("<br>") : "—") + "</td><td>" + item.resourceIds.map(function (id) { return e(entityName("resource", id)); }).join(", ") + "</td></tr>";
       }).join("") : "";
       var resourceRows = resources.map(function (resource) {
         return "<tr class='clickable-row " + (resource.id === state.selectedResourceId ? "selected-row" : "") + "' data-resource-id='" + e(resource.id) + "'><td><div class='cell-title'>" + e(resource.name) + "</div><div class='cell-sub mono'>" + e(resource.id) + "</div></td><td>" + e(humanize(resource.type)) + "</td><td>" + e(humanize(resource.environment)) + "</td><td>" + e(resource.provider) + "</td><td>" + e(resource.usedByModuleIds.length) + "</td></tr>";
       }).join("");
       document.getElementById("system-content").innerHTML =
-        "<div class='security-notice'><span aria-hidden='true'>△</span> Masked values remain readable in HTML source. Masking is not encryption.</div>" +
+        "<div class='security-notice'><span aria-hidden='true'>△</span> 遮罩值仍可从 HTML 源码读取；遮罩并不等于加密。</div>" +
         modeToolbar +
-        "<div class='deployment-list'>" + (environmentDeployments.length ? environmentDeployments.map(function (item) { return "<button class='deployment-chip' type='button' data-deployment-id='" + e(item.id) + "' aria-pressed='" + (deployment && item.id === deployment.id) + "'><strong>" + e(item.name) + "</strong><br>" + status(item.status) + " · <span class='mono'>" + e(item.id) + "</span></button>"; }).join("") : "<span class='cell-sub'>No deployment recorded.</span>") + "</div>" +
-        (deployment ? "<div class='runtime-header'><div><h2 style='margin:0'>" + e(deployment.name) + "</h2></div><div class='runtime-header-meta'><span>Release <strong class='mono'>" + e(release ? release.version : deployment.releaseId) + "</strong></span><span>→ Architecture <strong>" + e(architecture ? architecture.label : deployment.architectureVersionId) + "</strong></span>" + status(deployment.status) + "<span>Deployed " + e(dateTime(deployment.deployedAt)) + "</span></div></div>" : "<div class='empty-state'>No " + e(state.selectedEnvironment) + " Deployment is recorded.</div>") +
-        (deployment ? "<div class='runtime-grid'><section class='framed'><div class='runtime-flow'>Release <span>→</span> Deployment <span>→</span> Module <span class='mono'>artifactVersion</span> <span>→</span> Resource <span>→</span> Access</div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>Module / artifactVersion</th><th>Status</th><th>Endpoint</th><th>Linked Resource</th></tr></thead><tbody>" + moduleRows + "</tbody></table></div></section>" +
-        "<section class='framed'><div class='runtime-flow'>Resources <span class='count'>(" + resources.length + ")</span></div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>Resource</th><th>Type</th><th>Environment</th><th>Provider</th><th>Modules</th></tr></thead><tbody>" + resourceRows + "</tbody></table></div></section></div>" +
+        "<div class='deployment-list'>" + (environmentDeployments.length ? environmentDeployments.map(function (item) { return "<button class='deployment-chip' type='button' data-deployment-id='" + e(item.id) + "' aria-pressed='" + (deployment && item.id === deployment.id) + "'><strong>" + e(item.name) + "</strong><br>" + status(item.status) + " · <span class='mono'>" + e(item.id) + "</span></button>"; }).join("") : "<span class='cell-sub'>未记录部署。</span>") + "</div>" +
+        (deployment ? "<div class='runtime-header'><div><h2 style='margin:0'>" + e(deployment.name) + "</h2></div><div class='runtime-header-meta'><span>发布 <strong class='mono'>" + e(release ? release.version : deployment.releaseId) + "</strong></span><span>→ 架构 <strong>" + e(architecture ? architecture.label : deployment.architectureVersionId) + "</strong></span>" + status(deployment.status) + "<span>部署时间 " + e(dateTime(deployment.deployedAt)) + "</span></div></div>" : "<div class='empty-state'>" + e(humanize(state.selectedEnvironment)) + "环境未记录部署。</div>") +
+        (deployment ? "<div class='runtime-grid'><section class='framed'><div class='runtime-flow'>发布 <span>→</span> 部署 <span>→</span> 模块 <span class='mono'>artifactVersion</span> <span>→</span> 资源 <span>→</span> 访问</div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>模块 / artifactVersion</th><th>状态</th><th>端点</th><th>关联资源</th></tr></thead><tbody>" + moduleRows + "</tbody></table></div></section>" +
+        "<section class='framed'><div class='runtime-flow'>资源 <span class='count'>(" + resources.length + ")</span></div><div class='table-wrap' style='border:0;border-radius:0'><table><thead><tr><th>资源</th><th>类型</th><th>环境</th><th>提供方</th><th>模块</th></tr></thead><tbody>" + resourceRows + "</tbody></table></div></section></div>" +
         (selectedResource ? resourceInspector(selectedResource) : "") : "");
     }
     function renderResourcePool(modeToolbar) {
@@ -1064,21 +1091,21 @@
         var credentials = (resource.access || {}).credentials || { mode: "none" };
         return "<tr class='clickable-row " + (resource.id === state.selectedResourceId ? "selected-row" : "") + "' data-resource-id='" + e(resource.id) + "'><td><div class='cell-title'>" + e(resource.name) + "</div><div class='cell-sub mono'>" + e(resource.id) + "</div></td><td>" + e(humanize(resource.environment)) + "</td><td>" + e(humanize(resource.type)) + "</td><td>" + e(resource.provider || "—") + "</td><td>" + e(resource.location || "—") + "</td><td>" + status(resource.status) + "</td><td>" + e(arr(resource.usedByModuleIds).map(function (id) { return entityName("module", id); }).join(", ") || "—") + "</td><td>" + e(arr(resource.usedByDeploymentIds).map(function (id) { return entityName("deployment", id); }).join(", ") || "—") + "</td><td>" + e(humanize(credentials.mode)) + "</td></tr>";
       }).join("");
-      document.getElementById("system-content").innerHTML = "<div class='security-notice'><span aria-hidden='true'>△</span> Resource Pool never reveals External File or External Store values. Embedded values remain masked by default.</div>" + modeToolbar +
-        "<div class='toolbar'>" + selectControl("resource-environment", optionsFor(arr(data.resources).map(function (item) { return item.environment; })), filters.environment, "Environment") + selectControl("resource-type", optionsFor(arr(data.resources).map(function (item) { return item.type; })), filters.type, "Type") + selectControl("resource-status", optionsFor(arr(data.resources).map(function (item) { return item.status; })), filters.status, "Status") + "</div>" +
-        "<div class='table-wrap'><table><thead><tr><th>Resource</th><th>Environment</th><th>Type</th><th>Provider</th><th>Location</th><th>Status</th><th>Used By Modules</th><th>Deployments</th><th>Credential</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
-        (state.selectedResourceId ? resourceInspector(resourceForId(state.selectedResourceId)) : "<div class='empty-state'>No resources match the filters.</div>");
+      document.getElementById("system-content").innerHTML = "<div class='security-notice'><span aria-hidden='true'>△</span> 资源池不会显示外部文件或外部存储的密钥值；内嵌值默认保持遮罩。</div>" + modeToolbar +
+        "<div class='toolbar'>" + selectControl("resource-environment", optionsFor(arr(data.resources).map(function (item) { return item.environment; })), filters.environment, "环境") + selectControl("resource-type", optionsFor(arr(data.resources).map(function (item) { return item.type; })), filters.type, "类型") + selectControl("resource-status", optionsFor(arr(data.resources).map(function (item) { return item.status; })), filters.status, "状态") + "</div>" +
+        "<div class='table-wrap'><table><thead><tr><th>资源</th><th>环境</th><th>类型</th><th>提供方</th><th>位置</th><th>状态</th><th>使用模块</th><th>部署</th><th>凭据</th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+        (state.selectedResourceId ? resourceInspector(resourceForId(state.selectedResourceId)) : "<div class='empty-state'>没有符合筛选条件的资源。</div>");
     }
     function resourceInspector(resource) {
       var access = resource.access || {};
       return "<section class='resource-inspector'><div class='inspector-head'><h2>" + e(resource.name) + "</h2><span class='mono'>" + e(resource.id) + "</span></div><div class='inspector-grid'>" +
-        "<div class='inspector-pane'><h3>Overview</h3><dl class='key-value'><dt>Type</dt><dd>" + e(humanize(resource.type)) + "</dd><dt>Environment</dt><dd>" + e(humanize(resource.environment)) + "</dd><dt>Provider</dt><dd>" + e(resource.provider || "—") + "</dd><dt>Status</dt><dd>" + status(resource.status) + "</dd><dt>Location</dt><dd>" + e(resource.location || "—") + "</dd></dl></div>" +
-        "<div class='inspector-pane'><h3>Access</h3><dl class='key-value'><dt>URL</dt><dd>" + copyable(access.url) + "</dd><dt>Host</dt><dd>" + copyable(access.host) + "</dd><dt>Port</dt><dd>" + copyable(access.port) + "</dd><dt>Database</dt><dd>" + copyable(access.database) + "</dd><dt>Instructions</dt><dd>" + e(access.instructions || "—") + "</dd></dl><h3 style='margin-top:16px'>Dependents</h3>" + entityLinks("module", resource.usedByModuleIds) + "</div>" +
-        "<div class='inspector-pane'><h3>Credentials</h3>" + credentialView(resource) + "</div></div></section>";
+        "<div class='inspector-pane'><h3>概览</h3><dl class='key-value'><dt>类型</dt><dd>" + e(humanize(resource.type)) + "</dd><dt>环境</dt><dd>" + e(humanize(resource.environment)) + "</dd><dt>提供方</dt><dd>" + e(resource.provider || "—") + "</dd><dt>状态</dt><dd>" + status(resource.status) + "</dd><dt>位置</dt><dd>" + e(resource.location || "—") + "</dd></dl></div>" +
+        "<div class='inspector-pane'><h3>访问方式</h3><dl class='key-value'><dt>URL</dt><dd>" + copyable(access.url) + "</dd><dt>主机</dt><dd>" + copyable(access.host) + "</dd><dt>端口</dt><dd>" + copyable(access.port) + "</dd><dt>数据库</dt><dd>" + copyable(access.database) + "</dd><dt>说明</dt><dd>" + e(access.instructions || "—") + "</dd></dl><h3 style='margin-top:16px'>依赖方</h3>" + entityLinks("module", resource.usedByModuleIds) + "</div>" +
+        "<div class='inspector-pane'><h3>凭据</h3>" + credentialView(resource) + "</div></div></section>";
     }
     function copyable(value) {
       if (value === null || value === undefined || value === "") return "—";
-      return "<span class='mono'>" + e(value) + "</span> <button class='text-btn' type='button' data-copy-value='" + e(value) + "'>Copy</button>";
+      return "<span class='mono'>" + e(value) + "</span> <button class='text-btn' type='button' data-copy-value='" + e(value) + "'>复制</button>";
     }
     function credentialView(resource) {
       var credentials = resource.access.credentials || { mode: "none" };
@@ -1086,23 +1113,23 @@
         var rows = Object.keys(credentials.fields || {}).map(function (field) {
           var revealKey = resource.id + ":" + field;
           var revealed = Boolean(state.revealedSecrets[revealKey]);
-          return "<div class='credential-row'><span class='credential-label'>" + e(field) + "</span><span class='credential-value'>" + e(revealed ? credentials.fields[field] : "••••••••") + "</span><span><button class='small-btn' type='button' data-reveal-resource='" + e(resource.id) + "' data-reveal-field='" + e(field) + "'>" + (revealed ? "Hide" : "Reveal") + "</button> <button class='small-btn' type='button' data-copy-secret-resource='" + e(resource.id) + "' data-copy-secret-field='" + e(field) + "'>Copy</button></span></div>";
+          return "<div class='credential-row'><span class='credential-label'>" + e(field) + "</span><span class='credential-value'>" + e(revealed ? credentials.fields[field] : "••••••••") + "</span><span><button class='small-btn' type='button' data-reveal-resource='" + e(resource.id) + "' data-reveal-field='" + e(field) + "'>" + (revealed ? "隐藏" : "显示") + "</button> <button class='small-btn' type='button' data-copy-secret-resource='" + e(resource.id) + "' data-copy-secret-field='" + e(field) + "'>复制</button></span></div>";
         }).join("");
-        return "<div class='credential-block'><div class='credential-title'>Embedded · sensitive</div>" + rows + "</div>";
+        return "<div class='credential-block'><div class='credential-title'>内嵌 · 敏感</div>" + rows + "</div>";
       }
       if (credentials.mode === "external_file") {
-        return "<div class='credential-block'><div class='credential-title'>External File · no secret value embedded</div><div class='credential-row'><span class='credential-label'>Path</span><span class='credential-value'>" + e(credentials.path) + "</span><button class='small-btn' type='button' data-copy-value='" + e(credentials.path) + "'>Copy</button></div><div class='credential-row'><span class='credential-label'>Keys</span><span class='credential-value'>" + e(credentials.keys.join(", ")) + "</span><span></span></div></div>";
+        return "<div class='credential-block'><div class='credential-title'>外部文件 · 未内嵌密钥值</div><div class='credential-row'><span class='credential-label'>路径</span><span class='credential-value'>" + e(credentials.path) + "</span><button class='small-btn' type='button' data-copy-value='" + e(credentials.path) + "'>复制</button></div><div class='credential-row'><span class='credential-label'>键名</span><span class='credential-value'>" + e(credentials.keys.join(", ")) + "</span><span></span></div></div>";
       }
       if (credentials.mode === "external_store") {
-        return "<div class='credential-block'><div class='credential-title'>External Store · reference only</div><div class='credential-row'><span class='credential-label'>Provider</span><span class='credential-value'>" + e(credentials.provider) + "</span><span></span></div><div class='credential-row'><span class='credential-label'>Reference</span><span class='credential-value'>" + e(credentials.reference) + "</span><button class='small-btn' type='button' data-copy-value='" + e(credentials.reference) + "'>Copy</button></div><div class='credential-row'><span class='credential-label'>Keys</span><span class='credential-value'>" + e(credentials.keys.join(", ")) + "</span><span></span></div></div>";
+        return "<div class='credential-block'><div class='credential-title'>外部存储 · 仅保存引用</div><div class='credential-row'><span class='credential-label'>提供方</span><span class='credential-value'>" + e(credentials.provider) + "</span><span></span></div><div class='credential-row'><span class='credential-label'>引用</span><span class='credential-value'>" + e(credentials.reference) + "</span><button class='small-btn' type='button' data-copy-value='" + e(credentials.reference) + "'>复制</button></div><div class='credential-row'><span class='credential-label'>键名</span><span class='credential-value'>" + e(credentials.keys.join(", ")) + "</span><span></span></div></div>";
       }
-      return "<div class='credential-block'><div class='credential-title'>None</div><div class='credential-row'><span class='credential-label'>Access</span><span>No credentials recorded.</span><span></span></div></div>";
+      return "<div class='credential-block'><div class='credential-title'>无</div><div class='credential-row'><span class='credential-label'>访问</span><span>未记录凭据。</span><span></span></div></div>";
     }
 
     function renderSource() {
       var baselines = arr(data.architecture.baselines);
       document.getElementById("system-content").innerHTML =
-        "<div class='view-head'><div><h1>Architecture Source</h1><p class='eyeless-summary'>Track what the project retained, modified, added, or removed relative to each architecture baseline.</p></div></div>" +
+        "<div class='view-head'><div><h1>架构来源</h1><p class='eyeless-summary'>追踪项目相对于各架构基线保留、修改、新增或移除的内容。</p></div></div>" +
         (baselines.length ? baselines.map(function (baseline) {
           var modules = arr(data.architecture.modules).filter(function (module) {
             return module.source.baselineId === baseline.id || (!module.source.baselineId && ["added","removed"].indexOf(module.source.changeType) >= 0);
@@ -1111,11 +1138,11 @@
             var group = modules.filter(function (module) { return module.source.changeType === changeType; });
             return "<section class='source-group'><h3>" + e(humanize(changeType)) + " <span class='count'>" + group.length + "</span></h3>" +
               (group.length ? group.map(function (module) {
-                return "<div class='source-module'><strong>" + e(module.name) + "</strong><div class='cell-sub mono'>" + e(module.id) + "</div><p>" + e(module.source.rationale) + "</p><p><strong>Areas:</strong> " + e(module.source.changedAreas.join(", ") || "None") + "</p><p>" + status(module.source.upgradeImpact, "Upgrade " + humanize(module.source.upgradeImpact)) + "</p></div>";
-              }).join("") : "<p class='cell-sub'>None</p>") + "</section>";
+                return "<div class='source-module'><strong>" + e(module.name) + "</strong><div class='cell-sub mono'>" + e(module.id) + "</div><p>" + e(module.source.rationale) + "</p><p><strong>变更区域：</strong> " + e(module.source.changedAreas.join(", ") || "无") + "</p><p>" + status(module.source.upgradeImpact, "升级影响：" + humanize(module.source.upgradeImpact)) + "</p></div>";
+              }).join("") : "<p class='cell-sub'>无</p>") + "</section>";
           }).join("");
-          return "<section class='source-baseline'><div class='baseline-head'><div><h2>" + e(baseline.name) + "</h2><span class='mono'>" + e(baseline.id) + " · " + e(baseline.version) + "</span></div><div><span class='meta-label'>Divergence</span>" + status(baseline.divergence) + "</div><div><span class='meta-label'>Upgrade Strategy</span><p>" + e(baseline.upgradeStrategy || "Missing") + "</p></div></div><div class='source-groups'>" + groups + "</div></section>";
-        }).join("") : "<div class='empty-state'>No architecture baseline recorded.</div>");
+          return "<section class='source-baseline'><div class='baseline-head'><div><h2>" + e(baseline.name) + "</h2><span class='mono'>" + e(baseline.id) + " · " + e(baseline.version) + "</span></div><div><span class='meta-label'>偏离程度</span>" + status(baseline.divergence) + "</div><div><span class='meta-label'>升级策略</span><p>" + e(baseline.upgradeStrategy || "缺失") + "</p></div></div><div class='source-groups'>" + groups + "</div></section>";
+        }).join("") : "<div class='empty-state'>未记录架构基线。</div>");
     }
 
     function renderEvolution() {
@@ -1125,16 +1152,16 @@
       var timelineHtml = versions.map(function (version) {
         var review = byId("review", version.reviewId);
         var delta = version.delta;
-        return "<article class='timeline-item " + (version.id === state.selectedVersionId ? "is-selected" : "") + "'><span class='timeline-date'>" + e(shortDate(version.createdAt)) + "</span><button class='timeline-btn' type='button' data-version-id='" + e(version.id) + "'><div class='version-title'><span>" + e(version.label) + "</span>" + status(version.status) + "</div><p>" + e(version.summary) + "</p><p class='cell-sub'><strong>Rationale — </strong>" + e(version.rationale) + "</p><div class='delta-line'><span class='delta-add'>+ " + delta.addedModuleIds.length + " modules</span><span class='delta-mod'>~ " + delta.modifiedModuleIds.length + " modules</span><span class='delta-remove'>− " + delta.removedModuleIds.length + " modules</span><span>Review " + e(review ? humanize(review.status) : "Missing") + "</span></div></button></article>";
+        return "<article class='timeline-item " + (version.id === state.selectedVersionId ? "is-selected" : "") + "'><span class='timeline-date'>" + e(shortDate(version.createdAt)) + "</span><button class='timeline-btn' type='button' data-version-id='" + e(version.id) + "'><div class='version-title'><span>" + e(version.label) + "</span>" + status(version.status) + "</div><p>" + e(version.summary) + "</p><p class='cell-sub'><strong>设计理由 — </strong>" + e(version.rationale) + "</p><div class='delta-line'><span class='delta-add'>+ " + delta.addedModuleIds.length + " 个模块</span><span class='delta-mod'>~ " + delta.modifiedModuleIds.length + " 个模块</span><span class='delta-remove'>− " + delta.removedModuleIds.length + " 个模块</span><span>评审 " + e(review ? humanize(review.status) : "缺失") + "</span></div></button></article>";
       }).join("");
       var stageRail = stages.map(function (stage, index) {
         return "<button class='stage-btn " + (stage.id === selectedStage.id ? "is-selected" : "") + "' type='button' data-stage-id='" + e(stage.id) + "'><span class='stage-index'>" + (index + 1) + "</span><strong>" + e(stage.name) + "</strong><span class='stage-status'>" + status(stage.status) + "</span></button>";
       }).join("");
       document.getElementById("view-evolution").innerHTML =
-        sectionHeading("Architecture Timeline", versions.length + " versions") + "<div class='timeline' style='--timeline-columns:" + versions.length + "'>" + timelineHtml + "</div>" +
-        "<div class='section-rule'>" + sectionHeading("Stage Roadmap", stages.length + " stages") + "<div class='stage-rail' style='--stage-columns:" + stages.length + "'>" + stageRail + "</div>" + stageDetail(selectedStage) + "</div>" +
-        "<div class='section-rule'>" + sectionHeading("Stage × Module Status", selectedStage.name) + stageModuleTable(selectedStage) + "</div>" +
-        "<div class='section-rule'>" + sectionHeading("Release & Deployment History", data.releases.length + " releases") + releaseHistory() + "</div>";
+        sectionHeading("架构时间线", versions.length + " 个版本") + "<div class='timeline' style='--timeline-columns:" + versions.length + "'>" + timelineHtml + "</div>" +
+        "<div class='section-rule'>" + sectionHeading("阶段路线图", stages.length + " 个阶段") + "<div class='stage-rail' style='--stage-columns:" + stages.length + "'>" + stageRail + "</div>" + stageDetail(selectedStage) + "</div>" +
+        "<div class='section-rule'>" + sectionHeading("阶段 × 模块状态", selectedStage.name) + stageModuleTable(selectedStage) + "</div>" +
+        "<div class='section-rule'>" + sectionHeading("发布与部署历史", data.releases.length + " 个发布") + releaseHistory() + "</div>";
     }
     function acceptanceNames(ids) {
       return arr(ids).map(function (id) {
@@ -1144,7 +1171,7 @@
     }
     function stageDetail(stage) {
       var blockers = arr(stage.blockerDecisionIds).map(function (id) { return entityName("decision", id); }).concat(arr(stage.blockerRiskIds).map(function (id) { return entityName("risk", id); }));
-      return "<div class='stage-detail'><div><h3>Selected Stage</h3><p><strong>" + e(stage.name) + "</strong><br>" + status(stage.status) + "</p></div><div><h3>Purpose</h3><p>" + e(stage.purpose) + "</p></div><div><h3>Current Focus</h3><p>" + e(stage.currentFocus || "No active focus.") + "</p></div><div><h3>Entry / Exit Acceptance</h3>" + list(acceptanceNames(stage.entryAcceptanceIds), "No entry criteria.") + "<div style='height:7px'></div>" + list(acceptanceNames(stage.exitAcceptanceIds), "No exit criteria.") + "</div><div><h3>Blockers / Dates</h3>" + list(blockers, "No blockers.") + "<p class='cell-sub' style='margin-top:8px'>" + e(stage.plannedStart || "—") + " → " + e(stage.plannedEnd || "—") + "</p></div></div>";
+      return "<div class='stage-detail'><div><h3>所选阶段</h3><p><strong>" + e(stage.name) + "</strong><br>" + status(stage.status) + "</p></div><div><h3>目标</h3><p>" + e(stage.purpose) + "</p></div><div><h3>当前焦点</h3><p>" + e(stage.currentFocus || "当前没有焦点。") + "</p></div><div><h3>进入 / 退出验收</h3>" + list(acceptanceNames(stage.entryAcceptanceIds), "没有进入条件。") + "<div style='height:7px'></div>" + list(acceptanceNames(stage.exitAcceptanceIds), "没有退出条件。") + "</div><div><h3>阻塞项 / 日期</h3>" + list(blockers, "没有阻塞项。") + "<p class='cell-sub' style='margin-top:8px'>" + e(stage.plannedStart || "—") + " → " + e(stage.plannedEnd || "—") + "</p></div></div>";
     }
     function stageModuleTable(stage) {
       var modules = arr(stage.moduleIds).map(function (id) { return byId("module", id); }).filter(Boolean);
@@ -1154,7 +1181,7 @@
         var blockers = arr(module.riskIds).map(function (id) { return byId("risk", id); }).filter(function (risk) { return risk && ["high","critical"].indexOf(risk.severity) >= 0 && risk.status !== "closed"; });
         return "<tr data-open-module='" + e(module.id) + "' class='clickable-row'><td><div class='cell-title'>" + e(module.name) + "</div><div class='cell-sub mono'>" + e(module.id) + "</div></td><td>" + status(module.status.designMaturity) + "</td><td>" + status(module.status.implementationMaturity) + "</td><td>" + status(module.status.verificationStatus) + "</td><td>" + status(module.status.runtimeStatus) + "</td><td>" + (activeWork ? e(activeWork.title) + "<div class='cell-sub mono'>" + e(activeWork.id) + "</div>" : "—") + "</td><td>" + (pending.length ? pending.map(function (review) { return e(review.id); }).join(", ") : "—") + "</td><td>" + (blockers.length ? "<span class='severity-text'>" + e(blockers.map(function (risk) { return risk.title; }).join(", ")) + "</span>" : "—") + "</td></tr>";
       }).join("");
-      return "<div class='table-wrap'><table><thead><tr><th>Module</th><th>Design</th><th>Implementation</th><th>Verification</th><th>Runtime</th><th>Current Work Item</th><th>Pending Review</th><th>Blocker</th></tr></thead><tbody>" + (rows || "<tr><td colspan='8'>No Module mapped to this Stage.</td></tr>") + "</tbody></table></div>";
+      return "<div class='table-wrap'><table><thead><tr><th>模块</th><th>设计</th><th>实现</th><th>验证</th><th>运行时</th><th>当前工作项</th><th>待评审</th><th>阻塞项</th></tr></thead><tbody>" + (rows || "<tr><td colspan='8'>此阶段未映射模块。</td></tr>") + "</tbody></table></div>";
     }
     function releaseHistory() {
       var rows = arr(data.releases).slice().sort(function (a,b) { return String(b.createdAt).localeCompare(String(a.createdAt)); }).map(function (release) {
@@ -1165,7 +1192,7 @@
         var resources = Array.from(new Set(deployments.flatMap(function (deployment) { return arr(deployment.resourceIds); }))).map(function (id) { return entityName("resource", id); });
         return "<tr><td><div class='cell-title'>" + e(release.version) + "</div><div class='cell-sub'>" + e(release.name) + "</div></td><td>" + e(architecture ? architecture.label : release.architectureVersionId) + "</td><td>" + e(stage ? stage.name : release.stageId) + "</td><td>" + status(release.status) + "</td><td>" + (deployments.length ? deployments.map(function (deployment) { return e(humanize(deployment.environment)) + " · " + humanize(deployment.status); }).join("<br>") : "—") + "</td><td class='mono'>" + e(artifacts.join(" · ") || "—") + "</td><td>" + e(resources.join(", ") || "—") + "</td></tr>";
       }).join("");
-      return "<div class='table-wrap'><table><thead><tr><th>Release</th><th>Architecture Version</th><th>Stage</th><th>Status</th><th>Deployment</th><th>Module artifactVersion</th><th>Resources</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
+      return "<div class='table-wrap'><table><thead><tr><th>发布</th><th>架构版本</th><th>阶段</th><th>状态</th><th>部署</th><th>模块 artifactVersion</th><th>资源</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
     }
 
     function showToast(message) {
@@ -1177,17 +1204,17 @@
     }
     function copyText(value) {
       var text = String(value == null ? "" : value);
-      if (!text) { showToast("Nothing to copy"); return; }
+      if (!text) { showToast("没有可复制的内容"); return; }
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(function () { showToast("Copied to clipboard"); }).catch(function () { fallbackCopy(text); });
+        navigator.clipboard.writeText(text).then(function () { showToast("已复制到剪贴板"); }).catch(function () { fallbackCopy(text); });
       } else fallbackCopy(text);
     }
     function fallbackCopy(text) {
       var area = document.createElement("textarea");
       area.value = text; area.setAttribute("readonly", ""); area.style.position = "fixed"; area.style.opacity = "0";
       document.body.appendChild(area); area.select();
-      try { document.execCommand("copy"); showToast("Copied to clipboard"); }
-      catch (error) { showToast("Copy unavailable"); }
+      try { document.execCommand("copy"); showToast("已复制到剪贴板"); }
+      catch (error) { showToast("当前无法复制"); }
       area.remove();
     }
 

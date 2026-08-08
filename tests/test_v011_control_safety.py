@@ -63,7 +63,7 @@ def test_approved_package_mutation_invalidates_hash(
     html = make_html(tmp_path, template_path, reference_data)
     package = signed_package(reference_data)
     package[field] = [{"op": "replace", "path": "/intent/currentFocus", "value": "x"}] if field == "operations" else deepcopy(reference_data["guidance"])
-    with pytest.raises(ApplyPatchError, match="hash"):
+    with pytest.raises(ApplyPatchError, match="Hash"):
         apply_update_package(html, package, schema_path)
 
 
@@ -122,7 +122,7 @@ def test_unsafe_json_read_is_explicit(reference_path, reference_data, capsys):
     assert read_main([str(reference_path), "--json", "--unsafe-include-secrets"]) == 0
     captured = capsys.readouterr()
     assert secret in captured.out
-    assert "WARNING: Embedded secrets are being emitted in plaintext." in captured.err
+    assert "警告：正在以明文输出内嵌凭据。" in captured.err
 
 
 def test_validator_json_output_is_structured(reference_path, capsys):

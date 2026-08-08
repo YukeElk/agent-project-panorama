@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from panorama_cli import ChineseArgumentParser
 from panorama_io import (
     PanoramaIOError,
     atomic_write,
@@ -53,7 +54,7 @@ def proposal_semantics(package: dict[str, Any]) -> dict[str, Any]:
     """Return the exact stable semantics covered by user approval."""
 
     if not isinstance(package, dict):
-        raise ApplyPatchError("Update package must be a JSON object.")
+        raise ApplyPatchError("更新包必须是 JSON 对象。")
     defaults: dict[str, Any] = {
         "operations": [],
         "changeRecords": [],
@@ -86,32 +87,32 @@ def validate_package_approval(package: dict[str, Any]) -> None:
     actual_hash = compute_proposal_hash(package)
     if not isinstance(proposal_hash, str) or proposal_hash != actual_hash:
         raise ApplyPatchError(
-            "Proposal hash is missing or does not match the current update package."
+            "Proposal Hash 缺失，或与当前更新包不匹配。"
         )
     approval = package.get("approval")
     if not isinstance(approval, dict) or approval.get("status") != "approved":
-        raise ApplyPatchError("Package approval.status must be 'approved'.")
+        raise ApplyPatchError("更新包 approval.status 必须为 'approved'。")
     if approval.get("proposalHash") != actual_hash:
-        raise ApplyPatchError("Package approval hash does not match the proposal hash.")
+        raise ApplyPatchError("更新包的批准 Hash 与 Proposal Hash 不一致。")
     if not str(approval.get("approvedBy", "")).strip():
-        raise ApplyPatchError("Package approval.approvedBy is required.")
+        raise ApplyPatchError("更新包必须填写 approval.approvedBy。")
     if not str(approval.get("approvedAt", "")).strip():
-        raise ApplyPatchError("Package approval.approvedAt is required.")
+        raise ApplyPatchError("更新包必须填写 approval.approvedAt。")
 
     review = package.get("reviewDraft")
     batch = package.get("updateBatchDraft")
     if batch not in (None, {}):
         if not isinstance(review, dict) or not review.get("id"):
             raise ApplyPatchError(
-                "An applied Update Batch requires an approved reviewDraft."
+                "应用 Update Batch 前必须提供已批准的 reviewDraft。"
             )
         if review.get("status") not in {"approved", "waived"}:
             raise ApplyPatchError(
-                "reviewDraft.status must be approved or waived before Apply."
+                "Apply 前 reviewDraft.status 必须为 approved 或 waived。"
             )
         if batch.get("reviewId") != review.get("id"):
             raise ApplyPatchError(
-                "updateBatchDraft.reviewId must match reviewDraft.id."
+                "updateBatchDraft.reviewId 必须与 reviewDraft.id 一致。"
             )
         for change in package.get("changeRecords", []):
             if isinstance(change, dict) and change.get("reviewId") not in {
@@ -119,7 +120,7 @@ def validate_package_approval(package: dict[str, Any]) -> None:
                 review.get("id"),
             }:
                 raise ApplyPatchError(
-                    "A Change reviewId must match the package reviewDraft.id."
+                    "Change 的 reviewId 必须与更新包 reviewDraft.id 一致。"
                 )
 
 
@@ -132,7 +133,7 @@ def _timestamp() -> str:
 def _pointer_parts(pointer: str) -> list[str]:
     if not isinstance(pointer, str) or not pointer.startswith("/"):
         raise PatchOperationError(
-            f"JSON Pointer must start with '/'; got {pointer!r}."
+            f"JSON Pointer 必须以 '/' 开头；实际为 {pointer!r}。"
         )
     if pointer == "/":
         return [""]
@@ -145,11 +146,11 @@ def _list_index(token: str, length: int, *, allow_end: bool = False) -> int:
     try:
         index = int(token)
     except (TypeError, ValueError) as exc:
-        raise PatchOperationError(f"Invalid array index {token!r}.") from exc
+        raise PatchOperationError(f"无效的数组索引 {token!r}。") from exc
     maximum = length if allow_end else length - 1
     if index < 0 or index > maximum:
         raise PatchOperationError(
-            f"Array index {index} is out of range for length {length}."
+            f"数组索引 {index} 超出长度为 {length} 的有效范围。"
         )
     return index
 
@@ -157,20 +158,20 @@ def _list_index(token: str, length: int, *, allow_end: bool = False) -> int:
 def _parent(document: Any, pointer: str) -> tuple[Any, str]:
     parts = _pointer_parts(pointer)
     if not parts:
-        raise PatchOperationError("Root-level patch operations are not supported.")
+        raise PatchOperationError("不支持对根对象执行 Patch 操作。")
     current = document
     for part in parts[:-1]:
         if isinstance(current, dict):
             if part not in current:
                 raise PatchOperationError(
-                    f"JSON Pointer parent does not exist: {pointer!r}."
+                    f"JSON Pointer 的父路径不存在：{pointer!r}。"
                 )
             current = current[part]
         elif isinstance(current, list):
             current = current[_list_index(part, len(current))]
         else:
             raise PatchOperationError(
-                f"JSON Pointer traverses a scalar value: {pointer!r}."
+                f"JSON Pointer 穿越了标量值：{pointer!r}。"
             )
     return current, parts[-1]
 
@@ -181,38 +182,38 @@ def apply_operations(
     """Apply minimal add/replace/remove operations to a deep copy."""
 
     if not isinstance(document, dict):
-        raise PatchOperationError("Panorama data must be a JSON object.")
+        raise PatchOperationError("Panorama 数据必须是 JSON 对象。")
     if not isinstance(operations, list):
-        raise PatchOperationError("operations must be an array.")
+        raise PatchOperationError("operations 必须是数组。")
     result = copy.deepcopy(document)
     for index, operation in enumerate(operations):
         if not isinstance(operation, dict):
-            raise PatchOperationError(f"Operation {index} must be an object.")
+            raise PatchOperationError(f"操作 {index} 必须是对象。")
         op = operation.get("op")
         pointer = operation.get("path")
         if op not in {"add", "replace", "remove"}:
             raise PatchOperationError(
-                f"Operation {index} uses unsupported op {op!r}."
+                f"操作 {index} 使用了不支持的 op {op!r}。"
             )
         parent, token = _parent(result, pointer)
         if isinstance(parent, dict):
             if op in {"replace", "remove"} and token not in parent:
                 raise PatchOperationError(
-                    f"Operation {index} target does not exist: {pointer!r}."
+                    f"操作 {index} 的目标不存在：{pointer!r}。"
                 )
             if op == "remove":
                 del parent[token]
             else:
                 if "value" not in operation:
                     raise PatchOperationError(
-                        f"Operation {index} requires a value."
+                        f"操作 {index} 必须提供 value。"
                     )
                 parent[token] = copy.deepcopy(operation["value"])
         elif isinstance(parent, list):
             if op == "add":
                 if "value" not in operation:
                     raise PatchOperationError(
-                        f"Operation {index} requires a value."
+                        f"操作 {index} 必须提供 value。"
                     )
                 parent.insert(
                     _list_index(token, len(parent), allow_end=True),
@@ -225,12 +226,12 @@ def apply_operations(
                 else:
                     if "value" not in operation:
                         raise PatchOperationError(
-                            f"Operation {index} requires a value."
+                            f"操作 {index} 必须提供 value。"
                         )
                     parent[array_index] = copy.deepcopy(operation["value"])
         else:
             raise PatchOperationError(
-                f"Operation {index} targets a scalar parent: {pointer!r}."
+                f"操作 {index} 指向了标量父节点：{pointer!r}。"
             )
     return result
 
@@ -241,7 +242,7 @@ def _append_if_present(
     if value in (None, {}):
         return
     if not isinstance(value, dict):
-        raise ApplyPatchError(f"{field_name} must be an object when present.")
+        raise ApplyPatchError(f"提供 {field_name} 时，其值必须是对象。")
     target.append(copy.deepcopy(value))
 
 
@@ -255,14 +256,14 @@ def compose_updated_data(
 
     change_records = package.get("changeRecords", [])
     if not isinstance(change_records, list):
-        raise ApplyPatchError("changeRecords must be an array.")
+        raise ApplyPatchError("changeRecords 必须是数组。")
     updated.setdefault("changes", []).extend(copy.deepcopy(change_records))
     _append_if_present(updated.setdefault("reviews", []), package.get("reviewDraft"), "reviewDraft")
 
     update_batch = package.get("updateBatchDraft")
     if update_batch not in (None, {}):
         if not isinstance(update_batch, dict):
-            raise ApplyPatchError("updateBatchDraft must be an object.")
+            raise ApplyPatchError("updateBatchDraft 必须是对象。")
         update_batch = copy.deepcopy(update_batch)
         update_batch["revisionFrom"] = base_revision
         update_batch["revisionTo"] = next_revision
@@ -273,11 +274,11 @@ def compose_updated_data(
 
     if "guidanceDraft" in package and package.get("guidanceDraft") not in (None, {}):
         if not isinstance(package["guidanceDraft"], dict):
-            raise ApplyPatchError("guidanceDraft must be an object.")
+            raise ApplyPatchError("guidanceDraft 必须是对象。")
         next_guidance = copy.deepcopy(package["guidanceDraft"])
         next_extensions = next_guidance.setdefault("extensions", {})
         if not isinstance(next_extensions, dict):
-            raise ApplyPatchError("guidanceDraft.extensions must be an object.")
+            raise ApplyPatchError("guidanceDraft.extensions 必须是对象。")
 
         historical_by_id: dict[str, dict[str, Any]] = {}
         current_guidance = current.get("guidance", {})
@@ -335,7 +336,7 @@ def _exclusive_update_lock(source: Path):
         descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError as exc:
         raise RevisionConflictError(
-            f"Another Panorama update holds lock {lock_path.name}."
+            f"另一个 Panorama 更新正在持有锁 {lock_path.name}。"
         ) from exc
     try:
         os.close(descriptor)
@@ -353,7 +354,7 @@ def _apply_update_package_locked(
 
     source = Path(html_path)
     if not isinstance(package, dict):
-        raise ApplyPatchError("Update package must be a JSON object.")
+        raise ApplyPatchError("更新包必须是 JSON 对象。")
     validate_package_approval(package)
     original_text = _read_exact(source)
     original_presentation_hash = compute_presentation_hash(original_text)
@@ -364,11 +365,11 @@ def _apply_update_package_locked(
     actual_hash = compute_data_hash(current)
     if expected_revision != actual_revision:
         raise RevisionConflictError(
-            f"Base revision mismatch: package={expected_revision!r}, current={actual_revision!r}."
+            f"Base Revision 不匹配：更新包={expected_revision!r}，当前={actual_revision!r}。"
         )
     if expected_hash != actual_hash:
         raise RevisionConflictError(
-            f"Base data hash mismatch: package={expected_hash!r}, current={actual_hash!r}."
+            f"Base Data Hash 不匹配：更新包={expected_hash!r}，当前={actual_hash!r}。"
         )
 
     # The brief requires a backup before mutation.  The original remains intact
@@ -383,7 +384,7 @@ def _apply_update_package_locked(
     )
     if report.errors:
         messages = "\n".join(issue.render() for issue in report.errors)
-        raise ApplyPatchError(f"Updated data failed validation:\n{messages}")
+        raise ApplyPatchError(f"更新后的数据校验失败：\n{messages}")
 
     file_descriptor, stage_name = tempfile.mkstemp(
         dir=source.parent,
@@ -398,23 +399,23 @@ def _apply_update_package_locked(
         staged_text = _read_exact(staged)
         if compute_presentation_hash(staged_text) != original_presentation_hash:
             raise ApplyPatchError(
-                "Presentation Layer hash changed while staging the update."
+                "更新暂存期间 Presentation Layer Hash 发生变化。"
             )
         if _read_exact(source) != original_text:
             raise RevisionConflictError(
-                "Target Panorama changed after the Base Revision/Data Hash check; "
-                "the approved package was not applied."
+                "目标 Panorama 在 Base Revision/Data Hash 检查后发生变化；"
+                "已批准更新包未被应用。"
             )
         try:
             atomic_write(source, staged_text)
             final_text = _read_exact(source)
             if final_text != staged_text:
                 raise RevisionConflictError(
-                    "Target Panorama changed during commit; the concurrent state was preserved."
+                    "目标 Panorama 在提交期间发生变化；并发状态已保留。"
                 )
             if compute_presentation_hash(final_text) != original_presentation_hash:
                 raise ApplyPatchError(
-                    "Presentation Layer hash changed after atomic write."
+                    "原子写入后 Presentation Layer Hash 发生变化。"
                 )
         except Exception:
             # Revert only our own committed bytes.  Never overwrite a state that
@@ -449,11 +450,11 @@ def build_parser() -> argparse.ArgumentParser:
         / "schema"
         / "panorama.schema.v0.1.json"
     )
-    parser = argparse.ArgumentParser(
-        description="Apply an approved revision-guarded Panorama update package."
+    parser = ChineseArgumentParser(
+        description="应用经过批准且受 Revision 保护的 Panorama 更新包。"
     )
-    parser.add_argument("html", type=Path, help="Target Panorama HTML")
-    parser.add_argument("patch", type=Path, help="Pending update package JSON")
+    parser.add_argument("html", type=Path, help="目标 Panorama HTML")
+    parser.add_argument("patch", type=Path, help="待应用更新包 JSON")
     parser.add_argument("--schema", type=Path, default=default_schema)
     return parser
 
@@ -467,18 +468,18 @@ def main(argv: list[str] | None = None) -> int:
             args.html, package, args.schema
         )
     except RevisionConflictError as exc:
-        print(f"ERROR CONFLICT: {exc}", file=sys.stderr)
+        print(f"冲突错误：{exc}", file=sys.stderr)
         return 1
     except (ApplyPatchError, PanoramaIOError, ValidationRuntimeError) as exc:
-        print(f"ERROR APPLY: {exc}", file=sys.stderr)
+        print(f"应用错误：{exc}", file=sys.stderr)
         return 1
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"ERROR FILE: {exc}", file=sys.stderr)
+        print(f"文件错误：{exc}", file=sys.stderr)
         return 2
 
-    print(f"Applied revision: {updated['meta']['revision']}")
-    print(f"Data SHA-256: {compute_data_hash(updated)}")
-    print(f"Backup: {backup}")
+    print(f"已应用修订：{updated['meta']['revision']}")
+    print(f"数据 SHA-256：{compute_data_hash(updated)}")
+    print(f"备份：{backup}")
     for warning in warnings:
         print(warning)
     return 0
