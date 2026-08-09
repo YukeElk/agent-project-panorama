@@ -21,6 +21,12 @@ def _by_path(report: dict) -> dict[str, dict]:
     return {item["path"]: item for item in report["candidates"]}
 
 
+def _implementation_by_path(report: dict) -> dict[str, dict]:
+    return {
+        item["path"]: item for item in report["repository"]["implementationRoots"]
+    }
+
+
 def test_evidence_discovery_classifies_structured_decision_test_narrative_runtime(
     tmp_path: Path,
 ):
@@ -42,6 +48,7 @@ def test_evidence_discovery_classifies_structured_decision_test_narrative_runtim
     assert candidates["README.md"]["kind"] == "narrative"
     assert candidates["deploy/docker-compose.yml"]["kind"] == "runtime"
     assert report["repository"]["sourceRoots"] == ["src"]
+    assert _implementation_by_path(report)["src"]["codeFileCount"] == 1
 
 
 def test_secret_risk_files_are_metadata_only_and_never_probed(tmp_path: Path):
@@ -111,16 +118,100 @@ def test_discovery_does_not_escape_project_root(tmp_path: Path):
     assert all(not item["path"].startswith("..") for item in report["candidates"])
 
 
-def test_discovery_excludes_eval_oracle_paths(tmp_path: Path):
-    _write(tmp_path / "README.md", "# Project")
+def test_target_project_evals_are_visible_verification_evidence(tmp_path: Path):
+    _write(tmp_path / "evals" / "model-quality.json", '{"score": 1}')
+    _write(tmp_path / "evals" / "eval_agent.py", "def evaluate(): pass")
+
+    report = discover_project_evidence(tmp_path)
+    candidates = _by_path(report)
+
+    assert candidates["evals/model-quality.json"]["kind"] == "test"
+    assert candidates["evals/eval_agent.py"]["kind"] == "test"
+    assert report["scan"]["excludedSelfOraclePaths"] == []
+
+
+def test_only_executing_skill_evals_are_excluded_as_self_oracle(tmp_path: Path):
+    _write(tmp_path / "evals" / "model-quality.json", '{"score": 1}')
+    skill_root = tmp_path / "embedded-skill"
     _write(
-        tmp_path / "evals" / "semantic" / "cases" / "case-a" / "invariants.yaml",
+        skill_root / "evals" / "semantic" / "cases" / "oracle" / "invariants.yaml",
         "must_detect: [hidden_oracle_fact]",
     )
+    _write(skill_root / "docs" / "status.json", '{"status":"visible"}')
 
-    paths = _by_path(discover_project_evidence(tmp_path))
-    assert "README.md" in paths
-    assert not any(path.startswith("evals/") for path in paths)
+    report = discover_project_evidence(tmp_path, self_skill_root=skill_root)
+    candidates = _by_path(report)
+
+    assert "evals/model-quality.json" in candidates
+    assert "embedded-skill/docs/status.json" in candidates
+    assert not any(
+        path.startswith("embedded-skill/evals/") for path in candidates
+    )
+    assert report["scan"]["excludedSelfOraclePaths"] == [
+        "embedded-skill/evals"
+    ]
+
+
+def test_nonstandard_and_utility_implementation_roots_are_detected(tmp_path: Path):
+    for relative in (
+        "engine_xyz/a.py",
+        "engine_xyz/b.py",
+        "engine_xyz/c.py",
+        "tools/indexer.py",
+        "tools/exporter.py",
+        "scripts/worker.py",
+        "scripts/cleanup.py",
+    ):
+        _write(tmp_path / relative, "pass")
+
+    roots = _implementation_by_path(discover_project_evidence(tmp_path))
+
+    assert roots["engine_xyz"]["codeFileCount"] == 3
+    assert roots["tools"]["codeFileCount"] == 2
+    assert roots["scripts"]["codeFileCount"] == 2
+    assert roots["engine_xyz"]["signals"] == ["code-density"]
+    assert roots["engine_xyz"]["samplePaths"] == [
+        "engine_xyz/a.py",
+        "engine_xyz/b.py",
+        "engine_xyz/c.py",
+    ]
+
+
+def test_root_code_is_implementation_but_test_eval_and_large_dirs_are_not(
+    tmp_path: Path,
+):
+    _write(tmp_path / "main.py", "pass")
+    _write(tmp_path / "worker.py", "pass")
+    _write(tmp_path / "config.yaml", "mode: local")
+    for relative in (
+        "tests/test_a.py",
+        "tests/test_b.py",
+        "evals/eval_agent.py",
+        "benchmark/runner.py",
+        "fixtures/fake_service.py",
+        "node_modules/package/index.js",
+        "vendor/library/core.py",
+        "build/output/generated.js",
+        "dist/bundle.js",
+        ".venv/lib/site.py",
+    ):
+        _write(tmp_path / relative, "pass")
+
+    roots = _implementation_by_path(discover_project_evidence(tmp_path))
+
+    assert roots["."]["codeFileCount"] == 2
+    assert roots["."]["signals"] == ["root-level-code", "code-density"]
+    assert not {
+        "tests",
+        "evals",
+        "benchmark",
+        "fixtures",
+        "node_modules",
+        "vendor",
+        "build",
+        "dist",
+        ".venv",
+    } & set(roots)
 
 
 def test_managed_and_legacy_panorama_markers_are_distinguished(tmp_path: Path):
@@ -148,6 +239,35 @@ def test_managed_and_legacy_panorama_markers_are_distinguished(tmp_path: Path):
     assert legacy["panoramaKind"] == "legacy"
     assert narrative_legacy["legacyPanoramaHint"] is True
     assert narrative_legacy["panoramaKind"] == "legacy"
+
+
+def test_machine_status_names_are_state_hints_without_dashboard_legacy_regression(
+    tmp_path: Path,
+):
+    _write(tmp_path / "dashboard.md", "# generated by an external status job")
+    _write(tmp_path / "system-status.md", "# Current status")
+    _write(tmp_path / "project-overview.html", "<h1>Project Overview</h1>")
+    _write(
+        tmp_path / "architecture-overview.html", "<h1>Architecture Overview</h1>"
+    )
+    _write(tmp_path / "docs" / "dashboard-design.md", "# Dashboard design")
+
+    candidates = _by_path(discover_project_evidence(tmp_path))
+    dashboard = candidates["dashboard.md"]
+    status = candidates["system-status.md"]
+    dashboard_design = candidates["docs/dashboard-design.md"]
+
+    assert dashboard["kind"] == "state"
+    assert dashboard["machineStateHint"] is True
+    assert dashboard["generatedHint"] is False
+    assert dashboard["legacyPanoramaHint"] is False
+    assert status["kind"] == "state"
+    assert status["machineStateHint"] is True
+    assert candidates["project-overview.html"]["legacyPanoramaHint"] is True
+    assert candidates["architecture-overview.html"]["legacyPanoramaHint"] is True
+    assert dashboard_design["kind"] == "narrative"
+    assert dashboard_design["machineStateHint"] is False
+    assert dashboard_design["legacyPanoramaHint"] is False
 
 
 def test_discovery_cli_emits_json_without_writing_project(
@@ -253,9 +373,12 @@ def test_production_semantic_logic_has_no_case_specific_shortcuts(project_root: 
     )
     forbidden = (
         "ai-wiki",
+        "q1-q8",
         "q7",
         "lancedb",
         "deepseek",
+        "ticktick",
+        "obsidian",
         "docs/decisions.yaml",
     )
     for path in production_files:

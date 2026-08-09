@@ -30,7 +30,6 @@ EXCLUDED_DIRECTORIES = {
     "dist",
     "build",
     "coverage",
-    "evals",
 }
 
 SOURCE_ROOT_NAMES = {
@@ -97,6 +96,30 @@ CODE_FORMATS = {
     "shell",
     "powershell",
 }
+
+VERIFICATION_DIRECTORY_NAMES = {
+    "test",
+    "tests",
+    "eval",
+    "evals",
+    "evaluation",
+    "evaluations",
+    "benchmark",
+    "benchmarks",
+    "fixture",
+    "fixtures",
+}
+
+MACHINE_STATE_STEMS = {
+    "dashboard",
+    "status",
+    "status-report",
+    "health-report",
+    "build-status",
+    "release-status",
+    "runtime-status",
+    "system-status",
+}
 # Content probing is intentionally limited to bounded HTML prefixes because
 # Managed/Legacy marker detection requires it. Other evidence stays metadata-only.
 PROBE_FORMATS = {"html"}
@@ -106,10 +129,8 @@ LEGACY_CUES = (
     "panorama",
     "overview",
     "architecture",
-    "dashboard",
     "project-guide",
     "project_guide",
-    "status dashboard",
     "project guide",
     "system overview",
 )
@@ -154,6 +175,38 @@ def _knowledge_base_hint(relative: Path) -> bool:
     )
 
 
+def _path_at_or_below(path: Path, boundary: Path) -> bool:
+    try:
+        path.resolve(strict=False).relative_to(boundary.resolve(strict=False))
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _executing_skill_root() -> Path:
+    """Resolve the installed Skill root from this production script."""
+
+    return Path(__file__).resolve(strict=True).parents[1]
+
+
+def _verification_path_or_name(relative: Path) -> bool:
+    directory_parts = {part.lower() for part in relative.parts[:-1]}
+    stem = relative.stem.lower()
+    name = relative.name.lower()
+    return bool(
+        directory_parts & VERIFICATION_DIRECTORY_NAMES
+        or stem.startswith(("test_", "eval_", "benchmark_"))
+        or stem.endswith(("_test", "_eval", "_benchmark"))
+        or ".test." in name
+        or ".spec." in name
+    )
+
+
+def _machine_state_hint(relative: Path) -> bool:
+    normalized_stem = relative.stem.lower().replace("_", "-")
+    return normalized_stem in MACHINE_STATE_STEMS
+
+
 def _read_probe(path: Path, *, limit: int = 131_072) -> str:
     """Read a bounded text prefix. Callers must exclude secret-risk paths first."""
 
@@ -169,14 +222,10 @@ def _classify(relative: Path, file_format: str) -> tuple[str, list[str]]:
     parts = {part.lower() for part in relative.parts}
     signals: list[str] = []
 
-    if (
-        "test" in parts
-        or "tests" in parts
-        or stem.startswith("test_")
-        or stem.endswith("_test")
-        or any(token in lower_path for token in ("benchmark", "acceptance", "spec"))
+    if _verification_path_or_name(relative) or any(
+        token in lower_path for token in ("acceptance", "spec")
     ):
-        signals.append("test-path-or-name")
+        signals.append("verification-path-or-name")
         return "test", signals
 
     if (
@@ -189,6 +238,10 @@ def _classify(relative: Path, file_format: str) -> tuple[str, list[str]]:
         signals.append("decision-record-name")
         return "decision", signals
 
+    if _machine_state_hint(relative):
+        signals.append("status-report-name")
+        return "state", signals
+
     if any(token in lower_path for token in ("architecture", "topology", "component-model", "system-design")):
         signals.append("architecture-name")
         return "architecture", signals
@@ -200,7 +253,10 @@ def _classify(relative: Path, file_format: str) -> tuple[str, list[str]]:
         signals.append("runtime-or-deployment-name")
         return "runtime", signals
 
-    if any(token in stem for token in ("state", "status", "registry", "snapshot", "manifest", "lock")):
+    if file_format in STRUCTURED_FORMATS and any(
+        token in stem
+        for token in ("state", "status", "registry", "snapshot", "manifest", "lock")
+    ):
         signals.append("structured-state-name")
         return "state", signals
 
@@ -247,8 +303,9 @@ def _is_candidate(relative: Path, file_format: str) -> bool:
         "go.mod",
     }:
         return True
-    return file_format in CODE_FORMATS and any(
-        token in lower_path for token in ("/test", "tests/", "benchmark", "acceptance", "spec")
+    return file_format in CODE_FORMATS and (
+        _verification_path_or_name(relative)
+        or any(token in lower_path for token in ("acceptance", "spec"))
     )
 
 
@@ -302,14 +359,131 @@ def _git(root: Path, *args: str) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def _repository_metadata(root: Path) -> dict[str, Any]:
+def _implementation_scope_paths(relative: Path) -> list[Path]:
+    if len(relative.parts) == 1:
+        return [Path(".")]
+    scopes = [Path(relative.parts[0])]
+    if len(relative.parts) >= 3:
+        scopes.append(Path(relative.parts[0]) / relative.parts[1])
+    return scopes
+
+
+def _record_implementation_metadata(
+    scopes: dict[str, dict[str, Any]], relative: Path, file_format: str
+) -> None:
+    if _verification_path_or_name(relative):
+        return
+    is_code = file_format in CODE_FORMATS
+    for scope in _implementation_scope_paths(relative):
+        key = scope.as_posix()
+        item = scopes.setdefault(
+            key,
+            {
+                "path": key,
+                "totalFileCount": 0,
+                "codePaths": set(),
+                "languages": set(),
+                "directCodeFileCount": 0,
+            },
+        )
+        item["totalFileCount"] += 1
+        if not is_code:
+            continue
+        item["codePaths"].add(relative.as_posix())
+        item["languages"].add(file_format)
+        if len(relative.parts) == len(scope.parts) + 1 or key == ".":
+            item["directCodeFileCount"] += 1
+
+
+def _qualified_implementation_root(item: dict[str, Any]) -> bool:
+    code_count = len(item["codePaths"])
+    total_count = item["totalFileCount"]
+    ratio = code_count / total_count if total_count else 0.0
+    path = item["path"]
+    if path == ".":
+        return code_count >= 2
+    if len(Path(path).parts) == 1 and path.lower() in SOURCE_ROOT_NAMES:
+        return code_count >= 1
+    return code_count >= 2 and ratio >= 0.5
+
+
+def _implementation_roots(scopes: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    qualified = {
+        path: item
+        for path, item in scopes.items()
+        if _qualified_implementation_root(item)
+    }
+    selected: list[dict[str, Any]] = []
+    top_paths = sorted(
+        (
+            path
+            for path in scopes
+            if path == "." or len(Path(path).parts) == 1
+        ),
+        key=str.lower,
+    )
+    for top_path in top_paths:
+        top_item = scopes[top_path]
+        children = sorted(
+            (
+                item
+                for path, item in qualified.items()
+                if len(Path(path).parts) == 2
+                and Path(path).parts[0] == top_path
+            ),
+            key=lambda item: item["path"].lower(),
+        )
+        if top_path not in qualified:
+            selected.extend(children)
+        elif len(children) >= 2 and top_item["directCodeFileCount"] == 0:
+            selected.extend(children)
+        else:
+            selected.append(top_item)
+
+    roots: list[dict[str, Any]] = []
+    for item in selected[:25]:
+        path = item["path"]
+        code_paths = sorted(item["codePaths"], key=str.lower)
+        code_count = len(code_paths)
+        total_count = item["totalFileCount"]
+        signals = []
+        if path == ".":
+            signals.append("root-level-code")
+        elif len(Path(path).parts) == 1 and path.lower() in SOURCE_ROOT_NAMES:
+            signals.append("conventional-source-root")
+        if code_count >= 2 and code_count / total_count >= 0.5:
+            signals.append("code-density")
+        if len(Path(path).parts) == 2:
+            signals.append("second-level-scope")
+        roots.append(
+            {
+                "path": path,
+                "codeFileCount": code_count,
+                "languages": sorted(item["languages"]),
+                "samplePaths": code_paths[:5],
+                "signals": signals,
+            }
+        )
+    return roots
+
+
+def _repository_metadata(
+    root: Path,
+    *,
+    implementation_roots: list[dict[str, Any]],
+    excluded_paths: tuple[Path, ...] = (),
+) -> dict[str, Any]:
     head = _git(root, "rev-parse", "HEAD")
     branch = _git(root, "branch", "--show-current")
     status = _git(root, "status", "--porcelain")
     top_level = []
     source_roots = []
     for entry in sorted(root.iterdir(), key=lambda item: item.name.lower()):
-        if entry.name.lower() in EXCLUDED_DIRECTORIES or not is_within_root(entry, root):
+        if (
+            entry.name.lower() in EXCLUDED_DIRECTORIES
+            or not is_within_root(entry, root)
+            or any(_path_at_or_below(entry, boundary) for boundary in excluded_paths)
+        ):
             continue
         entry_type = "directory" if entry.is_dir() else "file"
         top_level.append({"path": entry.name, "type": entry_type})
@@ -325,11 +499,15 @@ def _repository_metadata(root: Path) -> dict[str, Any]:
         },
         "topLevelEntries": top_level,
         "sourceRoots": source_roots,
+        "implementationRoots": implementation_roots,
     }
 
 
 def discover_project_evidence(
-    project_root: str | os.PathLike[str], *, max_files: int = 5_000
+    project_root: str | os.PathLike[str],
+    *,
+    max_files: int = 5_000,
+    self_skill_root: str | os.PathLike[str] | None = None,
 ) -> dict[str, Any]:
     """Return metadata for evidence candidates without modifying the project."""
 
@@ -339,17 +517,35 @@ def discover_project_evidence(
     if max_files < 1:
         raise ValueError("max_files 必须大于 0。")
 
+    skill_root = (
+        Path(self_skill_root).resolve(strict=False)
+        if self_skill_root
+        else _executing_skill_root()
+    )
+    self_oracle = (skill_root / "evals").resolve(strict=False)
+    excluded_self_oracles: tuple[Path, ...] = ()
+    if self_oracle.is_dir() and _path_at_or_below(self_oracle, root):
+        excluded_self_oracles = (self_oracle,)
+
     candidates: list[dict[str, Any]] = []
+    implementation_scopes: dict[str, dict[str, Any]] = {}
     skipped_outside = 0
     skipped_unreadable = 0
     truncated = False
 
-    for dirpath, dirnames, filenames in os.walk(root, topdown=True, followlinks=False):
+    walk_entries = () if any(_path_at_or_below(root, item) for item in excluded_self_oracles) else os.walk(
+        root, topdown=True, followlinks=False
+    )
+    for dirpath, dirnames, filenames in walk_entries:
         directory = Path(dirpath)
         safe_directories = []
         for name in sorted(dirnames):
             child = directory / name
-            if name.lower() in EXCLUDED_DIRECTORIES or child.is_symlink():
+            if (
+                name.lower() in EXCLUDED_DIRECTORIES
+                or child.is_symlink()
+                or any(_path_at_or_below(child, item) for item in excluded_self_oracles)
+            ):
                 continue
             if is_within_root(child, root):
                 safe_directories.append(name)
@@ -365,6 +561,9 @@ def discover_project_evidence(
             try:
                 relative = path.relative_to(root)
                 file_format = _format(relative)
+                _record_implementation_metadata(
+                    implementation_scopes, relative, file_format
+                )
                 if not _is_candidate(relative, file_format):
                     continue
                 stat = path.stat()
@@ -387,6 +586,7 @@ def discover_project_evidence(
 
             kind, signals = _classify(relative, file_format)
             managed, legacy, panorama_kind = _panorama_hints(relative, probe)
+            machine_state_hint = _machine_state_hint(relative)
             candidates.append(
                 {
                     "path": relative.as_posix(),
@@ -397,6 +597,7 @@ def discover_project_evidence(
                     ).isoformat(timespec="seconds").replace("+00:00", "Z"),
                     "sizeBytes": stat.st_size,
                     "generatedHint": _generated_hint(relative, probe),
+                    "machineStateHint": machine_state_hint,
                     "managedPanoramaHint": managed,
                     "legacyPanoramaHint": legacy,
                     "panoramaKind": panorama_kind,
@@ -412,8 +613,16 @@ def discover_project_evidence(
             break
 
     candidates.sort(key=lambda item: (item["kind"], item["path"].lower()))
+    implementation_roots = _implementation_roots(implementation_scopes)
+    excluded_relative_paths = [
+        item.relative_to(root).as_posix() for item in excluded_self_oracles
+    ]
     return {
-        "repository": _repository_metadata(root),
+        "repository": _repository_metadata(
+            root,
+            implementation_roots=implementation_roots,
+            excluded_paths=excluded_self_oracles,
+        ),
         "candidates": candidates,
         "scan": {
             "candidateCount": len(candidates),
@@ -421,6 +630,7 @@ def discover_project_evidence(
             "truncated": truncated,
             "skippedOutsideRoot": skipped_outside,
             "skippedUnreadable": skipped_unreadable,
+            "excludedSelfOraclePaths": excluded_relative_paths,
             "contentPolicy": "Secret-risk and knowledge-base files are metadata-only; no values are read.",
         },
     }
