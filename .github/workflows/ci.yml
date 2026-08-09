@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install jsonschema pytest
+      - run: python -m pip install jsonschema pytest PyYAML tomli
       - run: python -m pytest -q
       - run: node tests/test_url_sanitizer.js
       - run: python scripts/validate_panorama.py examples/reference-project.v0.1.json

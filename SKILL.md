@@ -1,15 +1,15 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.1.3 Single HTML，理解陌生或已有项目、发现并评估证据、输出 INIT Preview，并执行 INSPECT、PROPOSE UPDATE、APPLY UPDATE、VALIDATE 和 Renderer 升级。Use when Codex needs to model an unfamiliar project, distinguish current/target/transition and historical/runtime facts, discover evidence safely, or apply a controlled architecture-centric panorama update with approval-hash binding and Presentation Layer preservation."
+description: "操作 Agent Project Panorama V0.1–V0.1.4 Single HTML，理解陌生或已有项目、安全获取 Operational Evidence、输出并确定性物化 INIT Preview，并执行 INSPECT、PROPOSE UPDATE、APPLY UPDATE、VALIDATE 和 Renderer 升级。Use when Codex needs to model an unfamiliar project, safely distinguish project content from operational metadata, observe current verification/runtime, materialize an approved INIT Preview, or apply an architecture-centric Panorama update with approval-hash binding and Presentation Layer preservation."
 ---
 
 # Agent 项目全景
 
-将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.1.3 支持 Schema `0.1`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.1.2`。
+将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.1.4 支持 Schema `0.1`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.1.2`。
 
 ## 不变量
 
-- 保持 HTML 对用户只读；数据写入必须经过 `scripts/apply_patch.py`。
+- 保持 HTML 对用户只读；已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
 - 普通更新只能修改 `project-panorama-data` 内的 JSON payload。
 - 保留两个数据 Marker、DOM、CSS、Renderer JavaScript、未知字段与所有 `extensions`。
 - Apply 前要求用户评审并批准准确的 Proposal Hash；不得制造或推断批准。
@@ -18,7 +18,7 @@ description: "操作 Agent Project Panorama V0.1–V0.1.3 Single HTML，理解�
 - 除非用户明确批准迁移，否则保持现有凭据模式。
 - 摘要不得输出 Embedded 明文；除非用户明确要求对应敏感值，否则不得使用 `--unsafe-include-secrets`。
 - 中文仅用于显示层与用户消息；Schema Key、枚举原值、ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文。
-- 正常 Skill 调用不得读取 `evals/` 或任何 Oracle；评测资料与生产语义推理严格隔离。
+- 正常 Skill 调用不得读取 executing Skill 自身的 `evals/` 或任何 Oracle；目标项目自己的 `evals/` 可以作为 Verification Evidence，但不得作为生产实现根。
 
 ## INIT
 
@@ -32,6 +32,7 @@ description: "操作 Agent Project Panorama V0.1–V0.1.3 Single HTML，理解�
 ```text
 DISCOVER
 → CLASSIFY EVIDENCE
+→ ACQUIRE OPERATIONAL EVIDENCE
 → ASSESS FRESHNESS
 → DETECT CONFLICTS
 → MODEL PROJECT
@@ -39,7 +40,8 @@ DISCOVER
 → ASSESS GAPS / RISKS
 → GENERATE INIT PREVIEW
 → HUMAN REVIEW
-→ INIT
+→ DETERMINISTIC MATERIALIZATION
+→ INIT HTML
 ```
 
 1. 使用只读 Evidence Discovery 建立候选地图：
@@ -48,11 +50,26 @@ DISCOVER
    python scripts/discover_project_evidence.py path/to/project-root
    ```
 
-   该工具只负责 evidence discovery、格式、Git metadata、mtime、Secret 风险与 Managed/Legacy marker detection。不得读取 `.env`、私钥或其他 Secret value，不得越出 project root，不得调用网络。
-2. 主动寻找 Intent、structured state、current implementation、verification、Decision/ADR、runtime/resource 与 narrative docs。再按 Fact Class 判断 authority，至少区分 `INTENT`、`REQUIREMENT`、`CURRENT_IMPLEMENTATION`、`CURRENT_RUNTIME`、`TARGET_DESIGN`、`HISTORICAL_RATIONALE`、`VERIFICATION`、`DECISION`、`RESOURCE`、`REFERENCE`；不得使用一个全局证据 Tier 替代事实类别判断。
-3. 对关键来源执行 Source Freshness Audit，使用 current / likely_current / stale / historical / unknown。mtime 只能作为信号，Narrative Documentation cannot silently override fresher structured evidence。
-4. 主动检测 Machine vs Narrative、Runtime vs Historical Test、Decision vs Old Design、Generated Snapshot vs Current Git、Current Implementation vs Accepted Architecture、Target vs Current。Preserve Conflict，解释时间/环境/范围差异并列出 Needs Human Review；不得静默消解。
-5. 建模时执行以下不可推导规则：
+   该工具只负责 evidence discovery、Access Class、格式、Git metadata、mtime、Secret 风险与 Managed/Legacy marker detection。不得读取 `.env`、私钥、Project Content 或其他 Secret value，不得越出 project root，不得调用网络。
+2. 完整读取 [Operational Evidence Contract](docs/operational-evidence-contract.md)。只对 Discovery 标记为 `PROJECT_OPERATIONAL_METADATA` 的候选使用 bounded Inspector：
+
+   ```powershell
+   python scripts/inspect_operational_evidence.py path/to/project-root `
+     --path relative/operational-candidate.json
+   ```
+
+   保持 `PUBLIC_PROJECT_EVIDENCE`、`PROJECT_OPERATIONAL_METADATA`、`PROJECT_CONTENT`、`SECRET`、`EXTERNAL_PRIVATE_DATA` 五类边界。Project Content、Secret、外部路径与符号链接不得读取；structured Secret key 必须递归脱敏。
+3. 需要 Current Runtime / Verification 时，只执行 [Operational Evidence Contract](docs/operational-evidence-contract.md) 允许的只读观察：
+
+   ```powershell
+   python scripts/observe_project_runtime.py path/to/project-root
+   ```
+
+   只允许 Git、文件存在性、dependency availability、指定 process/scheduler name，以及项目显式声明且无网络/安装/写入的 safe test command。不得返回进程参数或测试 stdout/stderr。Historical test report 保持 `historical_test`，主动验证结果才是 `current_test`。
+4. 主动寻找 Intent、structured state、current implementation、verification、Decision/ADR、runtime/resource 与 narrative docs。再按 Fact Class 判断 authority，至少区分 `INTENT`、`REQUIREMENT`、`CURRENT_IMPLEMENTATION`、`CURRENT_RUNTIME`、`TARGET_DESIGN`、`HISTORICAL_RATIONALE`、`VERIFICATION`、`DECISION`、`RESOURCE`、`REFERENCE`；不得使用一个全局证据 Tier 替代事实类别判断。
+5. 对关键来源执行 Source Freshness Audit，使用 current / likely_current / stale / historical / unknown。mtime 只能作为信号，Narrative Documentation cannot silently override fresher structured evidence。
+6. 主动检测 Machine vs Narrative、Runtime vs Historical Test、Decision vs Old Design、Generated Snapshot vs Current Git、Current Implementation vs Accepted Architecture、Target vs Current。Preserve Conflict，解释时间/环境/范围差异并列出 Needs Human Review；不得静默消解。
+7. 建模时执行以下不可推导规则：
 
    - Historical Verification ≠ Current Runtime Availability；
    - Planned ≠ Implemented ≠ Deployed ≠ Active；
@@ -61,11 +78,11 @@ DISCOVER
    - Not Detected ≠ Absent，优先使用 unknown / not_detected / not_observed；
    - Active Contract / Configuration Intent ≠ Active Runtime；
    - Test Passed Historically ≠ Current Test Baseline Passed。
-6. Requirement 来自业务场景、用户结果、能力、约束和质量目标；不要把框架、文件、目录或测试工具直接当 Requirement。Module 是可独立解释职责、接口、状态所有权、部署边界和演进的责任单元，不得使用“一目录/一文件/一任务 = 一 Module”。
-7. 按 Current / Target / Transition 独立建模。Current 只来自 actual implementation/config/runtime 或 accepted-and-implemented structure。confirmed Target 必须有 approved Decision/ADR、reviewed architecture 或 explicit user-approved target；idea/proposal 保持 draft/proposed/pending。只有 Current 与 Target 有证据化差异时建立 Transition。
-8. 对每个 Module 独立判断 Design、Implementation、Verification、Runtime。长期项目尝试重建 2–5 个 architecture-changing versions；证据不足时写 `historical architecture incomplete`。
-9. Agent 推理只能产生 Risk Candidate / Attention Candidate。只有实际运行 Validator 返回的代码才是 Formal Finding，禁止伪造 Finding Code。
-10. 检测现有总览：有 Managed Marker 时转入 INSPECT；没有 Marker 的 Legacy/Narrative Panorama 默认 COEXIST，禁止覆盖。只有用户明确批准 Adopt Existing Presentation 才提出迁移。
+8. Requirement 来自业务场景、用户结果、能力、约束和质量目标；不要把框架、文件、目录或测试工具直接当 Requirement。Module 是可独立解释职责、接口、状态所有权、部署边界和演进的责任单元，不得使用“一目录/一文件/一任务 = 一 Module”。
+9. 按 Current / Target / Transition 独立建模。Current 只来自 actual implementation/config/runtime 或 accepted-and-implemented structure。confirmed Target 必须有 approved Decision/ADR、reviewed architecture 或 explicit user-approved target；idea/proposal 保持 draft/proposed/pending。只有 Current 与 Target 有证据化差异时建立 Transition。
+10. 对每个 Module 独立判断 Design、Implementation、Verification、Runtime。长期项目尝试重建 2–5 个 architecture-changing versions；证据不足时写 `historical architecture incomplete`。
+11. Agent 推理只能产生 Risk Candidate / Attention Candidate。只有实际运行 Validator 返回的代码才是 Formal Finding，禁止伪造 Finding Code。
+12. 检测现有总览：有 Managed Marker 时转入 INSPECT；没有 Marker 的 Legacy/Narrative Panorama 默认 COEXIST，禁止覆盖。只有用户明确批准 Adopt Existing Presentation 才提出迁移。
 
 ### INIT Preview Gate
 
@@ -73,7 +90,17 @@ DISCOVER
 
 Next Focus 基于 Stage、blocker、exit criteria、Formal Findings、Risk Candidates、verification 与 transition，提供 2–3 个包含 Why now、Benefits、Risks、Impact、Prerequisites、Expected outcome 的方案并推荐一个。
 
-输出 Preview 后停止。用户明确批准 INIT Preview 后，才允许生成 JSON、生成 HTML、VALIDATE 与 INSPECT。
+输出 Preview 后停止。用户明确批准 INIT Preview 后，完整读取 [INIT Materialization Contract](docs/init-materialization-contract.md)，将 Preview、Source Snapshot、Evidence Provenance、语义 Change Intent、Guidance 和真实批准动作写入 `approved-init-model.v0.1`。先计算并展示准确 `previewHash`；批准必须绑定该 Hash、`approvedBy`、`approvedAt` 与未变化的 Source Snapshot。
+
+批准后执行：
+
+```powershell
+python scripts/materialize_init.py approved-init-model.json `
+  --project-root path/to/project-root `
+  --output work/initial-panorama-data.json
+```
+
+Materializer 必须生成 Initial approved Review、语义 Change、Initial UpdateBatch、Finding Reconciliation、聚类 Attention 和原样 Guidance。存在 actionable High/Critical Formal Finding 时 CONTROL Attention 不得为空。Verification Evidence 已存在但未映射时使用 `PANORAMA_EVIDENCE_GAP`，没有证据时使用 `PROJECT_GAP`；blocked Transition 使用 `CONTROL_BLOCKER`。Candidate Release 不得写入 `project.currentReleaseId`。Materializer 成功并通过 Validator 后，才允许生成 HTML、VALIDATE 与 INSPECT。
 
 ### 新建极简项目
 

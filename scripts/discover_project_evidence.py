@@ -120,6 +120,29 @@ MACHINE_STATE_STEMS = {
     "runtime-status",
     "system-status",
 }
+
+OPERATIONAL_PATH_SIGNALS = {
+    "system",
+    "_system",
+    "90-system",
+    "state",
+    "_state",
+    "status",
+    "registry",
+    "registries",
+    "audit",
+    "logs",
+    "reports",
+    "runtime",
+    "health",
+    "metadata",
+    "generated",
+    "tasks",
+    "approvals",
+    "retrieval",
+}
+
+OPERATIONAL_STRUCTURED_FORMATS = {"json", "jsonl", "yaml", "toml"}
 # Content probing is intentionally limited to bounded HTML prefixes because
 # Managed/Legacy marker detection requires it. Other evidence stays metadata-only.
 PROBE_FORMATS = {"html"}
@@ -205,6 +228,33 @@ def _verification_path_or_name(relative: Path) -> bool:
 def _machine_state_hint(relative: Path) -> bool:
     normalized_stem = relative.stem.lower().replace("_", "-")
     return normalized_stem in MACHINE_STATE_STEMS
+
+
+def _operational_metadata_hint(relative: Path, file_format: str) -> bool:
+    """Require both a semantic/path signal and a safely inspectable format."""
+
+    raw_parts = {part.lower() for part in relative.parts[:-1]}
+    normalized_parts = {part.replace("_", "-") for part in raw_parts}
+    parts = raw_parts | normalized_parts
+    path_signal = bool(parts & OPERATIONAL_PATH_SIGNALS)
+    machine_signal = _machine_state_hint(relative)
+    if file_format in OPERATIONAL_STRUCTURED_FORMATS:
+        return path_signal or machine_signal
+    if file_format == "markdown":
+        return path_signal and machine_signal
+    return False
+
+
+def evidence_access_class(relative: Path, file_format: str) -> str:
+    """Classify discovery access without reading file contents."""
+
+    if _secret_risk(relative):
+        return "SECRET"
+    if _operational_metadata_hint(relative, file_format):
+        return "PROJECT_OPERATIONAL_METADATA"
+    if _knowledge_base_hint(relative):
+        return "PROJECT_CONTENT"
+    return "PUBLIC_PROJECT_EVIDENCE"
 
 
 def _read_probe(path: Path, *, limit: int = 131_072) -> str:
@@ -587,6 +637,7 @@ def discover_project_evidence(
             kind, signals = _classify(relative, file_format)
             managed, legacy, panorama_kind = _panorama_hints(relative, probe)
             machine_state_hint = _machine_state_hint(relative)
+            access_class = evidence_access_class(relative, file_format)
             candidates.append(
                 {
                     "path": relative.as_posix(),
@@ -598,6 +649,10 @@ def discover_project_evidence(
                     "sizeBytes": stat.st_size,
                     "generatedHint": _generated_hint(relative, probe),
                     "machineStateHint": machine_state_hint,
+                    "operationalMetadataHint": (
+                        access_class == "PROJECT_OPERATIONAL_METADATA"
+                    ),
+                    "accessClass": access_class,
                     "managedPanoramaHint": managed,
                     "legacyPanoramaHint": legacy,
                     "panoramaKind": panorama_kind,
@@ -631,7 +686,10 @@ def discover_project_evidence(
             "skippedOutsideRoot": skipped_outside,
             "skippedUnreadable": skipped_unreadable,
             "excludedSelfOraclePaths": excluded_relative_paths,
-            "contentPolicy": "Secret-risk and knowledge-base files are metadata-only; no values are read.",
+            "contentPolicy": (
+                "Secret-risk and knowledge-base project-content files are metadata-only; "
+                "qualified operational candidates require the bounded inspector before values are read."
+            ),
         },
     }
 

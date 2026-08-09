@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.1.3（Semantic Autonomy Hardening）
+# Agent Project Panorama V0.1.4（Evidence & Materialization Hardening）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.1.3 能力
+## V0.1.4 能力
 
 - 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
 - `控制台 / 系统 / 演进` 三主视图；
@@ -18,6 +18,8 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - INIT 自动校验、最小项目骨架、确定性 Proposal 工具和 GitHub Actions CI。
 - 陌生/已有项目的 Evidence Discovery、按 Fact Class 判断 Authority、Freshness Audit、Conflict Preservation 与强制 INIT Preview；
 - Legacy / Managed Panorama 检测、Current / Target / Transition 语义协议、Module 四状态和隔离的 Semantic Eval Harness。
+- 五类 Evidence Access Class、受限 Operational Metadata Inspector，以及不读取进程参数/命令输出的 Current Runtime / Verification Observation；
+- Approved INIT Preview Hash/Source Snapshot 绑定，以及 Initial Review、Change、UpdateBatch、聚类 Attention 和 Guidance 的确定性物化。
 
 页面只读。核心实体编辑、评审批准和文件写回必须通过外部更新流程完成。
 
@@ -26,9 +28,11 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - Python 3.10+
 - `jsonschema`
 - `pytest`
+- `PyYAML`
+- `tomli`（Python 3.10 的 TOML 解析兼容；Python 3.11+ 使用标准库 `tomllib`）
 
 ```powershell
-python -m pip install jsonschema pytest
+python -m pip install jsonschema pytest PyYAML tomli
 ```
 
 Renderer 不需要 Python；生成后的 HTML 可直接在桌面浏览器打开。
@@ -42,9 +46,10 @@ ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文稳定，以兼容�
 [`docs/semantic-modeling-protocol.md`](docs/semantic-modeling-protocol.md)：
 
 ```text
-DISCOVER → CLASSIFY EVIDENCE → ASSESS FRESHNESS → DETECT CONFLICTS
+DISCOVER → CLASSIFY EVIDENCE → ACQUIRE OPERATIONAL EVIDENCE
+→ ASSESS FRESHNESS → DETECT CONFLICTS
 → MODEL PROJECT → INFER CURRENT / TARGET / TRANSITION
-→ INIT PREVIEW → HUMAN REVIEW → INIT
+→ INIT PREVIEW → HUMAN REVIEW → DETERMINISTIC MATERIALIZATION → INIT HTML
 ```
 
 先运行只读 Evidence Inventory：
@@ -59,9 +64,40 @@ python scripts/discover_project_evidence.py path/to/project-root
 抽象、Module 拆分、版本重建、Current/Target/Transition、Risk Candidate 与 Next Focus 仍由 Agent
 按协议推理，并显式保留 Unknown 与来源冲突。
 
+对于 `PROJECT_OPERATIONAL_METADATA` Candidate，使用受限 Inspector；普通知识正文即使是 YAML 也不会因此变为可读：
+
+```powershell
+python scripts/inspect_operational_evidence.py path/to/project-root `
+  --path vault/90-System/tasks/registry.json
+```
+
+Current Runtime / Verification 使用只读 Observer。它只返回 Git、文件存在性、dependency availability、
+指定 process/scheduler name 与显式 safe test 的状态，不读取进程参数或测试输出，也不安装依赖、构建或联网：
+
+```powershell
+python scripts/observe_project_runtime.py path/to/project-root `
+  --dependency json `
+  --check-path reports/current-status.json
+```
+
+完整访问边界见 [`docs/operational-evidence-contract.md`](docs/operational-evidence-contract.md)。
+
 复杂项目的 INIT Preview 固定包含 Intent、Stage、Current/Target/Transition、Architecture Versions、
 Modules、Requirements、Decisions、Acceptance/Gates、Runtime/Resources、Freshness、Conflicts、Formal
 Findings、Risk Candidates、Unknown 和 2–3 个 Next Focus。用户批准 Preview 前不写 JSON 或 HTML。
+
+用户批准准确 Preview Hash 后，按 [`docs/init-materialization-contract.md`](docs/init-materialization-contract.md)
+生成 Initial Review、Change、UpdateBatch、聚类 Attention 和原样 Guidance：
+
+```powershell
+python scripts/materialize_init.py approved-init-model.json `
+  --project-root path/to/project-root `
+  --output work/initial-panorama-data.json
+```
+
+Source Snapshot 变化、批准 Hash 不匹配或 Schema/Cross-reference Error 都会阻止物化。Candidate Release
+保留为 Release 实体，但不会冒充 `project.currentReleaseId`。物化 JSON 验证通过后，再交给
+`scripts/init_panorama.py` 生成 Single HTML。
 
 `evals/semantic/` 是隔离评测 Harness，不属于生产 Skill 上下文；正常 INIT 禁止读取其中 case invariants
 或 Oracle 信息。
