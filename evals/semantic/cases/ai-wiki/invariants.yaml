@@ -1,0 +1,26 @@
+case: ai-wiki
+oracle_policy: "Invariants only; no canonical preview or project-specific answer."
+
+must_detect:
+  - legacy_panorama_exists
+  - narrative_sources_have_freshness_conflicts
+  - historical_verification_differs_from_current_runtime
+  - unresolved_or_partial_decisions_exist
+  - configuration_intent_does_not_prove_runtime
+  - current_and_target_architecture_differ
+
+must_not_claim:
+  - all_external_resources_active
+  - historical_test_pass_means_current_runtime_active
+  - legacy_panorama_is_managed_panorama
+  - all_target_components_are_current
+  - missing_runtime_detection_means_component_absent
+
+must_produce:
+  - source_freshness_audit
+  - init_preview_before_write
+  - current_architecture
+  - target_architecture
+  - transitions
+  - module_four_state_model
+  - multiple_next_focus_options

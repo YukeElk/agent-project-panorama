@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.1.2（中文 Renderer）
+# Agent Project Panorama V0.1.3（Semantic Autonomy Hardening）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.1.2 能力
+## V0.1.3 能力
 
 - 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
 - `控制台 / 系统 / 演进` 三主视图；
@@ -16,6 +16,8 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - Approval Hash、Revision/Hash、独占锁、备份、原子写入与最小 JSON Patch Apply；
 - 默认 Secret 脱敏、Git Secret Risk 与统一 URL Sanitizer；
 - INIT 自动校验、最小项目骨架、确定性 Proposal 工具和 GitHub Actions CI。
+- 陌生/已有项目的 Evidence Discovery、按 Fact Class 判断 Authority、Freshness Audit、Conflict Preservation 与强制 INIT Preview；
+- Legacy / Managed Panorama 检测、Current / Target / Transition 语义协议、Module 四状态和隔离的 Semantic Eval Harness。
 
 页面只读。核心实体编辑、评审批准和文件写回必须通过外部更新流程完成。
 
@@ -33,6 +35,36 @@ Renderer 不需要 Python；生成后的 HTML 可直接在桌面浏览器打开�
 
 用户可见界面、CLI 帮助、Validator 说明与 Skill 工作流使用简体中文。Schema Key、枚举原值、
 ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文稳定，以兼容现有数据与自动化工具。
+
+## 已有项目的 Semantic INIT
+
+已有、Legacy 或复杂项目不能直接生成正式 HTML。Skill 会完整执行
+[`docs/semantic-modeling-protocol.md`](docs/semantic-modeling-protocol.md)：
+
+```text
+DISCOVER → CLASSIFY EVIDENCE → ASSESS FRESHNESS → DETECT CONFLICTS
+→ MODEL PROJECT → INFER CURRENT / TARGET / TRANSITION
+→ INIT PREVIEW → HUMAN REVIEW → INIT
+```
+
+先运行只读 Evidence Inventory：
+
+```powershell
+python scripts/discover_project_evidence.py path/to/project-root
+```
+
+工具只发现候选、格式、Git/mtime、生成痕迹、Secret 风险和 Panorama Marker；除 Marker 检测所需
+的 bounded HTML prefix 外保持 metadata-only，不调用网络、不读取 `.env`、密钥或正式知识库正文、
+不越出 project root，也不自动判断架构。Evidence Authority、Requirement
+抽象、Module 拆分、版本重建、Current/Target/Transition、Risk Candidate 与 Next Focus 仍由 Agent
+按协议推理，并显式保留 Unknown 与来源冲突。
+
+复杂项目的 INIT Preview 固定包含 Intent、Stage、Current/Target/Transition、Architecture Versions、
+Modules、Requirements、Decisions、Acceptance/Gates、Runtime/Resources、Freshness、Conflicts、Formal
+Findings、Risk Candidates、Unknown 和 2–3 个 Next Focus。用户批准 Preview 前不写 JSON 或 HTML。
+
+`evals/semantic/` 是隔离评测 Harness，不属于生产 Skill 上下文；正常 INIT 禁止读取其中 case invariants
+或 Oracle 信息。
 
 ## 最小项目初始化
 
@@ -231,7 +263,7 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 - 原始设计基线位于 `docs/design/`；
 - 当前冻结 Schema 为 `schema/panorama.schema.v0.1.json`；
 - 建模缺口记录在 `docs/schema-findings.md`；
-- V0.1.1 没有覆盖或重构 v0.1 Schema。
+- V0.1.3 没有覆盖或重构 v0.1 Schema，Renderer 仍为 0.1.2。
 
 V0.2 的历史快照、Artifact Manifest、结构化 Replacement 和正式 Next Focus Snapshot 仅作为
 后续 Migration Proposal，本轮未执行。
