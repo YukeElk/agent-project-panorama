@@ -58,7 +58,7 @@ DISCOVER
      --path relative/operational-candidate.json
    ```
 
-   保持 `PUBLIC_PROJECT_EVIDENCE`、`PROJECT_OPERATIONAL_METADATA`、`PROJECT_CONTENT`、`SECRET`、`EXTERNAL_PRIVATE_DATA` 五类边界。Project Content、Secret、外部路径与符号链接不得读取；structured Secret key 必须递归脱敏。
+   保持 `PUBLIC_PROJECT_EVIDENCE`、`PROJECT_OPERATIONAL_METADATA`、`PROJECT_CONTENT`、`SECRET`、`EXTERNAL_PRIVATE_DATA` 五类边界。Knowledge Root 名称使用统一的 delimiter-aware terminal matcher：支持 exact 或以 `vault`、`wiki`、`knowledge`、`knowledge-base`、`kb` 结尾的分隔复合名称，禁止 substring/prefix 猜测；识别后普通内容仍保持 `PROJECT_CONTENT`。Project Content、Secret、外部路径与符号链接不得读取；structured Secret key 必须递归脱敏。
 3. 需要 Current Runtime / Verification 时，只执行 [Operational Evidence Contract](docs/operational-evidence-contract.md) 允许的只读观察：
 
    ```powershell

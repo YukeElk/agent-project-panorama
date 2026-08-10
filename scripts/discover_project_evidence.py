@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from typing import Any
@@ -44,14 +45,15 @@ SOURCE_ROOT_NAMES = {
     "client",
 }
 
-KNOWLEDGE_BASE_DIRECTORY_NAMES = {
-    "kb",
-    "knowledge",
-    "knowledge-base",
-    "knowledge_base",
-    "vault",
-    "wiki",
+KNOWLEDGE_ROOT_TERMINALS = {
+    ("kb",),
+    ("knowledge",),
+    ("knowledge", "base"),
+    ("vault",),
+    ("wiki",),
 }
+
+KNOWLEDGE_ROOT_SEPARATOR = re.compile(r"[\s_.-]+")
 
 FORMAT_BY_SUFFIX = {
     ".json": "json",
@@ -202,11 +204,19 @@ def _secret_risk(relative: Path) -> bool:
     )
 
 
-def _knowledge_base_hint(relative: Path) -> bool:
-    return bool(
-        {part.lower() for part in relative.parts[:-1]}
-        & KNOWLEDGE_BASE_DIRECTORY_NAMES
+def _knowledge_root_name(name: str) -> bool:
+    """Match exact or delimiter-joined names ending in a knowledge concept."""
+
+    normalized = KNOWLEDGE_ROOT_SEPARATOR.sub("-", name.strip().lower()).strip("-")
+    parts = tuple(part for part in normalized.split("-") if part)
+    return any(
+        len(parts) >= len(terminal) and parts[-len(terminal) :] == terminal
+        for terminal in KNOWLEDGE_ROOT_TERMINALS
     )
+
+
+def _knowledge_base_hint(relative: Path) -> bool:
+    return any(_knowledge_root_name(part) for part in relative.parts[:-1])
 
 
 def _knowledge_operational_parts(relative: Path) -> tuple[str, ...]:
@@ -216,7 +226,7 @@ def _knowledge_operational_parts(relative: Path) -> tuple[str, ...]:
     knowledge_indexes = [
         index
         for index, part in enumerate(directories)
-        if part in KNOWLEDGE_BASE_DIRECTORY_NAMES
+        if _knowledge_root_name(part)
     ]
     if not knowledge_indexes:
         return ()

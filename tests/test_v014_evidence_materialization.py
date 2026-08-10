@@ -9,7 +9,12 @@ import sys
 import pytest
 
 import materialize_init as materialize_module
-from discover_project_evidence import discover_project_evidence
+from discover_project_evidence import (
+    _knowledge_base_hint,
+    _knowledge_operational_parts,
+    _knowledge_root_name,
+    discover_project_evidence,
+)
 from inspect_operational_evidence import inspect_operational_evidence
 from materialize_init import (
     InitMaterializationError,
@@ -46,6 +51,129 @@ def _write(path: Path, text: str) -> None:
 
 def _candidate(report: dict, path: str) -> dict:
     return next(item for item in report["candidates"] if item["path"] == path)
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "vault",
+        "sandbox-vault",
+        "personal_vault",
+        "team.wiki",
+        "private-knowledge",
+        "private-knowledge-base",
+        "personal-kb",
+    ),
+)
+def test_knowledge_root_name_accepts_terminal_compounds(name: str):
+    assert _knowledge_root_name(name) is True
+
+
+@pytest.mark.parametrize(
+    "name",
+    (
+        "vault-tools",
+        "wiki-renderer",
+        "knowledge-graph",
+        "kb-client",
+        "myvault",
+        "knowledgebase-utils",
+    ),
+)
+def test_knowledge_root_name_rejects_prefixes_and_substrings(name: str):
+    assert _knowledge_root_name(name) is False
+
+
+@pytest.mark.parametrize(
+    "root_name",
+    (
+        "sandbox-vault",
+        "personal-vault",
+        "team_wiki",
+        "private-knowledge",
+        "private-knowledge-base",
+        "personal-kb",
+    ),
+)
+def test_compound_knowledge_roots_protect_ordinary_content(
+    tmp_path: Path, root_name: str
+):
+    relative = f"{root_name}/notes/private.md"
+    _write(tmp_path / relative, "private knowledge body")
+
+    candidate = _candidate(discover_project_evidence(tmp_path), relative)
+
+    assert candidate["accessClass"] == "PROJECT_CONTENT"
+    assert candidate["knowledgeBaseHint"] is True
+    assert candidate["operationalMetadataHint"] is False
+
+
+@pytest.mark.parametrize(
+    "directory_name",
+    ("vault-tools", "wiki-renderer", "knowledge-graph", "kb-client"),
+)
+def test_engineering_directories_are_not_false_positive_knowledge_roots(
+    tmp_path: Path, directory_name: str
+):
+    relative = f"{directory_name}/notes/overview.md"
+    _write(tmp_path / relative, "public engineering overview")
+
+    candidate = _candidate(discover_project_evidence(tmp_path), relative)
+
+    assert candidate["accessClass"] == "PUBLIC_PROJECT_EVIDENCE"
+    assert candidate["knowledgeBaseHint"] is False
+
+
+def test_compound_knowledge_root_preserves_operational_escape_boundary(
+    tmp_path: Path,
+):
+    payloads = {
+        "sandbox-vault/10-Captures/note.md": "private capture",
+        "sandbox-vault/.obsidian/app.json": '{"theme":"private"}',
+        "sandbox-vault/tasks/personal-tasks.json": '{"tasks":[]}',
+        "sandbox-vault/90-System/tasks/registry.json": '{"tasks":[]}',
+        "sandbox-vault/90-System/state/current.json": '{"status":"active"}',
+    }
+    for relative, payload in payloads.items():
+        _write(tmp_path / relative, payload)
+
+    discovery = discover_project_evidence(tmp_path)
+
+    for relative in (
+        "sandbox-vault/10-Captures/note.md",
+        "sandbox-vault/.obsidian/app.json",
+        "sandbox-vault/tasks/personal-tasks.json",
+    ):
+        candidate = _candidate(discovery, relative)
+        assert candidate["accessClass"] == "PROJECT_CONTENT"
+        assert candidate["operationalMetadataHint"] is False
+    for relative in (
+        "sandbox-vault/90-System/tasks/registry.json",
+        "sandbox-vault/90-System/state/current.json",
+    ):
+        candidate = _candidate(discovery, relative)
+        assert candidate["accessClass"] == "PROJECT_OPERATIONAL_METADATA"
+        assert candidate["operationalMetadataHint"] is True
+    obsidian = inspect_operational_evidence(
+        tmp_path, "sandbox-vault/.obsidian/app.json", observed_at=T2
+    )
+    assert obsidian["accessClass"] == "PROJECT_CONTENT"
+    assert obsidian["safeToRead"] is False
+    assert obsidian["facts"] == {}
+
+
+def test_compound_root_hint_and_operational_parts_share_canonical_matcher():
+    for root_name in (
+        "sandbox-vault",
+        "personal_vault",
+        "team.wiki",
+        "private-knowledge",
+        "private-knowledge-base",
+        "personal-kb",
+    ):
+        relative = Path(root_name) / "90-System" / "tasks" / "registry.json"
+        assert _knowledge_base_hint(relative) is True
+        assert _knowledge_operational_parts(relative) == ("90-system", "tasks")
 
 
 def test_discovery_and_inspector_separate_operational_metadata_from_content(

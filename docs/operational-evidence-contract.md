@@ -42,6 +42,10 @@ Discovery 为每个候选输出：
 
 Knowledge root 内的普通文件优先保持 `PROJECT_CONTENT`。只有同时存在明确 Operational System Boundary、Operational Semantic 与安全格式时，才标记为 `PROJECT_OPERATIONAL_METADATA` Candidate。
 
+Knowledge Root 名称统一通过 canonical matcher 判断：先 lowercase，再把 `_`、`.`、空格与 `-` 规范为分隔符；接受 exact canonical name，或以 `vault`、`wiki`、`knowledge`、`knowledge-base`、`kb` terminal concept 结尾的分隔复合名称。不得使用简单 substring matching，也不得维护另一套 exact-set index 判断。
+
+因此 `personal-vault`、`team_wiki`、`private-knowledge-base` 可以成为 Knowledge Root；`vault-tools`、`wiki-renderer`、`knowledge-graph`、`kb-client`、`myvault` 不能仅凭名称成为 Knowledge Root。
+
 ## 3. Operational Candidate Qualification
 
 普通工程目录中的资格判断至少需要两个独立信号：
@@ -61,6 +65,8 @@ Knowledge Root（`knowledge`、`vault`、`wiki`、`kb`）默认覆盖普通 oper
 1. 明确系统边界：`90-System`、`_system`、`system` 或 `_state`；
 2. 边界内存在 registry、state、audit、runtime、tasks、approvals 等 Operational Semantic；
 3. 使用允许的安全格式。
+
+Knowledge Root 内的 `.obsidian` 目录只构成内容/应用配置位置，不是 Operational System Boundary；其中 JSON 不得因格式或配置文件名自动升级为 Operational Metadata。本轮不读取 `.obsidian` 内容来推断 Root。
 
 固定边界示例：
 
