@@ -90,19 +90,36 @@ DISCOVER
 
 Next Focus 基于 Stage、blocker、exit criteria、Formal Findings、Risk Candidates、verification 与 transition，提供 2–3 个包含 Why now、Benefits、Risks、Impact、Prerequisites、Expected outcome 的方案并推荐一个。
 
-输出 Preview 后停止。用户明确批准 INIT Preview 后，完整读取 [INIT Materialization Contract](docs/init-materialization-contract.md)，将 Preview、Source Snapshot、Evidence Provenance、语义 Change Intent、Guidance 和真实批准动作写入 `approved-init-model.v0.1`。先计算并展示准确 `previewHash`；批准必须绑定该 Hash、`approvedBy`、`approvedAt` 与未变化的 Source Snapshot。
-
-批准后执行：
+先构造完整 `draft-init-model.v0.1`，不得留下待批准后补写的语义字段。完整读取 [INIT Materialization Contract](docs/init-materialization-contract.md)，执行 PREPARE：先运行 Schema、跨实体引用、规则和派生 Review/Change 预校验；只有全部通过后，才冻结为 `prepared-init-review.v0.1`、计算 canonical Preview SHA-256，并生成包含固定 Preview 章节与 Hash 页脚的 Markdown。
 
 ```powershell
-python scripts/materialize_init.py .panorama-work/approved-init-model.json `
+python scripts/prepare_init_review.py .panorama-work/draft-init-model.json `
+  --project-root path/to/project-root `
+  --output .panorama-work/prepared-init-review.json `
+  --preview-markdown .panorama-work/prepared-init-review.md
+```
+
+展示完整 Preview 和准确 Hash 后停止。普通“批准”或“继续”不够；用户必须显式确认 `批准 INIT Preview <EXACT-HASH>`。任何 Preview 修改都使原批准失效，必须重新 PREPARE、展示新 Hash 并重新批准。确认后使用 recorder clock 一次性写入独立 `init-approval.v0.1`；固定 `approvalMethod=explicit_hash_confirmation`、`approvalTimeSource=approval_recorder_clock`，不得覆盖已有 Approval：
+
+```powershell
+python scripts/record_init_approval.py .panorama-work/prepared-init-review.json `
+  --approved-hash <EXACT-HASH> `
+  --approved-by <USER-IDENTITY> `
+  --output .panorama-work/init-approval.json
+```
+
+仅在独立 Approval 存在后执行：
+
+```powershell
+python scripts/materialize_init.py .panorama-work/prepared-init-review.json `
+  --approval .panorama-work/init-approval.json `
   --project-root path/to/project-root `
   --output .panorama-work/initial-panorama-data.json
 ```
 
 将 Panorama 自有临时文件放入 `.panorama-work/`；Source Snapshot 对 Git 项目使用 tracked + 非忽略 untracked 文件，并排除已忽略文件、`.panorama-work/`、Panorama lock、backup HTML 与 `*.local.html`，避免 Skill 自身制造 Source Drift。
 
-Materializer 必须生成 Initial approved Review、语义 Change、Initial UpdateBatch、Finding Reconciliation、聚类 Attention 和原样 Guidance。Finding Reconciliation 必须在 provisional UpdateBatch 已存在后运行最终 Validator，并最多进行 2 次稳定化；最终 Validator Finding 必须与 stored reconciliation 一致，最终 actionable High/Critical 必须与 CONTROL Attention 一致。存在 actionable High/Critical Formal Finding 时 CONTROL Attention 不得为空。Verification Evidence 已存在但未映射时使用 `PANORAMA_EVIDENCE_GAP`，没有证据时使用 `PROJECT_GAP`；blocked Transition 使用 `CONTROL_BLOCKER`。Candidate Release 不得写入 `project.currentReleaseId`。Materializer 成功并通过 Validator 后，才允许生成 HTML、VALIDATE 与 INSPECT。
+Materializer 必须验证 `recomputed hash = prepared hash = approval hash`、Approval Method、recorder time 和未变化的 Source Snapshot；缺少独立 Approval 时失败。它生成 Initial approved Review、语义 Change、Initial UpdateBatch、Finding Reconciliation、聚类 Attention 和原样 Guidance。Review `reviewedAt` 使用 `approvalRecordedAt`，approvalBinding 保存 approvedHash、approvalMethod 与 approvalTimeSource。Finding Reconciliation 必须在 provisional UpdateBatch 已存在后运行最终 Validator，并最多进行 2 次稳定化；最终 Validator Finding 必须与 stored reconciliation 一致，最终 actionable High/Critical 必须与 CONTROL Attention 一致。存在 actionable High/Critical Formal Finding 时 CONTROL Attention 不得为空。Verification Evidence 已存在但未映射时使用 `PANORAMA_EVIDENCE_GAP`，没有证据时使用 `PROJECT_GAP`；blocked Transition 使用 `CONTROL_BLOCKER`。Candidate Release 被写为 `project.currentReleaseId` 时 PREPARE 与 Materializer 都必须失败，禁止静默修正。排除派生 Review/Change/UpdateBatch、revision、review binding、reconciliation/attention/provenance 后，最终语义投影必须与批准 Preview 完全相等。Materializer 成功并通过 Validator 后，才允许生成 HTML、VALIDATE 与 INSPECT。
 
 ### 新建极简项目
 

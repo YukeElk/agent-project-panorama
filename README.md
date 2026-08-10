@@ -88,21 +88,42 @@ Python、Node 或其他通用项目代码。用户明确授权准确命令后才
 
 复杂项目的 INIT Preview 固定包含 Intent、Stage、Current/Target/Transition、Architecture Versions、
 Modules、Requirements、Decisions、Acceptance/Gates、Runtime/Resources、Freshness、Conflicts、Formal
-Findings、Risk Candidates、Unknown 和 2–3 个 Next Focus。用户批准 Preview 前不写 JSON 或 HTML。
+Findings、Risk Candidates、Unknown 和 2–3 个 Next Focus。用户批准 Preview 前不写正式 Panorama JSON 或 HTML；
+只允许在 `.panorama-work/` 写入 Draft、Prepared Review 与独立 Approval 工作制品。
 
-用户批准准确 Preview Hash 后，按 [`docs/init-materialization-contract.md`](docs/init-materialization-contract.md)
-生成 Initial Review、Change、UpdateBatch、聚类 Attention 和原样 Guidance：
+按 [`docs/init-materialization-contract.md`](docs/init-materialization-contract.md) 完成完整 Draft 后，先 PREPARE。
+脚本会在全部 Schema、跨引用、风险规则与派生记录预校验通过后冻结 exact Preview、计算 Hash，并生成供人审阅的 Markdown：
 
 ```powershell
-python scripts/materialize_init.py .panorama-work/approved-init-model.json `
+python scripts/prepare_init_review.py .panorama-work/draft-init-model.json `
+  --project-root path/to/project-root `
+  --output .panorama-work/prepared-init-review.json `
+  --preview-markdown .panorama-work/prepared-init-review.md
+```
+
+展示完整 Preview 和 Hash 后必须停止。只有用户显式确认 `批准 INIT Preview <EXACT-HASH>` 才能一次性记录独立批准：
+
+```powershell
+python scripts/record_init_approval.py .panorama-work/prepared-init-review.json `
+  --approved-hash <EXACT-HASH> `
+  --approved-by <USER-IDENTITY> `
+  --output .panorama-work/init-approval.json
+```
+
+随后使用两个独立制品生成 Initial Review、Change、UpdateBatch、聚类 Attention 和原样 Guidance：
+
+```powershell
+python scripts/materialize_init.py .panorama-work/prepared-init-review.json `
+  --approval .panorama-work/init-approval.json `
   --project-root path/to/project-root `
   --output .panorama-work/initial-panorama-data.json
 ```
 
 Git Source Snapshot 使用 tracked + 非忽略 untracked 文件，并排除 `.panorama-work/`、Panorama lock/backup
-和 `*.local.html`。真实 Source Snapshot 变化、批准 Hash 不匹配、最终 Finding/Reconciliation/Attention
-不一致或 Schema/Cross-reference Error 都会阻止物化。Candidate Release
-保留为 Release 实体，但不会冒充 `project.currentReleaseId`。物化 JSON 验证通过后，再交给
+和 `*.local.html`。真实 Source Snapshot 变化、三重 Hash 不一致、缺少独立 Approval、最终
+Finding/Reconciliation/Attention 不一致、批准后语义投影变化或 Schema/Cross-reference Error 都会阻止物化。
+Candidate Release 可以保留为实体，但若被写成 `project.currentReleaseId`，PREPARE 和 Materializer 都会失败，
+不会静默改成 `null`。物化 JSON 验证通过后，再交给
 `scripts/init_panorama.py` 生成 Single HTML。
 
 `evals/semantic/` 是隔离评测 Harness，不属于生产 Skill 上下文；正常 INIT 禁止读取其中 case invariants

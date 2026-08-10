@@ -20,19 +20,29 @@ from materialize_init import (
     InitMaterializationError,
     classify_finding,
     compute_preview_hash,
-    materialize_approved_init,
+    materialize_prepared_init,
     reconcile_findings,
+    semantic_projection,
 )
+from materialize_init import main as materialize_main
 from new_project_data import build_minimal_project
 from observe_project_runtime import (
     ObservationError,
     observe_project_runtime,
     source_snapshot,
 )
+from prepare_init_review import (
+    PREPARED_VERSION,
+    prepare_init_review,
+    render_prepared_preview,
+)
+from record_init_approval import main as record_approval_main
+from record_init_approval import record_init_approval
 from validate_panorama import ValidationIssue, validate_data
 
 
 T1 = "2026-08-09T08:00:00Z"
+TP = "2026-08-09T08:30:00Z"
 T2 = "2026-08-09T09:00:00Z"
 SOURCE_SNAPSHOT = {
     "mode": "git",
@@ -519,7 +529,7 @@ def test_source_snapshot_ignores_panorama_owned_artifacts_but_detects_project_dr
         check=True,
     )
     artifacts = (
-        tmp_path / ".panorama-work" / "approved-init-model.json",
+        tmp_path / ".panorama-work" / "prepared-init-review.json",
         tmp_path / ".preview.panorama.lock",
         tmp_path / "project.backup-20260810.html",
         tmp_path / "ignored.local.html",
@@ -597,7 +607,7 @@ def _module(reference_data: dict, module_id: str) -> dict:
     return module
 
 
-def _approved_model(reference_data: dict) -> dict:
+def _draft_model(reference_data: dict) -> dict:
     data = build_minimal_project(
         "PRJ-GENERIC",
         "Generic Project",
@@ -658,7 +668,7 @@ def _approved_model(reference_data: dict) -> dict:
         }
     )
     data["releases"] = [release]
-    data["project"]["currentReleaseId"] = "REL-001"
+    data["project"]["currentReleaseId"] = None
     guidance = deepcopy(data["guidance"])
     guidance["generatedAt"] = T1
     guidance["status"] = "proposed"
@@ -755,33 +765,258 @@ def _approved_model(reference_data: dict) -> dict:
         "reviewSummary": "Approved Managed Panorama Initialization",
         "reviewDecisionIds": [],
     }
-    preview_hash = compute_preview_hash(preview)
     return {
-        "modelVersion": "approved-init-model.v0.1",
+        "draftVersion": "draft-init-model.v0.1",
         "preview": preview,
-        "previewHash": preview_hash,
-        "approval": {
-            "status": "approved",
-            "previewHash": preview_hash,
-            "approvedBy": "project-owner",
-            "approvedAt": T2,
-        },
     }
 
 
-def test_materialization_creates_review_changes_batch_attention_and_guidance(
+def _prepared_approval(
+    reference_data: dict, schema_path: Path, base_dir: Path
+) -> tuple[dict, dict]:
+    prepared = prepare_init_review(
+        _draft_model(reference_data),
+        schema_path,
+        base_dir=base_dir,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        prepared_at=TP,
+    )
+    approval = record_init_approval(
+        prepared,
+        approved_hash=prepared["previewHash"],
+        approved_by="project-owner",
+        recorded_at=T2,
+    )
+    return prepared, approval
+
+
+def test_case_a_prepare_prevalidates_then_freezes_exact_preview(
     tmp_path: Path, schema_path: Path, reference_data: dict
 ):
-    model = _approved_model(reference_data)
+    draft = _draft_model(reference_data)
 
-    first = materialize_approved_init(
-        model,
+    prepared = prepare_init_review(
+        draft,
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        prepared_at=TP,
+    )
+    markdown = render_prepared_preview(
+        prepared, artifact_name="prepared-init-review.json"
+    )
+
+    assert prepared["preparedVersion"] == PREPARED_VERSION
+    assert prepared["approvalState"] == "awaiting_user_approval"
+    assert prepared["preview"] == draft["preview"]
+    assert prepared["previewHash"] == compute_preview_hash(draft["preview"])
+    assert prepared["validation"]["valid"] is True
+    assert prepared["validation"]["counts"]["errors"] == 0
+    assert "## Current Architecture" in markdown
+    assert "## Verification / Runtime" in markdown
+    assert f"Preview SHA-256: {prepared['previewHash']}" in markdown
+    assert "Status: Awaiting explicit hash approval" in markdown
+
+
+def test_case_b_prepare_rejects_schema_invalid_draft_without_output(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    draft = _draft_model(reference_data)
+    draft["preview"]["panoramaData"]["project"]["id"] = "invalid id"
+    output = tmp_path / "prepared-init-review.json"
+
+    with pytest.raises(InitMaterializationError, match="prevalidation failed"):
+        prepare_init_review(
+            draft,
+            schema_path,
+            base_dir=tmp_path,
+            current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+            prepared_at=TP,
+        )
+
+    assert not output.exists()
+
+
+def test_case_c_candidate_release_as_current_fails_before_approval(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    draft = _draft_model(reference_data)
+    draft["preview"]["panoramaData"]["project"]["currentReleaseId"] = "REL-001"
+
+    with pytest.raises(
+        InitMaterializationError,
+        match="candidate/planned release cannot be currentReleaseId",
+    ):
+        prepare_init_review(
+            draft,
+            schema_path,
+            base_dir=tmp_path,
+            current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+            prepared_at=TP,
+        )
+
+    prepared = prepare_init_review(
+        _draft_model(reference_data),
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        prepared_at=TP,
+    )
+    prepared["preview"]["panoramaData"]["project"]["currentReleaseId"] = "REL-001"
+    prepared["previewHash"] = compute_preview_hash(prepared["preview"])
+    approval = record_init_approval(
+        prepared,
+        approved_hash=prepared["previewHash"],
+        approved_by="project-owner",
+        recorded_at=T2,
+    )
+    with pytest.raises(
+        InitMaterializationError,
+        match="candidate/planned release cannot be currentReleaseId",
+    ):
+        materialize_prepared_init(
+            prepared,
+            approval,
+            schema_path,
+            base_dir=tmp_path,
+            current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        )
+
+
+def test_case_d_and_e_explicit_hash_records_only_exact_prepared_hash(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    prepared = prepare_init_review(
+        _draft_model(reference_data),
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        prepared_at=TP,
+    )
+
+    approval = record_init_approval(
+        prepared,
+        approved_hash=prepared["previewHash"],
+        approved_by="project-owner",
+        recorded_at=T2,
+    )
+
+    assert approval == {
+        "approvalVersion": "init-approval.v0.1",
+        "status": "approved",
+        "previewHash": prepared["previewHash"],
+        "approvedBy": "project-owner",
+        "approvalRecordedAt": T2,
+        "approvalMethod": "explicit_hash_confirmation",
+        "approvalTimeSource": "approval_recorder_clock",
+    }
+    with pytest.raises(InitMaterializationError, match="does not match"):
+        record_init_approval(
+            prepared,
+            approved_hash="0" * 64,
+            approved_by="project-owner",
+            recorded_at=T2,
+        )
+
+
+def test_case_f_materializer_cli_requires_separate_approval_without_output(
+    tmp_path: Path,
+):
+    output = tmp_path / "panorama.json"
+    with pytest.raises(SystemExit) as exit_info:
+        materialize_main(
+            [
+                str(tmp_path / "prepared.json"),
+                "--project-root",
+                str(tmp_path),
+                "--output",
+                str(output),
+            ]
+        )
+    assert exit_info.value.code == 2
+    assert not output.exists()
+
+
+def test_case_g_post_approval_preview_mutation_is_rejected_even_if_rehashed(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    prepared, approval = _prepared_approval(reference_data, schema_path, tmp_path)
+    mutated = deepcopy(prepared)
+    mutated["preview"]["reviewSummary"] = "post-approval mutation"
+    mutated["previewHash"] = compute_preview_hash(mutated["preview"])
+
+    with pytest.raises(InitMaterializationError, match="hash binding"):
+        materialize_prepared_init(
+            mutated,
+            approval,
+            schema_path,
+            base_dir=tmp_path,
+            current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        )
+
+
+def test_case_h_approval_artifact_is_write_once(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    prepared = prepare_init_review(
+        _draft_model(reference_data),
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+        prepared_at=TP,
+    )
+    prepared_path = tmp_path / "prepared.json"
+    approval_path = tmp_path / "approval.json"
+    _write(prepared_path, json.dumps(prepared, ensure_ascii=False))
+    argv = [
+        str(prepared_path),
+        "--approved-hash",
+        prepared["previewHash"],
+        "--approved-by",
+        "project-owner",
+        "--output",
+        str(approval_path),
+    ]
+
+    assert record_approval_main(argv) == 0
+    first = approval_path.read_bytes()
+    assert record_approval_main(argv) == 2
+    assert approval_path.read_bytes() == first
+
+
+def test_case_k_materialization_preserves_approved_semantic_projection(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    prepared, approval = _prepared_approval(reference_data, schema_path, tmp_path)
+    approved_data = deepcopy(prepared["preview"]["panoramaData"])
+    approved_data["guidance"] = deepcopy(prepared["preview"]["guidance"])
+
+    result = materialize_prepared_init(
+        prepared,
+        approval,
         schema_path,
         base_dir=tmp_path,
         current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
     )
-    second = materialize_approved_init(
-        model,
+
+    assert semantic_projection(result["data"]) == semantic_projection(approved_data)
+
+
+def test_case_i_materialization_uses_recorder_time_for_review_and_bindings(
+    tmp_path: Path, schema_path: Path, reference_data: dict
+):
+    prepared, approval = _prepared_approval(reference_data, schema_path, tmp_path)
+
+    first = materialize_prepared_init(
+        prepared,
+        approval,
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+    )
+    second = materialize_prepared_init(
+        prepared,
+        approval,
         schema_path,
         base_dir=tmp_path,
         current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
@@ -799,9 +1034,14 @@ def test_materialization_creates_review_changes_batch_attention_and_guidance(
     assert batch["id"].startswith("UPD-INIT-")
     assert batch["status"] == "applied"
     assert data["meta"]["latestUpdateBatchId"] == batch["id"]
-    assert data["guidance"] == model["preview"]["guidance"]
+    assert data["guidance"] == prepared["preview"]["guidance"]
     assert data["project"]["currentReleaseId"] is None
-    assert batch["extensions"]["candidateReleaseNormalizedFrom"] == "REL-001"
+    assert "candidateReleaseNormalizedFrom" not in batch["extensions"]
+    binding = data["reviews"][0]["extensions"]["approvalBinding"]
+    assert binding["approvedHash"] == prepared["previewHash"]
+    assert binding["approvalRecordedAt"] == T2
+    assert binding["approvalMethod"] == "explicit_hash_confirmation"
+    assert binding["approvalTimeSource"] == "approval_recorder_clock"
     assert first["materialization"]["formalHighCriticalCount"] == 3
     assert len(batch["attentionItems"]) == 2
     assert any(
@@ -827,7 +1067,7 @@ def test_materialization_creates_review_changes_batch_attention_and_guidance(
     assert batch["attentionItems"] == expected["attentionItems"]
 
 
-def test_materialization_stabilizes_findings_created_after_reconciliation(
+def test_case_l_materialization_stabilizes_findings_created_after_reconciliation(
     tmp_path: Path,
     schema_path: Path,
     reference_data: dict,
@@ -853,8 +1093,10 @@ def test_materialization_stabilizes_findings_created_after_reconciliation(
         return report
 
     monkeypatch.setattr(materialize_module, "validate_data", staged_validate)
-    result = materialize_approved_init(
-        _approved_model(reference_data),
+    prepared, approval = _prepared_approval(reference_data, schema_path, tmp_path)
+    result = materialize_prepared_init(
+        prepared,
+        approval,
         schema_path,
         base_dir=tmp_path,
         current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
@@ -875,7 +1117,7 @@ def test_materialization_stabilizes_findings_created_after_reconciliation(
 def test_finding_classification_distinguishes_project_evidence_and_blocker(
     reference_data: dict,
 ):
-    model = _approved_model(reference_data)
+    model = _draft_model(reference_data)
     data = model["preview"]["panoramaData"]
     verification = ValidationIssue(
         "WARNING",
@@ -903,24 +1145,26 @@ def test_finding_classification_distinguishes_project_evidence_and_blocker(
     assert blocker["classification"] == "CONTROL_BLOCKER"
 
 
-def test_materialization_rejects_hash_approval_and_source_snapshot_drift(
+def test_case_j_materialization_rejects_hash_approval_and_source_snapshot_drift(
     tmp_path: Path, schema_path: Path, reference_data: dict
 ):
-    model = _approved_model(reference_data)
-    mutated = deepcopy(model)
+    prepared, approval = _prepared_approval(reference_data, schema_path, tmp_path)
+    mutated = deepcopy(prepared)
     mutated["preview"]["reviewSummary"] = "changed after approval"
-    with pytest.raises(InitMaterializationError, match="previewHash"):
-        materialize_approved_init(
+    with pytest.raises(InitMaterializationError, match="hash binding"):
+        materialize_prepared_init(
             mutated,
+            approval,
             schema_path,
             base_dir=tmp_path,
             current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
         )
 
-    wrong_approval = deepcopy(model)
-    wrong_approval["approval"]["previewHash"] = "0" * 64
-    with pytest.raises(InitMaterializationError, match="approval"):
-        materialize_approved_init(
+    wrong_approval = deepcopy(approval)
+    wrong_approval["previewHash"] = "0" * 64
+    with pytest.raises(InitMaterializationError, match="hash binding"):
+        materialize_prepared_init(
+            prepared,
             wrong_approval,
             schema_path,
             base_dir=tmp_path,
@@ -930,8 +1174,9 @@ def test_materialization_rejects_hash_approval_and_source_snapshot_drift(
     changed_snapshot = deepcopy(SOURCE_SNAPSHOT)
     changed_snapshot["gitHead"] = "c" * 40
     with pytest.raises(InitMaterializationError, match="source snapshot changed"):
-        materialize_approved_init(
-            model,
+        materialize_prepared_init(
+            prepared,
+            approval,
             schema_path,
             base_dir=tmp_path,
             current_source_snapshot=changed_snapshot,
@@ -950,6 +1195,12 @@ def test_skill_exposes_v014_evidence_and_materialization_contracts(
         "inspect_operational_evidence.py",
         "observe_project_runtime.py",
         "init-materialization-contract.md",
+        "prepare_init_review.py",
+        "record_init_approval.py",
+        "prepared-init-review.v0.1",
+        "init-approval.v0.1",
+        "explicit_hash_confirmation",
+        "approval_recorder_clock",
         "materialize_init.py",
         "PANORAMA_EVIDENCE_GAP",
         "CONTROL_BLOCKER",
@@ -964,6 +1215,8 @@ def test_v014_production_logic_has_no_case_specific_shortcuts(project_root: Path
         project_root / "scripts" / "discover_project_evidence.py",
         project_root / "scripts" / "inspect_operational_evidence.py",
         project_root / "scripts" / "observe_project_runtime.py",
+        project_root / "scripts" / "prepare_init_review.py",
+        project_root / "scripts" / "record_init_approval.py",
         project_root / "scripts" / "materialize_init.py",
     )
     forbidden = (

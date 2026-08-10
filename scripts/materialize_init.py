@@ -18,7 +18,28 @@ from panorama_cli import ChineseArgumentParser
 from validate_panorama import ValidationIssue, validate_data
 
 
-MODEL_VERSION = "approved-init-model.v0.1"
+PREPARED_VERSION = "prepared-init-review.v0.1"
+APPROVAL_VERSION = "init-approval.v0.1"
+APPROVAL_METHOD = "explicit_hash_confirmation"
+APPROVAL_TIME_SOURCE = "approval_recorder_clock"
+PREPARED_FIELDS = {
+    "preparedVersion",
+    "preparedAt",
+    "preview",
+    "previewHash",
+    "sourceSnapshot",
+    "validation",
+    "approvalState",
+}
+APPROVAL_FIELDS = {
+    "approvalVersion",
+    "status",
+    "previewHash",
+    "approvedBy",
+    "approvalRecordedAt",
+    "approvalMethod",
+    "approvalTimeSource",
+}
 FINDING_CLASSES = {
     "PROJECT_GAP",
     "PANORAMA_EVIDENCE_GAP",
@@ -102,9 +123,11 @@ def _timestamp(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value:
         raise InitMaterializationError(f"{field} must be a non-empty timestamp")
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise InitMaterializationError(f"{field} is not an ISO timestamp") from exc
+    if parsed.utcoffset() is None:
+        raise InitMaterializationError(f"{field} must include a UTC offset")
     return value
 
 
@@ -459,10 +482,12 @@ def _materialize_changes(
     return records
 
 
-def _normalize_current_release(data: dict[str, Any]) -> str | None:
+def assert_release_semantics(data: dict[str, Any]) -> None:
+    """Reject a candidate/planned Release being presented as current."""
+
     current_id = data.get("project", {}).get("currentReleaseId")
     if not current_id:
-        return None
+        return
     release = next(
         (
             item
@@ -472,9 +497,10 @@ def _normalize_current_release(data: dict[str, Any]) -> str | None:
         None,
     )
     if release is not None and release.get("status") != "deployed":
-        data["project"]["currentReleaseId"] = None
-        return current_id
-    return None
+        raise InitMaterializationError(
+            "candidate/planned release cannot be currentReleaseId; "
+            "correct the draft before approval"
+        )
 
 
 def _sanitize_evidence_inventory(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -538,38 +564,122 @@ def _assert_empty_initial_history(data: dict[str, Any]) -> None:
             )
 
 
-def materialize_approved_init(
-    model: dict[str, Any],
+def semantic_projection(data: dict[str, Any]) -> dict[str, Any]:
+    """Remove only the records and bindings derived during INIT materialization."""
+
+    projected = copy.deepcopy(data)
+    meta = projected.get("meta", {})
+    for key in ("revision", "updatedAt", "latestUpdateBatchId"):
+        meta.pop(key, None)
+    projected["reviews"] = []
+    projected["changes"] = []
+    projected["updateBatches"] = []
+    intent = projected.get("intent")
+    if isinstance(intent, dict):
+        intent.pop("reviewId", None)
+    for collection in (
+        "requirements",
+        "stages",
+        "decisions",
+        "acceptanceCriteria",
+    ):
+        for item in projected.get(collection, []):
+            if isinstance(item, dict):
+                item.pop("reviewId", None)
+    for item in projected.get("architecture", {}).get("versions", []):
+        if isinstance(item, dict):
+            item.pop("reviewId", None)
+    for item in projected.get("architecture", {}).get("modules", []):
+        if isinstance(item, dict):
+            item.pop("reviewIds", None)
+    extensions = projected.get("extensions")
+    if isinstance(extensions, dict):
+        extensions.pop("initMaterialization", None)
+        if not extensions:
+            projected.pop("extensions", None)
+    for reference in projected.get("references", []):
+        if not isinstance(reference, dict):
+            continue
+        reference_extensions = reference.get("extensions")
+        if isinstance(reference_extensions, dict):
+            reference_extensions.pop("evidenceProvenance", None)
+            if not reference_extensions:
+                reference.pop("extensions", None)
+    return projected
+
+
+def materialize_prepared_init(
+    prepared: dict[str, Any],
+    approval: dict[str, Any],
     schema_path: Path,
     *,
     base_dir: Path,
     current_source_snapshot: dict[str, Any],
 ) -> dict[str, Any]:
-    if model.get("modelVersion") != MODEL_VERSION:
-        raise InitMaterializationError(f"modelVersion must be {MODEL_VERSION}")
-    preview = model.get("preview")
-    approval = model.get("approval")
-    if not isinstance(preview, dict) or not isinstance(approval, dict):
-        raise InitMaterializationError("model requires preview and approval objects")
+    if set(prepared) != PREPARED_FIELDS:
+        raise InitMaterializationError(
+            "prepared artifact fields do not match prepared-init-review.v0.1"
+        )
+    if prepared.get("preparedVersion") != PREPARED_VERSION:
+        raise InitMaterializationError(f"preparedVersion must be {PREPARED_VERSION}")
+    if prepared.get("approvalState") != "awaiting_user_approval":
+        raise InitMaterializationError("prepared artifact is not awaiting user approval")
+    preview = prepared.get("preview")
+    if not isinstance(preview, dict):
+        raise InitMaterializationError("prepared artifact requires a Preview object")
+    if not isinstance(approval, dict):
+        raise InitMaterializationError("a separate approval artifact is required")
+    if set(approval) != APPROVAL_FIELDS:
+        raise InitMaterializationError(
+            "approval artifact fields do not match init-approval.v0.1"
+        )
+    validation = prepared.get("validation")
+    if not isinstance(validation, dict) or validation.get("valid") is not True:
+        raise InitMaterializationError("prepared artifact has no successful prevalidation")
     calculated_hash = compute_preview_hash(preview)
-    if model.get("previewHash") != calculated_hash:
-        raise InitMaterializationError("previewHash does not match the approved Preview")
+    prepared_hash = prepared.get("previewHash")
+    approval_hash = approval.get("previewHash")
+    if not calculated_hash == prepared_hash == approval_hash:
+        raise InitMaterializationError(
+            "approval hash binding failed: recomputed, prepared, and approval hashes must match"
+        )
+    if approval.get("approvalVersion") != APPROVAL_VERSION:
+        raise InitMaterializationError(f"approvalVersion must be {APPROVAL_VERSION}")
     if approval.get("status") != "approved":
         raise InitMaterializationError("INIT Preview approval is not approved")
-    if approval.get("previewHash") != calculated_hash:
-        raise InitMaterializationError("approval is not bound to previewHash")
+    if approval.get("approvalMethod") != APPROVAL_METHOD:
+        raise InitMaterializationError(
+            f"approvalMethod must be {APPROVAL_METHOD}"
+        )
+    if approval.get("approvalTimeSource") != APPROVAL_TIME_SOURCE:
+        raise InitMaterializationError(
+            f"approvalTimeSource must be {APPROVAL_TIME_SOURCE}"
+        )
     approved_by = approval.get("approvedBy")
     if not isinstance(approved_by, str) or not approved_by.strip():
         raise InitMaterializationError("approval.approvedBy must come from the user action")
+    if approved_by != approved_by.strip():
+        raise InitMaterializationError("approval.approvedBy must be normalized")
     preview_at = _timestamp(preview.get("generatedAt"), "preview.generatedAt")
-    approved_at = _timestamp(approval.get("approvedAt"), "approval.approvedAt")
+    prepared_at = _timestamp(prepared.get("preparedAt"), "preparedAt")
+    approved_at = _timestamp(
+        approval.get("approvalRecordedAt"), "approval.approvalRecordedAt"
+    )
     if datetime.fromisoformat(approved_at.replace("Z", "+00:00")) < datetime.fromisoformat(
+        prepared_at.replace("Z", "+00:00")
+    ):
+        raise InitMaterializationError("approval time cannot precede PREPARE")
+    if datetime.fromisoformat(prepared_at.replace("Z", "+00:00")) < datetime.fromisoformat(
         preview_at.replace("Z", "+00:00")
     ):
-        raise InitMaterializationError("approval time cannot precede Preview generation")
+        raise InitMaterializationError("PREPARE time cannot precede Preview generation")
     expected_snapshot = preview.get("sourceSnapshot")
     if not isinstance(expected_snapshot, dict):
         raise InitMaterializationError("preview.sourceSnapshot is required")
+    if _canonical_json(prepared.get("sourceSnapshot")) != _canonical_json(expected_snapshot):
+        raise InitMaterializationError(
+            "prepared sourceSnapshot does not match the approved Preview"
+        )
     if _canonical_json(expected_snapshot) != _canonical_json(current_source_snapshot):
         raise InitMaterializationError(
             "project source snapshot changed after Preview; regenerate and reapprove"
@@ -580,10 +690,12 @@ def materialize_approved_init(
         raise InitMaterializationError("preview.panoramaData must be an object")
     data = copy.deepcopy(source_data)
     _assert_empty_initial_history(data)
+    assert_release_semantics(data)
     guidance = preview.get("guidance")
     if not isinstance(guidance, dict) or not 2 <= len(guidance.get("options", [])) <= 3:
         raise InitMaterializationError("approved Preview Guidance must contain 2–3 options")
     data["guidance"] = copy.deepcopy(guidance)
+    approved_projection = semantic_projection(data)
     evidence_inventory = _sanitize_evidence_inventory(
         preview.get("evidenceInventory", [])
     )
@@ -620,17 +732,19 @@ def materialize_approved_init(
         "changeIds": [item["id"] for item in changes],
         "extensions": {
             "approvalBinding": {
+                "approvedHash": calculated_hash,
                 "previewHash": calculated_hash,
                 "sourceSnapshot": copy.deepcopy(expected_snapshot),
                 "approvedBy": approved_by,
-                "approvedAt": approved_at,
+                "approvalRecordedAt": approved_at,
+                "approvalMethod": APPROVAL_METHOD,
+                "approvalTimeSource": APPROVAL_TIME_SOURCE,
             }
         },
     }
     data["reviews"] = [review]
     data["changes"] = changes
     _bind_initial_review(data, subject_refs, review_id)
-    normalized_release_id = _normalize_current_release(data)
 
     summary_items = copy.deepcopy(preview.get("updateSummaryItems", []))
     if not isinstance(summary_items, list) or not summary_items:
@@ -663,7 +777,6 @@ def materialize_approved_init(
             "formalFindingCount": 0,
             "formalHighCriticalCount": 0,
             "attentionClusterCount": 0,
-            "candidateReleaseNormalizedFrom": normalized_release_id,
         },
     }
     data["updateBatches"] = [batch]
@@ -671,7 +784,8 @@ def materialize_approved_init(
     data["meta"]["updatedAt"] = approved_at
     data["meta"]["latestUpdateBatchId"] = update_id
     data.setdefault("extensions", {})["initMaterialization"] = {
-        "modelVersion": MODEL_VERSION,
+        "preparedVersion": PREPARED_VERSION,
+        "approvalVersion": APPROVAL_VERSION,
         "previewHash": calculated_hash,
         "sourceSnapshot": copy.deepcopy(expected_snapshot),
         "evidenceInventory": evidence_inventory,
@@ -711,6 +825,12 @@ def materialize_approved_init(
         raise InitMaterializationError(
             "final Validator findings do not match stored reconciliation and CONTROL Attention"
         )
+    if _canonical_json(semantic_projection(data)) != _canonical_json(
+        approved_projection
+    ):
+        raise InitMaterializationError(
+            "materialization changed approved semantic content outside derived records"
+        )
     return {
         "data": data,
         "materialization": {
@@ -720,7 +840,6 @@ def materialize_approved_init(
             "updateBatchId": update_id,
             "formalHighCriticalCount": reconciliation["formalHighCriticalCount"],
             "attentionCount": len(batch["attentionItems"]),
-            "candidateReleaseNormalizedFrom": normalized_release_id,
         },
         "validation": final_report.to_dict(),
     }
@@ -732,7 +851,7 @@ def _read_json(path: Path) -> dict[str, Any]:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise InitMaterializationError(f"cannot read {path}: {exc}") from exc
     if not isinstance(value, dict):
-        raise InitMaterializationError("approved INIT model must be a JSON object")
+        raise InitMaterializationError("INIT artifact must be a JSON object")
     return value
 
 
@@ -762,7 +881,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = ChineseArgumentParser(
         description="将已批准 INIT Preview 确定性物化为首版 Panorama Data。"
     )
-    parser.add_argument("model", type=Path, nargs="?")
+    parser.add_argument("prepared", type=Path)
+    parser.add_argument("--approval", type=Path, required=True)
     parser.add_argument("--project-root", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument(
@@ -772,8 +892,6 @@ def build_parser() -> argparse.ArgumentParser:
         / "schema"
         / "panorama.schema.v0.1.json",
     )
-    parser.add_argument("--print-preview-hash", action="store_true")
-    parser.add_argument("--print-source-snapshot", action="store_true")
     return parser
 
 
@@ -782,33 +900,14 @@ def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     try:
-        if args.print_source_snapshot:
-            if args.project_root is None:
-                raise InitMaterializationError("--project-root is required")
-            print(
-                json.dumps(
-                    source_snapshot(args.project_root.resolve(strict=True)),
-                    ensure_ascii=False,
-                    indent=2,
-                )
-            )
-            return 0
-        if args.model is None:
-            raise InitMaterializationError("model path is required")
-        model = _read_json(args.model)
-        if args.print_preview_hash:
-            preview = model.get("preview")
-            if not isinstance(preview, dict):
-                raise InitMaterializationError("model.preview must be an object")
-            print(compute_preview_hash(preview))
-            return 0
         if args.project_root is None or args.output is None:
             raise InitMaterializationError(
                 "--project-root and --output are required for materialization"
             )
         root = args.project_root.resolve(strict=True)
-        result = materialize_approved_init(
-            model,
+        result = materialize_prepared_init(
+            _read_json(args.prepared),
+            _read_json(args.approval),
             args.schema,
             base_dir=root,
             current_source_snapshot=source_snapshot(root),
