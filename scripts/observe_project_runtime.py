@@ -120,18 +120,29 @@ def git_observation(root: Path) -> dict[str, Any]:
 
 
 def source_snapshot(root: Path) -> dict[str, Any]:
+    root = root.resolve(strict=True)
+    if not root.is_dir():
+        raise ObservationError(f"project root is not a directory: {root}")
     git = git_observation(root)
-    records, truncated = _project_metadata_records(root)
+    if git["isRepository"]:
+        records, truncated = _git_project_metadata_records(root)
+        status_records = _git_source_status_records(root)
+    else:
+        records, truncated = _project_metadata_records(root)
+        status_records = []
     canonical = json.dumps(records, ensure_ascii=False, separators=(",", ":"))
     metadata_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     if git["isRepository"]:
+        status_text = json.dumps(
+            status_records, ensure_ascii=False, separators=(",", ":")
+        )
         return {
             "mode": "git",
             "gitHead": git["head"],
             "gitBranch": git["branch"],
-            "gitDirty": git["dirty"],
-            "gitStatusEntryCount": git["statusEntryCount"],
-            "gitStatusHash": git["statusHash"],
+            "gitDirty": bool(status_records),
+            "gitStatusEntryCount": len(status_records),
+            "gitStatusHash": hashlib.sha256(status_text.encode("utf-8")).hexdigest(),
             "worktreeFileCount": len(records),
             "worktreeMetadataTruncated": truncated,
             "worktreeMetadataHash": metadata_hash,
@@ -144,6 +155,77 @@ def source_snapshot(root: Path) -> dict[str, Any]:
     }
 
 
+def _panorama_owned_artifact(relative: Path) -> bool:
+    parts = {part.lower() for part in relative.parts[:-1]}
+    name = relative.name.lower()
+    return bool(
+        ".panorama-work" in parts
+        or (name.startswith(".") and name.endswith(".panorama.lock"))
+        or (".backup-" in name and name.endswith(".html"))
+        or name.endswith(".local.html")
+    )
+
+
+def _metadata_record(root: Path, relative: Path) -> list[Any] | None:
+    if relative.is_absolute() or _panorama_owned_artifact(relative):
+        return None
+    path = root / relative
+    try:
+        resolved = path.resolve(strict=False)
+        resolved.relative_to(root)
+        if path.is_symlink():
+            return None
+        if not path.exists():
+            return [relative.as_posix(), None, None]
+        stat = path.stat()
+        return [relative.as_posix(), stat.st_size, stat.st_mtime_ns]
+    except (OSError, ValueError):
+        return None
+
+
+def _git_project_metadata_records(root: Path) -> tuple[list[list[Any]], bool]:
+    result = _run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=root,
+    )
+    if result.returncode != 0:
+        raise ObservationError("cannot enumerate Git source files for Source Snapshot")
+    records = []
+    for value in sorted(item for item in result.stdout.split("\0") if item):
+        record = _metadata_record(root, Path(value))
+        if record is not None:
+            records.append(record)
+        if len(records) >= MAX_PROJECT_FILES:
+            return records, True
+    return records, False
+
+
+def _git_source_status_records(root: Path) -> list[list[str]]:
+    result = _run(
+        ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        cwd=root,
+    )
+    if result.returncode != 0:
+        raise ObservationError("cannot read Git status for Source Snapshot")
+    raw = [item for item in result.stdout.split("\0") if item]
+    records: list[list[str]] = []
+    index = 0
+    while index < len(raw):
+        entry = raw[index]
+        index += 1
+        if len(entry) < 4:
+            continue
+        status = entry[:2]
+        paths = [entry[3:]]
+        if any(marker in status for marker in ("R", "C")) and index < len(raw):
+            paths.append(raw[index])
+            index += 1
+        if all(_panorama_owned_artifact(Path(value)) for value in paths):
+            continue
+        records.append([status, *paths])
+    return sorted(records)
+
+
 def _project_metadata_records(root: Path) -> tuple[list[list[Any]], bool]:
     records: list[list[Any]] = []
     for dirpath, dirnames, filenames in os.walk(root, topdown=True, followlinks=False):
@@ -151,16 +233,18 @@ def _project_metadata_records(root: Path) -> tuple[list[list[Any]], bool]:
             name
             for name in sorted(dirnames)
             if name not in {".git", "__pycache__", ".pytest_cache"}
+            and name.lower() != ".panorama-work"
             and not (Path(dirpath) / name).is_symlink()
         ]
         for name in sorted(filenames):
             path = Path(dirpath) / name
-            if path.is_symlink():
+            relative = path.relative_to(root)
+            if path.is_symlink() or _panorama_owned_artifact(relative):
                 continue
             try:
                 stat = path.stat()
                 records.append(
-                    [path.relative_to(root).as_posix(), stat.st_size, stat.st_mtime_ns]
+                    [relative.as_posix(), stat.st_size, stat.st_mtime_ns]
                 )
             except (OSError, ValueError):
                 continue
@@ -304,7 +388,10 @@ def _load_test_command(root: Path, manifest_path: str, command_id: str) -> dict[
     supplied = Path(manifest_path)
     if supplied.is_absolute():
         raise ObservationError("test manifest must be project-relative")
-    path = (root / supplied).resolve(strict=True)
+    lexical = root / supplied
+    if lexical.is_symlink():
+        raise ObservationError("test manifest must not be a symbolic link")
+    path = lexical.resolve(strict=True)
     try:
         path.relative_to(root)
     except ValueError as exc:
@@ -319,10 +406,28 @@ def _load_test_command(root: Path, manifest_path: str, command_id: str) -> dict[
     raise ObservationError(f"test command is not declared: {command_id}")
 
 
-def _execute_safe_test(
-    root: Path, manifest_path: str, command_id: str
+def _authorization_required_test(
+    command_id: str,
 ) -> dict[str, Any]:
-    command = _load_test_command(root, manifest_path, command_id)
+    return {
+        "id": command_id,
+        "status": "requires_explicit_authorization",
+        "declarationStatus": "validated",
+        "authorizationRequired": True,
+        "authorizationGranted": False,
+        "networkIsolation": "not_enforced",
+        "filesystemIsolation": "not_enforced",
+        "projectWriteCheck": "not_performed",
+        "provenance": "not_observed",
+        "outputPolicy": "test was not executed; stdout/stderr do not exist",
+    }
+
+
+def _execute_authorized_test(
+    root: Path,
+    command_id: str,
+    command: dict[str, Any],
+) -> dict[str, Any]:
     argv, cwd, timeout = _validate_test_command(command, root)
     before, before_truncated = _project_metadata_records(root)
     if before_truncated:
@@ -360,6 +465,11 @@ def _execute_safe_test(
         "stdoutBytes": stdout_bytes,
         "stderrBytes": stderr_bytes,
         "projectModified": modified,
+        "authorizationRequired": True,
+        "authorizationGranted": True,
+        "networkIsolation": "not_enforced",
+        "filesystemIsolation": "not_enforced",
+        "projectWriteCheck": "post_execution_metadata_check",
         "provenance": "current_test",
         "outputPolicy": "stdout/stderr content is not returned",
     }
@@ -374,6 +484,7 @@ def observe_project_runtime(
     check_paths: list[str] | None = None,
     test_manifest: str | None = None,
     test_id: str | None = None,
+    authorize_test_execution: bool = False,
     observed_at: str | None = None,
     process_provider: Callable[[], set[str]] = _running_process_names,
     scheduler_provider: Callable[[str], str] = _scheduler_status,
@@ -408,7 +519,12 @@ def observe_project_runtime(
     if bool(test_manifest) != bool(test_id):
         raise ObservationError("test_manifest and test_id must be provided together")
     if test_manifest and test_id:
-        verification.append(_execute_safe_test(root, test_manifest, test_id))
+        command = _load_test_command(root, test_manifest, test_id)
+        _validate_test_command(command, root)
+        if authorize_test_execution:
+            verification.append(_execute_authorized_test(root, test_id, command))
+        else:
+            verification.append(_authorization_required_test(test_id))
 
     return {
         "projectRoot": str(root),
@@ -434,10 +550,21 @@ def observe_project_runtime(
         "files": files,
         "verification": verification,
         "safety": {
-            "networkUsed": False,
-            "dependenciesInstalled": False,
+            "automaticTestExecution": False,
+            "testExecutionAuthorized": bool(
+                test_manifest and test_id and authorize_test_execution
+            ),
+            "networkIsolation": "not_enforced" if test_manifest else "not_applicable",
+            "filesystemIsolation": "not_enforced" if test_manifest else "not_applicable",
+            "projectWriteCheck": (
+                "post_execution_metadata_check"
+                if test_manifest and authorize_test_execution
+                else "not_performed"
+            ),
+            "dependencyInstallation": (
+                "not_observed" if test_manifest else "not_applicable"
+            ),
             "processArgumentsRead": False,
-            "secretValuesRead": False,
             "testOutputReturned": False,
         },
         "semantics": [
@@ -457,6 +584,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--check-path", action="append", default=[])
     parser.add_argument("--test-manifest")
     parser.add_argument("--test-id")
+    parser.add_argument(
+        "--authorize-test-execution",
+        action="store_true",
+        help="仅在用户已显式授权准确测试命令时执行；不提供 OS 级隔离。",
+    )
     return parser
 
 
@@ -473,6 +605,7 @@ def main(argv: list[str] | None = None) -> int:
             check_paths=args.check_path,
             test_manifest=args.test_manifest,
             test_id=args.test_id,
+            authorize_test_execution=args.authorize_test_execution,
         )
     except (OSError, ValueError, ObservationError, json.JSONDecodeError) as exc:
         print(f"Runtime Observation 错误：{exc}", file=sys.stderr)

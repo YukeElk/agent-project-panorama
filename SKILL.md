@@ -65,7 +65,7 @@ DISCOVER
    python scripts/observe_project_runtime.py path/to/project-root
    ```
 
-   只允许 Git、文件存在性、dependency availability、指定 process/scheduler name，以及项目显式声明且无网络/安装/写入的 safe test command。不得返回进程参数或测试 stdout/stderr。Historical test report 保持 `historical_test`，主动验证结果才是 `current_test`。
+   只自动执行 Git、文件存在性、dependency availability 与指定 process/scheduler name 等只读观察。项目 test manifest 中的 `safe` 只是声明，不是安全证明；默认只校验声明并返回 `requires_explicit_authorization`，不得自动执行通用项目代码。只有用户明确授权准确命令后才可增加 `--authorize-test-execution`；此时仍必须报告 `networkIsolation=not_enforced`、`filesystemIsolation=not_enforced` 与 `projectWriteCheck=post_execution_metadata_check`，不得声称未使用网络或未读取 Secret。不得返回进程参数或测试 stdout/stderr。Historical test report 保持 `historical_test`，实际授权执行结果才是 `current_test`。
 4. 主动寻找 Intent、structured state、current implementation、verification、Decision/ADR、runtime/resource 与 narrative docs。再按 Fact Class 判断 authority，至少区分 `INTENT`、`REQUIREMENT`、`CURRENT_IMPLEMENTATION`、`CURRENT_RUNTIME`、`TARGET_DESIGN`、`HISTORICAL_RATIONALE`、`VERIFICATION`、`DECISION`、`RESOURCE`、`REFERENCE`；不得使用一个全局证据 Tier 替代事实类别判断。
 5. 对关键来源执行 Source Freshness Audit，使用 current / likely_current / stale / historical / unknown。mtime 只能作为信号，Narrative Documentation cannot silently override fresher structured evidence。
 6. 主动检测 Machine vs Narrative、Runtime vs Historical Test、Decision vs Old Design、Generated Snapshot vs Current Git、Current Implementation vs Accepted Architecture、Target vs Current。Preserve Conflict，解释时间/环境/范围差异并列出 Needs Human Review；不得静默消解。
@@ -95,12 +95,14 @@ Next Focus 基于 Stage、blocker、exit criteria、Formal Findings、Risk Candi
 批准后执行：
 
 ```powershell
-python scripts/materialize_init.py approved-init-model.json `
+python scripts/materialize_init.py .panorama-work/approved-init-model.json `
   --project-root path/to/project-root `
-  --output work/initial-panorama-data.json
+  --output .panorama-work/initial-panorama-data.json
 ```
 
-Materializer 必须生成 Initial approved Review、语义 Change、Initial UpdateBatch、Finding Reconciliation、聚类 Attention 和原样 Guidance。存在 actionable High/Critical Formal Finding 时 CONTROL Attention 不得为空。Verification Evidence 已存在但未映射时使用 `PANORAMA_EVIDENCE_GAP`，没有证据时使用 `PROJECT_GAP`；blocked Transition 使用 `CONTROL_BLOCKER`。Candidate Release 不得写入 `project.currentReleaseId`。Materializer 成功并通过 Validator 后，才允许生成 HTML、VALIDATE 与 INSPECT。
+将 Panorama 自有临时文件放入 `.panorama-work/`；Source Snapshot 对 Git 项目使用 tracked + 非忽略 untracked 文件，并排除已忽略文件、`.panorama-work/`、Panorama lock、backup HTML 与 `*.local.html`，避免 Skill 自身制造 Source Drift。
+
+Materializer 必须生成 Initial approved Review、语义 Change、Initial UpdateBatch、Finding Reconciliation、聚类 Attention 和原样 Guidance。Finding Reconciliation 必须在 provisional UpdateBatch 已存在后运行最终 Validator，并最多进行 2 次稳定化；最终 Validator Finding 必须与 stored reconciliation 一致，最终 actionable High/Critical 必须与 CONTROL Attention 一致。存在 actionable High/Critical Formal Finding 时 CONTROL Attention 不得为空。Verification Evidence 已存在但未映射时使用 `PANORAMA_EVIDENCE_GAP`，没有证据时使用 `PROJECT_GAP`；blocked Transition 使用 `CONTROL_BLOCKER`。Candidate Release 不得写入 `project.currentReleaseId`。Materializer 成功并通过 Validator 后，才允许生成 HTML、VALIDATE 与 INSPECT。
 
 ### 新建极简项目
 

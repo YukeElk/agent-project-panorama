@@ -8,6 +8,7 @@ import sys
 
 import pytest
 
+import materialize_init as materialize_module
 from discover_project_evidence import discover_project_evidence
 from inspect_operational_evidence import inspect_operational_evidence
 from materialize_init import (
@@ -15,9 +16,14 @@ from materialize_init import (
     classify_finding,
     compute_preview_hash,
     materialize_approved_init,
+    reconcile_findings,
 )
 from new_project_data import build_minimal_project
-from observe_project_runtime import ObservationError, observe_project_runtime
+from observe_project_runtime import (
+    ObservationError,
+    observe_project_runtime,
+    source_snapshot,
+)
 from validate_panorama import ValidationIssue, validate_data
 
 
@@ -74,6 +80,34 @@ def test_discovery_and_inspector_separate_operational_metadata_from_content(
         "id": "TASK-1",
         "status": "active",
     }
+
+
+@pytest.mark.parametrize(
+    ("relative", "expected"),
+    [
+        ("knowledge/reports/customer-report.json", "PROJECT_CONTENT"),
+        ("vault/tasks/personal-tasks.json", "PROJECT_CONTENT"),
+        (
+            "vault/90-System/tasks/registry.json",
+            "PROJECT_OPERATIONAL_METADATA",
+        ),
+    ],
+)
+def test_knowledge_root_requires_explicit_operational_system_boundary(
+    tmp_path: Path, relative: str, expected: str
+):
+    _write(tmp_path / relative, '{"status":"active","tasks":[]}')
+
+    candidate = _candidate(discover_project_evidence(tmp_path), relative)
+    inspected = inspect_operational_evidence(tmp_path, relative, observed_at=T2)
+
+    assert candidate["accessClass"] == expected
+    assert candidate["operationalMetadataHint"] is (
+        expected == "PROJECT_OPERATIONAL_METADATA"
+    )
+    assert inspected["safeToRead"] is (
+        expected == "PROJECT_OPERATIONAL_METADATA"
+    )
 
 
 @pytest.mark.parametrize(
@@ -276,6 +310,7 @@ def test_safe_active_test_is_current_observation_and_output_is_not_returned(
         tmp_path,
         test_manifest="observation.json",
         test_id="unit",
+        authorize_test_execution=True,
         observed_at=T2,
     )["verification"][0]
 
@@ -283,7 +318,96 @@ def test_safe_active_test_is_current_observation_and_output_is_not_returned(
     assert current["provenance"] == "current_test"
     assert current["status"] == "passed"
     assert current["projectModified"] is False
+    assert current["networkIsolation"] == "not_enforced"
+    assert current["filesystemIsolation"] == "not_enforced"
+    assert current["projectWriteCheck"] == "post_execution_metadata_check"
     assert "stdout" not in current and "stderr" not in current
+
+
+def test_declared_test_requires_authorization_and_is_not_executed(
+    tmp_path: Path,
+):
+    _write(
+        tmp_path / "untrusted.py",
+        "from pathlib import Path\nPath('executed').write_text('bad')\n",
+    )
+    _write(
+        tmp_path / "observation.json",
+        json.dumps(
+            {
+                "commands": [
+                    {
+                        "id": "declared-only",
+                        "argv": [sys.executable, "untrusted.py"],
+                        "workingDirectory": ".",
+                        "timeoutSeconds": 30,
+                        "safe": True,
+                        "networkAccess": "none",
+                        "writesProject": False,
+                        "installsDependencies": False,
+                    }
+                ]
+            }
+        ),
+    )
+
+    result = observe_project_runtime(
+        tmp_path,
+        test_manifest="observation.json",
+        test_id="declared-only",
+        observed_at=T2,
+    )
+    observation = result["verification"][0]
+
+    assert observation["status"] == "requires_explicit_authorization"
+    assert observation["provenance"] == "not_observed"
+    assert observation["authorizationGranted"] is False
+    assert not (tmp_path / "executed").exists()
+    assert "networkUsed" not in result["safety"]
+    assert "secretValuesRead" not in result["safety"]
+    assert result["safety"]["networkIsolation"] == "not_enforced"
+    assert result["safety"]["filesystemIsolation"] == "not_enforced"
+
+
+def test_source_snapshot_ignores_panorama_owned_artifacts_but_detects_project_drift(
+    tmp_path: Path,
+):
+    _write(tmp_path / ".gitignore", "ignored.local.html\n")
+    _write(tmp_path / "tracked.txt", "tracked")
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", ".gitignore", "tracked.txt"], cwd=tmp_path, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Panorama Test",
+            "-c",
+            "user.email=panorama@example.invalid",
+            "commit",
+            "-qm",
+            "initial",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    artifacts = (
+        tmp_path / ".panorama-work" / "approved-init-model.json",
+        tmp_path / ".preview.panorama.lock",
+        tmp_path / "project.backup-20260810.html",
+        tmp_path / "ignored.local.html",
+    )
+    for index, artifact in enumerate(artifacts):
+        _write(artifact, f"artifact-{index}")
+
+    before = source_snapshot(tmp_path)
+    for index, artifact in enumerate(artifacts):
+        _write(artifact, f"changed-artifact-{index}")
+    after_artifacts = source_snapshot(tmp_path)
+    _write(tmp_path / "new-project-source.txt", "project change")
+    after_project_change = source_snapshot(tmp_path)
+
+    assert before == after_artifacts
+    assert after_project_change != before
 
 
 def test_costly_or_mutating_test_command_is_refused(tmp_path: Path):
@@ -563,6 +687,61 @@ def test_materialization_creates_review_changes_batch_attention_and_guidance(
         for item in batch["attentionItems"]
     )
     assert validate_data(data, schema_path, base_dir=tmp_path).errors == []
+    final_report = validate_data(data, schema_path, base_dir=tmp_path)
+    expected = reconcile_findings(
+        final_report.issues,
+        data["extensions"]["initMaterialization"]["evidenceInventory"],
+        data,
+    )
+    assert batch["extensions"]["findingReconciliation"] == expected[
+        "classifiedFindings"
+    ]
+    assert batch["attentionItems"] == expected["attentionItems"]
+
+
+def test_materialization_stabilizes_findings_created_after_reconciliation(
+    tmp_path: Path,
+    schema_path: Path,
+    reference_data: dict,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    original_validate = materialize_module.validate_data
+
+    def staged_validate(data, schema, *, base_dir):
+        report = original_validate(data, schema, base_dir=base_dir)
+        batches = data.get("updateBatches", [])
+        if batches and batches[0].get("extensions", {}).get("findingReconciliation"):
+            report.issues.append(
+                ValidationIssue(
+                    "WARNING",
+                    "RESOURCE_RISK",
+                    "Reconciliation materialization exposed a resource risk.",
+                    severity="high",
+                    related_entities=(
+                        {"type": "project", "id": data["project"]["id"]},
+                    ),
+                )
+            )
+        return report
+
+    monkeypatch.setattr(materialize_module, "validate_data", staged_validate)
+    result = materialize_approved_init(
+        _approved_model(reference_data),
+        schema_path,
+        base_dir=tmp_path,
+        current_source_snapshot=deepcopy(SOURCE_SNAPSHOT),
+    )
+    batch = result["data"]["updateBatches"][0]
+
+    assert any(
+        item["code"] == "RESOURCE_RISK"
+        for item in batch["extensions"]["findingReconciliation"]
+    )
+    assert any(
+        entity["id"] == result["data"]["project"]["id"]
+        for attention in batch["attentionItems"]
+        for entity in attention["relatedEntities"]
+    )
 
 
 def test_finding_classification_distinguishes_project_evidence_and_blocker(

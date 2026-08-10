@@ -326,6 +326,39 @@ def reconcile_findings(
     }
 
 
+def _write_reconciliation(
+    batch: dict[str, Any], reconciliation: dict[str, Any]
+) -> None:
+    batch["attentionItems"] = copy.deepcopy(reconciliation["attentionItems"])
+    extensions = batch.setdefault("extensions", {})
+    extensions["findingReconciliation"] = copy.deepcopy(
+        reconciliation["classifiedFindings"]
+    )
+    extensions["formalFindingCount"] = reconciliation["formalFindingCount"]
+    extensions["formalHighCriticalCount"] = reconciliation[
+        "formalHighCriticalCount"
+    ]
+    extensions["attentionClusterCount"] = reconciliation["attentionCount"]
+
+
+def _reconciliation_matches(
+    batch: dict[str, Any], reconciliation: dict[str, Any]
+) -> bool:
+    extensions = batch.get("extensions", {})
+    return bool(
+        _canonical_json(batch.get("attentionItems", []))
+        == _canonical_json(reconciliation["attentionItems"])
+        and _canonical_json(extensions.get("findingReconciliation", []))
+        == _canonical_json(reconciliation["classifiedFindings"])
+        and extensions.get("formalFindingCount")
+        == reconciliation["formalFindingCount"]
+        and extensions.get("formalHighCriticalCount")
+        == reconciliation["formalHighCriticalCount"]
+        and extensions.get("attentionClusterCount")
+        == reconciliation["attentionCount"]
+    )
+
+
 def _find_entity(data: dict[str, Any], entity_type: str, entity_id: str) -> dict[str, Any] | None:
     paths = {
         "requirement": ("requirements",),
@@ -599,15 +632,6 @@ def materialize_approved_init(
     _bind_initial_review(data, subject_refs, review_id)
     normalized_release_id = _normalize_current_release(data)
 
-    preliminary = validate_data(data, schema_path, base_dir=base_dir)
-    if preliminary.errors:
-        raise InitMaterializationError(
-            "approved INIT model is not Schema/cross-reference valid before batching: "
-            + "; ".join(item.render() for item in preliminary.errors[:5])
-        )
-    reconciliation = reconcile_findings(
-        preliminary.issues, evidence_inventory, data
-    )
     summary_items = copy.deepcopy(preview.get("updateSummaryItems", []))
     if not isinstance(summary_items, list) or not summary_items:
         raise InitMaterializationError("updateSummaryItems must not be empty")
@@ -628,16 +652,17 @@ def materialize_approved_init(
         "reviewId": review_id,
         "changeIds": [item["id"] for item in changes],
         "summaryItems": summary_items,
-        "attentionItems": reconciliation["attentionItems"],
+        "attentionItems": [],
         "nextFocusOptionIds": option_ids,
         "projectStageBefore": current_stage,
         "projectStageAfter": current_stage,
         "changeLevel": preview.get("changeLevel", "project"),
         "extensions": {
             "materializationType": "approved_managed_panorama_initialization",
-            "findingReconciliation": reconciliation["classifiedFindings"],
-            "formalHighCriticalCount": reconciliation["formalHighCriticalCount"],
-            "attentionClusterCount": reconciliation["attentionCount"],
+            "findingReconciliation": [],
+            "formalFindingCount": 0,
+            "formalHighCriticalCount": 0,
+            "attentionClusterCount": 0,
             "candidateReleaseNormalizedFrom": normalized_release_id,
         },
     }
@@ -654,18 +679,37 @@ def materialize_approved_init(
         "updateBatchId": update_id,
     }
 
-    final_report = validate_data(data, schema_path, base_dir=base_dir)
-    if final_report.errors:
-        raise InitMaterializationError(
-            "materialized Panorama is invalid: "
-            + "; ".join(item.render() for item in final_report.errors[:5])
+    final_report = None
+    reconciliation = None
+    for _ in range(2):
+        report = validate_data(data, schema_path, base_dir=base_dir)
+        if report.errors:
+            raise InitMaterializationError(
+                "materialized Panorama is invalid: "
+                + "; ".join(item.render() for item in report.errors[:5])
+            )
+        candidate = reconcile_findings(report.issues, evidence_inventory, data)
+        _write_reconciliation(batch, candidate)
+        settled_report = validate_data(data, schema_path, base_dir=base_dir)
+        if settled_report.errors:
+            raise InitMaterializationError(
+                "materialized Panorama is invalid after Finding reconciliation: "
+                + "; ".join(item.render() for item in settled_report.errors[:5])
+            )
+        settled = reconcile_findings(
+            settled_report.issues, evidence_inventory, data
         )
-    if (
-        reconciliation["formalHighCriticalCount"] > 0
-        and not batch["attentionItems"]
-    ):
+        if _reconciliation_matches(batch, settled):
+            final_report = settled_report
+            reconciliation = settled
+            break
+    if final_report is None or reconciliation is None:
         raise InitMaterializationError(
-            "CONTROL consistency failed: High/Critical findings but no Attention"
+            "final Validator findings did not stabilize after 2 reconciliation passes"
+        )
+    if not _reconciliation_matches(batch, reconciliation):
+        raise InitMaterializationError(
+            "final Validator findings do not match stored reconciliation and CONTROL Attention"
         )
     return {
         "data": data,

@@ -142,6 +142,17 @@ OPERATIONAL_PATH_SIGNALS = {
     "retrieval",
 }
 
+EXPLICIT_KNOWLEDGE_OPERATIONAL_BOUNDARIES = {
+    "90-system",
+    "_state",
+    "_system",
+    "system",
+}
+
+KNOWLEDGE_OPERATIONAL_SEMANTIC_SIGNALS = (
+    OPERATIONAL_PATH_SIGNALS - EXPLICIT_KNOWLEDGE_OPERATIONAL_BOUNDARIES
+)
+
 OPERATIONAL_STRUCTURED_FORMATS = {"json", "jsonl", "yaml", "toml"}
 # Content probing is intentionally limited to bounded HTML prefixes because
 # Managed/Legacy marker detection requires it. Other evidence stays metadata-only.
@@ -198,6 +209,37 @@ def _knowledge_base_hint(relative: Path) -> bool:
     )
 
 
+def _knowledge_operational_parts(relative: Path) -> tuple[str, ...]:
+    """Return path parts after the last knowledge root, excluding the file name."""
+
+    directories = tuple(part.lower() for part in relative.parts[:-1])
+    knowledge_indexes = [
+        index
+        for index, part in enumerate(directories)
+        if part in KNOWLEDGE_BASE_DIRECTORY_NAMES
+    ]
+    if not knowledge_indexes:
+        return ()
+    return directories[knowledge_indexes[-1] + 1 :]
+
+
+def _knowledge_operational_boundary(relative: Path) -> bool:
+    return bool(
+        set(_knowledge_operational_parts(relative))
+        & EXPLICIT_KNOWLEDGE_OPERATIONAL_BOUNDARIES
+    )
+
+
+def _knowledge_operational_semantic(relative: Path) -> bool:
+    parts = set(_knowledge_operational_parts(relative))
+    normalized_stem = relative.stem.lower().replace("_", "-")
+    return bool(
+        parts & KNOWLEDGE_OPERATIONAL_SEMANTIC_SIGNALS
+        or normalized_stem in MACHINE_STATE_STEMS
+        or normalized_stem in {"registry", "audit", "metadata"}
+    )
+
+
 def _path_at_or_below(path: Path, boundary: Path) -> bool:
     try:
         path.resolve(strict=False).relative_to(boundary.resolve(strict=False))
@@ -238,6 +280,16 @@ def _operational_metadata_hint(relative: Path, file_format: str) -> bool:
     parts = raw_parts | normalized_parts
     path_signal = bool(parts & OPERATIONAL_PATH_SIGNALS)
     machine_signal = _machine_state_hint(relative)
+    if _knowledge_base_hint(relative):
+        qualified_knowledge_signal = (
+            _knowledge_operational_boundary(relative)
+            and _knowledge_operational_semantic(relative)
+        )
+        if file_format in OPERATIONAL_STRUCTURED_FORMATS:
+            return qualified_knowledge_signal
+        if file_format == "markdown":
+            return qualified_knowledge_signal and machine_signal
+        return False
     if file_format in OPERATIONAL_STRUCTURED_FORMATS:
         return path_signal or machine_signal
     if file_format == "markdown":
@@ -250,10 +302,12 @@ def evidence_access_class(relative: Path, file_format: str) -> str:
 
     if _secret_risk(relative):
         return "SECRET"
+    if _knowledge_base_hint(relative):
+        if _operational_metadata_hint(relative, file_format):
+            return "PROJECT_OPERATIONAL_METADATA"
+        return "PROJECT_CONTENT"
     if _operational_metadata_hint(relative, file_format):
         return "PROJECT_OPERATIONAL_METADATA"
-    if _knowledge_base_hint(relative):
-        return "PROJECT_CONTENT"
     return "PUBLIC_PROJECT_EVIDENCE"
 
 

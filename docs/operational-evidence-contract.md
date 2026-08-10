@@ -40,11 +40,11 @@ Discovery 为每个候选输出：
 - `secretRisk`；
 - `knowledgeBaseHint`。
 
-Knowledge root 内的普通文件保持 `PROJECT_CONTENT`。只有路径/语义信号与安全格式同时成立时，才标记为 `PROJECT_OPERATIONAL_METADATA` Candidate。
+Knowledge root 内的普通文件优先保持 `PROJECT_CONTENT`。只有同时存在明确 Operational System Boundary、Operational Semantic 与安全格式时，才标记为 `PROJECT_OPERATIONAL_METADATA` Candidate。
 
 ## 3. Operational Candidate Qualification
 
-资格判断至少需要两个独立信号：
+普通工程目录中的资格判断至少需要两个独立信号：
 
 1. 结构化格式或明确的机器状态文件名；
 2. operational path/semantic signal，例如 system、state、registry、audit、reports、runtime、health、metadata、generated、tasks、approvals 或 retrieval。
@@ -56,7 +56,19 @@ Knowledge root 内的普通文件保持 `PROJECT_CONTENT`。只有路径/语义�
 - TOML；
 - 明确 machine-status 的 Markdown/frontmatter。
 
-目录名本身不能授权读取。例如 `knowledge/article-001.yaml` 仍是 `PROJECT_CONTENT`；`vault/90-System/tasks/registry.json` 可以成为 Operational Candidate。
+Knowledge Root（`knowledge`、`vault`、`wiki`、`kb`）默认覆盖普通 operational 名称。`reports`、`tasks`、`status` 等目录名本身不能授权读取。Knowledge Root 内升级为 Operational Candidate 必须同时满足：
+
+1. 明确系统边界：`90-System`、`_system`、`system` 或 `_state`；
+2. 边界内存在 registry、state、audit、runtime、tasks、approvals 等 Operational Semantic；
+3. 使用允许的安全格式。
+
+固定边界示例：
+
+```text
+knowledge/reports/customer-report.json → PROJECT_CONTENT
+vault/tasks/personal-tasks.json        → PROJECT_CONTENT
+vault/90-System/tasks/registry.json    → PROJECT_OPERATIONAL_METADATA
+```
 
 ## 4. Bounded Inspector
 
@@ -119,7 +131,7 @@ python scripts/observe_project_runtime.py path/to/project-root `
 - 顶层 Python dependency 的 import availability（不执行 import）；
 - 指定 process name 是否被观察到，不读取 PID 参数或环境；
 - 指定 scheduler name 的注册状态，不列出任务命令；
-- 项目声明的显式 safe test command。
+- 项目声明的 test command（默认只校验声明，不执行）。
 
 Safe test command 必须来自 project-relative JSON manifest，并声明：
 
@@ -132,9 +144,33 @@ Safe test command 必须来自 project-relative JSON manifest，并声明：
 }
 ```
 
-Observer 使用 `shell=false`、最小环境、超时和前后文件元数据快照；拒绝 shell、package manager、install/build/download/upload 和 URL 参数。它只返回 exit code、状态与耗时；stdout/stderr 直接丢弃，字节数字段保持 `null`，不返回输出内容。
+Manifest 中的 `safe=true`、`networkAccess=none`、`writesProject=false` 与 `installsDependencies=false` 只是项目声明，不是技术隔离证明。Observer 验证声明后默认返回：
 
-安装依赖、构建容器、模型下载、网络测试、外部 API 或成本明显的命令不得自动执行，只能登记 `not_observed / requires explicit authorization`。
+```text
+status = requires_explicit_authorization
+provenance = not_observed
+```
+
+不得自动执行 Python、Node、native executable 或其他通用项目代码。只有用户明确授权准确命令后才能使用：
+
+```powershell
+python scripts/observe_project_runtime.py path/to/project-root `
+  --test-manifest observation.json `
+  --test-id unit `
+  --authorize-test-execution
+```
+
+授权执行仍使用 `shell=false`、最小环境、超时、命令过滤和前后项目文件元数据快照；拒绝 shell、package manager、install/build/download/upload 和 URL 参数。它只返回 exit code、状态与耗时；stdout/stderr 直接丢弃，不返回输出内容。结果必须诚实记录：
+
+```text
+networkIsolation = not_enforced
+filesystemIsolation = not_enforced
+projectWriteCheck = post_execution_metadata_check
+```
+
+在没有 OS sandbox 或等价技术证据时，不得输出 `networkUsed=false`、`secretValuesRead=false` 等无法证明的事实。
+
+安装依赖、构建容器、模型下载、网络测试、外部 API、来源不明或成本明显的命令不得执行，只能登记 `not_observed / requires explicit authorization`。显式授权只解除“是否执行”门槛，不把命令变成已隔离或已证明安全。
 
 ## 7. Provenance
 

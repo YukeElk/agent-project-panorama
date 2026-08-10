@@ -81,7 +81,16 @@ Preview Hash 是 canonical JSON SHA-256，覆盖完整 `preview`，包括 Panora
 - `approvedAt=T2`，且不早于 Preview `generatedAt=T1`；
 - 当前 Source Snapshot 与 Preview 中的 Snapshot 完全一致。
 
-Git 项目 Snapshot 包含 HEAD、branch、dirty、状态条目数量、状态 Hash，以及不读取正文的 worktree path/size/mtime metadata Hash。非 Git 项目使用同样受限的 filesystem metadata snapshot。HEAD 或工作树状态变化时停止，重新生成 Preview 并重新批准。
+Git 项目使用 `git ls-files --cached --others --exclude-standard` 枚举 tracked + 非忽略 untracked 文件，Snapshot 包含 HEAD、branch、过滤后的 dirty/status 计数与 Hash，以及不读取正文的 worktree path/size/mtime metadata Hash。非 Git 项目使用同样受限的 filesystem metadata snapshot。
+
+Source Snapshot 显式排除 Panorama-owned artifacts：
+
+- `.panorama-work/`；
+- `.*.panorama.lock`；
+- `*.backup-*.html`；
+- `*.local.html`。
+
+Approved Model、临时审计和初始 JSON 应放入 `.panorama-work/`，避免 Skill 自己制造 Source Drift。真实 HEAD 或项目源文件变化时停止，重新生成 Preview 并重新批准。
 
 Initial Review 的 `reviewedAt` 必须使用 T2，不得使用 T1。
 
@@ -100,12 +109,14 @@ VERIFY MODEL VERSION
 → CREATE SEMANTIC CHANGES
 → BIND REVIEW TO SUBJECTS
 → NORMALIZE CANDIDATE RELEASE SEMANTICS
-→ RUN VALIDATOR
-→ CLASSIFY FORMAL FINDINGS
-→ CLUSTER CONTROL ATTENTION
-→ CREATE INITIAL UPDATEBATCH
+→ CREATE PROVISIONAL INITIAL UPDATEBATCH
 → SET REVISION / LATEST UPDATE
-→ FINAL VALIDATE
+→ RUN VALIDATOR
+→ CLASSIFY FINAL FORMAL FINDINGS
+→ CLUSTER CONTROL ATTENTION
+→ WRITE RECONCILIATION
+→ VALIDATE AGAIN（最多 2 次稳定化）
+→ ASSERT FINAL FINDING / RECONCILIATION / ATTENTION CONSISTENCY
 → ATOMIC JSON WRITE
 ```
 
@@ -151,7 +162,16 @@ Initial UpdateBatch：
 
 被明确标记 blocked 的 Transition Finding 分类为 `CONTROL_BLOCKER`。
 
-完整分类结果保存在 Initial UpdateBatch `extensions.findingReconciliation`，不扩展 Schema。
+完整分类结果保存在 Initial UpdateBatch `extensions.findingReconciliation`，不扩展 Schema。分类输入必须来自已存在 provisional UpdateBatch 的 materialized data，而不是加入 UpdateBatch 前的中间状态。
+
+写入 Reconciliation 和 Attention 后再次运行 Validator。必要时最多进行 2 次稳定化，最终必须满足：
+
+```text
+Final Validator Findings ↔ Initial UpdateBatch extensions.findingReconciliation
+Final actionable High/Critical ↔ CONTROL Attention
+```
+
+未稳定或任一集合不一致时停止，不写正式输出。
 
 ## 7. CONTROL Attention
 
@@ -203,15 +223,15 @@ python scripts/materialize_init.py `
 计算 Preview Hash：
 
 ```powershell
-python scripts/materialize_init.py draft-init-model.json --print-preview-hash
+python scripts/materialize_init.py .panorama-work/draft-init-model.json --print-preview-hash
 ```
 
 用户批准准确 Hash 后物化：
 
 ```powershell
-python scripts/materialize_init.py approved-init-model.json `
+python scripts/materialize_init.py .panorama-work/approved-init-model.json `
   --project-root path/to/project `
-  --output work/initial-panorama-data.json
+  --output .panorama-work/initial-panorama-data.json
 ```
 
 输出存在时拒绝覆盖。成功后再使用 `scripts/init_panorama.py` 将 JSON 嵌入稳定 Renderer。

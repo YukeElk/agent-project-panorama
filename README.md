@@ -71,14 +71,18 @@ python scripts/inspect_operational_evidence.py path/to/project-root `
   --path vault/90-System/tasks/registry.json
 ```
 
-Current Runtime / Verification 使用只读 Observer。它只返回 Git、文件存在性、dependency availability、
-指定 process/scheduler name 与显式 safe test 的状态，不读取进程参数或测试输出，也不安装依赖、构建或联网：
+Current Runtime / Verification 使用只读 Observer。它只自动观察 Git、文件存在性、dependency availability
+与指定 process/scheduler name，不读取进程参数：
 
 ```powershell
 python scripts/observe_project_runtime.py path/to/project-root `
   --dependency json `
   --check-path reports/current-status.json
 ```
+
+Test manifest 中的 `safe` 只是声明。Observer 默认只校验并返回 `requires_explicit_authorization`，不会执行
+Python、Node 或其他通用项目代码。用户明确授权准确命令后才能使用 `--authorize-test-execution`；即使执行，
+仍会诚实报告网络/文件系统隔离未实施，只做项目文件元数据事后检查，且不返回 stdout/stderr。
 
 完整访问边界见 [`docs/operational-evidence-contract.md`](docs/operational-evidence-contract.md)。
 
@@ -90,12 +94,14 @@ Findings、Risk Candidates、Unknown 和 2–3 个 Next Focus。用户批准 Pre
 生成 Initial Review、Change、UpdateBatch、聚类 Attention 和原样 Guidance：
 
 ```powershell
-python scripts/materialize_init.py approved-init-model.json `
+python scripts/materialize_init.py .panorama-work/approved-init-model.json `
   --project-root path/to/project-root `
-  --output work/initial-panorama-data.json
+  --output .panorama-work/initial-panorama-data.json
 ```
 
-Source Snapshot 变化、批准 Hash 不匹配或 Schema/Cross-reference Error 都会阻止物化。Candidate Release
+Git Source Snapshot 使用 tracked + 非忽略 untracked 文件，并排除 `.panorama-work/`、Panorama lock/backup
+和 `*.local.html`。真实 Source Snapshot 变化、批准 Hash 不匹配、最终 Finding/Reconciliation/Attention
+不一致或 Schema/Cross-reference Error 都会阻止物化。Candidate Release
 保留为 Release 实体，但不会冒充 `project.currentReleaseId`。物化 JSON 验证通过后，再交给
 `scripts/init_panorama.py` 生成 Single HTML。
 
