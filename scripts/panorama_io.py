@@ -124,6 +124,18 @@ def compute_data_hash(data: dict[str, Any]) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
+def compute_canonical_hash(value: Any) -> str:
+    """Return SHA-256 for any canonical JSON-compatible value."""
+
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def compute_presentation_hash(html_text: str) -> str:
     """Hash every HTML byte except the replaceable JSON payload."""
 
@@ -211,6 +223,7 @@ __all__ = [
     "DATA_START_MARKER",
     "PanoramaIOError",
     "atomic_write",
+    "compute_canonical_hash",
     "compute_data_hash",
     "compute_presentation_hash",
     "create_backup",

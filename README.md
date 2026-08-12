@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.1.4（Evidence & Materialization Hardening）
+# Agent Project Panorama V0.2（Continuous Observation）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.1.4 能力
+## V0.2 能力
 
 - 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
 - `控制台 / 系统 / 演进` 三主视图；
@@ -20,8 +20,55 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - Legacy / Managed Panorama 检测、Current / Target / Transition 语义协议、Module 四状态和隔离的 Semantic Eval Harness。
 - 五类 Evidence Access Class、受限 Operational Metadata Inspector，以及不读取进程参数/命令输出的 Current Runtime / Verification Observation；
 - Approved INIT Preview Hash/Source Snapshot 绑定，以及 Initial Review、Change、UpdateBatch、聚类 Attention 和 Guidance 的确定性物化。
+- 正式 Current 的 Continuous Observation：Git Hook、启动补偿、Source Binding、Fact Provenance、Current Architecture Snapshot 与 Observation Batch；
+- 项目规范 Standard Pack 输入、声明式安全评估、规范风险披露与 Commit/Pack/Data Hash 绑定；
+- 自动更新只记录 observed/declared/inferred/unknown/conflict 事实，保护 Intent、Target、Decision、Review、Acceptance、Waiver、Guidance 和 Credential。
 
 页面只读。核心实体编辑、评审批准和文件写回必须通过外部更新流程完成。
+
+## Continuous Observation
+
+V0.2 取消需要人工维护的 Current Baseline。Current 可以基于实际 Git、实现、验证、运行、资源与规范证据全量自动更新；Target 和治理事实保持受保护。自动化不会修改业务项目，也不会向业务分支提交。
+
+先将 V0.1 迁移为新文件：
+
+```powershell
+python scripts/migrate_v01_to_v02.py project-panorama.local.html `
+  --output project-panorama.v0.2.local.html
+```
+
+执行首次同步并登记项目规范：
+
+```powershell
+python scripts/continuous_observation.py project-panorama.v0.2.local.html `
+  --project-root path/to/project `
+  --standard path/to/project/standards/engineering.yaml
+```
+
+安装 Git Hooks；Hook 只入队并后台唤醒一次同步，失败不影响 Git Commit：
+
+```powershell
+python scripts/manage_git_hook.py install path/to/project `
+  --panorama path/to/project/project-panorama.v0.2.local.html `
+  --standard path/to/project/standards/engineering.yaml
+```
+
+支持 `post-commit`、`post-merge`、`post-checkout` 和 `post-rewrite`。每次 Skill 启动或显式 sync 都会比较 Source Binding 与 HEAD，因此遗漏 Hook 后仍能补偿追踪。
+
+自动观察写入 Observation Batch，而不是伪造人工 Review。允许的事实类别和受保护路径由带 SHA-256 的 `observationPolicy` 固定；策略自身不能被自动修改。完整边界见 [`docs/continuous-observation-contract.md`](docs/continuous-observation-contract.md)。
+
+## 项目规范
+
+规范输入使用 JSON/YAML Standard Pack：
+
+```powershell
+python scripts/validate_standard_pack.py standards/engineering.yaml
+python scripts/assess_project_standards.py project-panorama.v0.2.local.html `
+  --project-root path/to/project `
+  --standard standards/engineering.yaml
+```
+
+支持 `path_exists`、`path_absent`、`path_glob_exists`、`git_tracked`、`panorama_pointer_exists`、`panorama_pointer_equals` 和 `manual`。规范包不能携带任意命令或网络回调。示例位于 [`examples/standard-pack.example.yaml`](examples/standard-pack.example.yaml)，合同见 [`docs/standards-assessment-contract.md`](docs/standards-assessment-contract.md)。
 
 ## 环境
 
@@ -295,10 +342,10 @@ record，当前 UI 只显示当前 Guidance。
 
 ## 兼容性
 
-- Data Schema：`0.1`
-- Renderer：`0.1.2`（zh-CN）
+- Data Schema：`0.1`、`0.2`
+- Renderer：`0.2.0`（zh-CN）
 - 支持 Template：`0.1.0`、`0.1.1`
-- Skill 支持 Schema：`0.1`
+- Skill 支持 Schema：`0.1`、`0.2`
 
 不支持的 Schema/Template 会显示或返回明确错误，不静默渲染。
 
@@ -324,9 +371,8 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 ## Design Baseline 与 Schema Findings
 
 - 原始设计基线位于 `docs/design/`；
-- 当前冻结 Schema 为 `schema/panorama.schema.v0.1.json`；
+- V0.1 冻结 Schema 为 `schema/panorama.schema.v0.1.json`；V0.2 Continuous Observation Schema 为 `schema/panorama.schema.v0.2.json`；
 - 建模缺口记录在 `docs/schema-findings.md`；
-- V0.1.3 没有覆盖或重构 v0.1 Schema，Renderer 仍为 0.1.2。
+- V0.2 不覆盖 v0.1；迁移默认输出新文件，Renderer 为 0.2.0。
 
-V0.2 的历史快照、Artifact Manifest、结构化 Replacement 和正式 Next Focus Snapshot 仅作为
-后续 Migration Proposal，本轮未执行。
+V0.2 已实现 Observation Snapshot；原 SF-03、SF-08、SF-09、SF-13 所述完整 Architecture Version Snapshot、Artifact Manifest、结构化 Replacement 和 Next Focus Snapshot 仍未实现。

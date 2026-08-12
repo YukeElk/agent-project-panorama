@@ -12,6 +12,7 @@ from typing import Any, Iterable
 
 from panorama_cli import ChineseArgumentParser
 from panorama_io import PanoramaIOError, extract_data
+from schema_support import SCHEMA_BY_VERSION, schema_for_data
 
 
 ENTITY_REF_TYPES = {
@@ -37,6 +38,9 @@ ENTITY_REF_TYPES = {
     "review",
     "change",
     "update_batch",
+    "observation_batch",
+    "current_architecture_snapshot",
+    "standard_assessment",
 }
 
 SCOPE_TYPE_MAP = {
@@ -48,7 +52,7 @@ SCOPE_TYPE_MAP = {
     "deployment": "deployment",
 }
 
-SUPPORTED_SCHEMA_VERSIONS = {"0.1"}
+SUPPORTED_SCHEMA_VERSIONS = set(SCHEMA_BY_VERSION)
 SUPPORTED_TEMPLATE_VERSIONS = {"0.1.0", "0.1.1"}
 
 
@@ -239,6 +243,10 @@ def build_registry(data: dict[str, Any], report: ValidationReport) -> EntityRegi
         "review": _items(data, "reviews"),
         "change": _items(data, "changes"),
         "update_batch": _items(data, "updateBatches"),
+        "fact_provenance": _items(data, "factProvenance"),
+        "observation_batch": _items(data, "observationBatches"),
+        "current_architecture_snapshot": _items(data, "currentArchitectureSnapshots"),
+        "standard_assessment": _items(data, "standardAssessments"),
         "decision_option": [
             option
             for decision in _items(data, "decisions")
@@ -614,6 +622,59 @@ def validate_cross_references(
         require(batch.get("projectStageAfter"), "stage", f"{base}/projectStageAfter")
         for item_index, item in enumerate(batch.get("attentionItems", [])):
             require_entity_refs(item.get("relatedEntities"), f"{base}/attentionItems/{item_index}/relatedEntities")
+
+    if data.get("schemaVersion") == "0.2":
+        policy = data.get("observationPolicy", {})
+        if not isinstance(policy, dict):
+            report.error("INVALID_OBSERVATION_POLICY", "observationPolicy 必须是对象。", "/observationPolicy")
+        else:
+            try:
+                from observation_policy import policy_hash
+
+                expected_policy_hash = policy_hash(policy)
+            except (TypeError, ValueError):
+                expected_policy_hash = None
+            if policy.get("policyHash") != expected_policy_hash:
+                report.error(
+                    "OBSERVATION_POLICY_HASH_MISMATCH",
+                    "Continuous Observation Policy Hash 与策略内容不一致。",
+                    "/observationPolicy/policyHash",
+                )
+        binding = data.get("sourceBinding", {})
+        require(
+            binding.get("lastObservationBatchId"),
+            "observation_batch",
+            "/sourceBinding/lastObservationBatchId",
+            optional=True,
+        )
+        for index, provenance in enumerate(_items(data, "factProvenance")):
+            require(
+                provenance.get("observationBatchId"),
+                "observation_batch",
+                f"/factProvenance/{index}/observationBatchId",
+            )
+        for index, snapshot in enumerate(_items(data, "currentArchitectureSnapshots")):
+            base = f"/currentArchitectureSnapshots/{index}"
+            require_many(snapshot.get("moduleIds"), "module", f"{base}/moduleIds")
+            require_many(snapshot.get("connectionIds"), "connection", f"{base}/connectionIds")
+            require_many(snapshot.get("provenanceIds"), "fact_provenance", f"{base}/provenanceIds")
+        for index, assessment in enumerate(_items(data, "standardAssessments")):
+            base = f"/standardAssessments/{index}"
+            for result_index, result in enumerate(assessment.get("results", [])):
+                require_entity_refs(
+                    result.get("relatedEntities"),
+                    f"{base}/results/{result_index}/relatedEntities",
+                )
+        for index, batch in enumerate(_items(data, "observationBatches")):
+            base = f"/observationBatches/{index}"
+            require_many(batch.get("standardAssessmentIds"), "standard_assessment", f"{base}/standardAssessmentIds")
+            require_many(batch.get("provenanceIds"), "fact_provenance", f"{base}/provenanceIds")
+            if batch.get("revisionTo") != batch.get("revisionFrom", -1) + 1:
+                report.error(
+                    "INVALID_OBSERVATION_REVISION",
+                    "Observation Batch 必须精确增加一个 Revision。",
+                    f"{base}/revisionTo",
+                )
 
     guidance = data.get("guidance", {})
     for field_name in ("recommendedOptionId", "selectedOptionId"):
@@ -1347,7 +1408,7 @@ def validate_rules(
 
 def validate_data(
     data: dict[str, Any],
-    schema_path: str | Path,
+    schema_path: str | Path | None = None,
     *,
     base_dir: str | Path = ".",
     source_path: str | Path | None = None,
@@ -1369,7 +1430,12 @@ def validate_data(
             "/meta/templateVersion",
         )
         return report
-    validate_schema(data, schema_path, report)
+    try:
+        selected_schema = schema_for_data(data, schema_path)
+    except ValueError as exc:
+        report.error("UNSUPPORTED_SCHEMA_VERSION", str(exc), "/schemaVersion")
+        return report
+    validate_schema(data, selected_schema, report)
     if report.errors:
         return report
     registry = build_registry(data, report)
@@ -1406,12 +1472,11 @@ def load_panorama(path: str | Path) -> tuple[dict[str, Any], Path]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    default_schema = Path(__file__).resolve().parents[1] / "schema" / "panorama.schema.v0.1.json"
     parser = ChineseArgumentParser(
         description="校验 Panorama Schema、跨实体引用和工程规则。"
     )
     parser.add_argument("input", type=Path, help="Panorama JSON 或 Single HTML")
-    parser.add_argument("--schema", type=Path, default=default_schema)
+    parser.add_argument("--schema", type=Path, default=None, help="覆盖自动选择的 Schema")
     parser.add_argument(
         "--json",
         action="store_true",

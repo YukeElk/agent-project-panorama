@@ -24,7 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--schema",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "schema" / "panorama.schema.v0.1.json",
+        default=None,
+        help="覆盖按 schemaVersion 自动选择的 Schema",
     )
     parser.add_argument(
         "--allow-invalid",

@@ -77,6 +77,9 @@
     }
     .topbar-meta { display: flex; align-items: center; justify-content: flex-end; padding: 0 22px; color: var(--muted); }
     .revision-label { font: 600 12px/1 var(--mono); }
+    .observation-badge { margin-left: 10px; padding: 4px 7px; border: 1px solid var(--rule-strong); border-radius: 999px; font-size: 11px; font-weight: 720; }
+    .observation-badge.is-current { color: var(--passed); border-color: #a9d8c1; background: #f1fbf6; }
+    .observation-badge.is-stale { color: var(--warning); border-color: #e8c790; background: #fff8eb; }
 
     main { min-height: calc(100vh - var(--topbar-height)); }
     .view { padding: 22px clamp(20px, 2.6vw, 42px) 48px; }
@@ -416,7 +419,7 @@
       <button class="nav-btn" type="button" data-view="system" aria-selected="false">系统</button>
       <button class="nav-btn" type="button" data-view="evolution" aria-selected="false">演进</button>
     </nav>
-    <div class="topbar-meta"><span class="revision-label" id="revision-label">修订 —</span></div>
+    <div class="topbar-meta"><span class="revision-label" id="revision-label">修订 —</span><span class="observation-badge" id="observation-badge" hidden></span></div>
   </header>
 
   <main id="main-content">
@@ -454,9 +457,9 @@
   (function () {
     "use strict";
 
-    var RENDERER_VERSION = "0.1.2";
+    var RENDERER_VERSION = "0.2.0";
     var UI_LOCALE = "zh-CN";
-    var SUPPORTED_SCHEMA_VERSIONS = ["0.1"];
+    var SUPPORTED_SCHEMA_VERSIONS = ["0.1", "0.2"];
     var SUPPORTED_TEMPLATE_VERSIONS = ["0.1.0", "0.1.1"];
 
     var rootDataElement = document.getElementById("project-panorama-data");
@@ -525,6 +528,13 @@
     };
 
     document.getElementById("revision-label").textContent = "修订 " + String(data.meta.revision) + " · Schema " + String(data.schemaVersion);
+    if (String(data.schemaVersion) === "0.2" && data.sourceBinding) {
+      var observationBadge = document.getElementById("observation-badge");
+      var observedHead = String(data.sourceBinding.gitHead || "");
+      observationBadge.hidden = false;
+      observationBadge.classList.add(observedHead ? "is-current" : "is-stale");
+      observationBadge.textContent = observedHead ? "自动追踪 · " + observedHead.slice(0, 8) : "等待首次同步";
+    }
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -650,6 +660,9 @@
     function currentUpdate() {
       return byId("update_batch", data.meta.latestUpdateBatchId) || arr(data.updateBatches).slice(-1)[0] || null;
     }
+    function currentObservation() {
+      return arr(data.observationBatches).slice(-1)[0] || null;
+    }
     function selectedDeployment() {
       var deployments = deploymentsForEnvironment(state.selectedEnvironment).slice().sort(function (a, b) {
         var rank = { active: 0, deploying: 1, degraded: 2, planned: 3, stopped: 4, retired: 5 };
@@ -692,6 +705,7 @@
       var currentStage = byId("stage", data.project.currentStageId);
       var currentRelease = byId("release", data.project.currentReleaseId);
       var update = currentUpdate();
+      var observation = currentObservation();
       var environmentHtml = ["development", "staging", "production"].map(function (environment) {
         var deployments = deploymentsForEnvironment(environment);
         if (!deployments.length) return status("unknown", humanize(environment) + " · 无部署");
@@ -731,6 +745,7 @@
         metaCell("目标架构", targetArch ? targetArch.label : "无") +
         metaCell("当前发布", currentRelease ? currentRelease.version : "无") +
         "<div class='meta-cell'><span class='meta-label'>运行时 / 更新时间</span><div class='environment-mini'>" + environmentHtml + "</div><div class='cell-sub' style='margin-top:7px'>" + e(dateTime(data.meta.updatedAt)) + "</div>" +
+        (observation ? "<div class='cell-sub mono' style='margin-top:7px'>Observed " + e(String(observation.sourceCommitTo || "").slice(0, 8)) + " · " + e(arr(observation.standardAssessmentIds).length) + " 规范</div>" : "") +
         (containsEmbeddedSecret() ? "<div class='sensitive-flag'><span aria-hidden='true'>△</span> 包含敏感数据</div>" : "") + "</div></div>" +
         "<div class='control-grid'><div class='control-main'>" +
         sectionHeading("最近已评审更新", update ? update.id : "—") + "<div class='framed'><ul class='reviewed-list'>" + updateHtml + "</ul></div>" +

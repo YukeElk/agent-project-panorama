@@ -1,19 +1,20 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.1.4 Single HTML，理解陌生或已有项目、安全获取 Operational Evidence、输出并确定性物化 INIT Preview，并执行 INSPECT、PROPOSE UPDATE、APPLY UPDATE、VALIDATE 和 Renderer 升级。Use when Codex needs to model an unfamiliar project, safely distinguish project content from operational metadata, observe current verification/runtime, materialize an approved INIT Preview, or apply an architecture-centric Panorama update with approval-hash binding and Presentation Layer preservation."
+description: "操作 Agent Project Panorama V0.1–V0.2 Single HTML，持续自动追踪 Git/实现/验证/运行事实，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, assess declarative project standards, preserve fact provenance, or apply an architecture-centric Panorama update without making governance decisions."
 ---
 
 # Agent 项目全景
 
-将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.1.4 支持 Schema `0.1`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.1.2`。
+将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.2 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.2.0`。
+V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
 
 ## 不变量
 
 - 保持 HTML 对用户只读；已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
 - 普通更新只能修改 `project-panorama-data` 内的 JSON payload。
 - 保留两个数据 Marker、DOM、CSS、Renderer JavaScript、未知字段与所有 `extensions`。
-- Apply 前要求用户评审并批准准确的 Proposal Hash；不得制造或推断批准。
-- Schema 重构前先记录 Schema Finding；普通更新不得修改冻结的 Schema v0.1。
+- 治理变更 Apply 前要求用户评审并批准准确的 Proposal Hash；V0.2 事实观察只可按已启用 Policy 自动 Apply，不得制造或推断批准。
+- Schema 重构前先记录 Schema Finding；V0.1 普通更新不得修改冻结 Schema，V0.2 Observation 不得修改 Schema 或 Policy。
 - 不确定信息标记为 unknown/draft/pending，或向用户索取证据；不得虚构 ID、路径、评审、验收、部署或凭据。
 - 除非用户明确批准迁移，否则保持现有凭据模式。
 - 摘要不得输出 Embedded 明文；除非用户明确要求对应敏感值，否则不得使用 `--unsafe-include-secrets`。
@@ -168,6 +169,45 @@ python scripts/init_panorama.py `
    输出默认脱敏。不要读取 External File 内容，也不要解析 External Store 值。
 4. 汇报当前阶段、主线、当前→目标架构、活跃/部署中运行状态、最近更新、High/Critical 关注事项、验证缺口和当前下一步焦点。
 
+## CONTINUOUS OBSERVATION
+
+Schema `0.2` 每次使用 Skill 时先比较 `sourceBinding.gitHead` 与项目 HEAD；不一致即执行补偿同步，不等待用户提醒：
+
+```powershell
+python scripts/continuous_observation.py path/to/project-panorama.v0.2.local.html `
+  --project-root path/to/project `
+  --standard path/to/project/standards/engineering.yaml
+```
+
+完整读取 [Continuous Observation Contract](docs/continuous-observation-contract.md)。只自动更新 Current Implementation/Runtime、Verification、Resource Observation、Source Freshness、Standard Assessment 与 Risk Candidate。事实使用 observed/declared/inferred/unknown/conflict，并保存 Commit、Evidence、Confidence 与 Observation Batch。
+
+不得自动修改 Intent、Requirement、Target、Decision、Review、Acceptance 治理状态、Waiver、Guidance、Credential、Schema、Policy 或 Presentation；实际状态偏离它们时更新 Current 并披露 Drift。不得修改业务项目或向业务分支自动提交。
+
+V0.1 升级必须输出新文件：
+
+```powershell
+python scripts/migrate_v01_to_v02.py old.local.html --output new.v0.2.local.html
+```
+
+Hook 安装必须使用现有 V0.2 Panorama；发现外部 Hook 时停止，不得覆盖：
+
+```powershell
+python scripts/manage_git_hook.py install path/to/project `
+  --panorama path/to/project/project-panorama.v0.2.local.html
+```
+
+## ASSESS STANDARDS
+
+完整读取 [Standards Assessment Contract](docs/standards-assessment-contract.md)。只接受通过独立 Schema 的 JSON/YAML Standard Pack；Markdown 必须先规范化，不得在 Hook 中猜测自然语言规则。禁止任意命令、网络回调和越界路径。
+
+```powershell
+python scripts/validate_standard_pack.py path/to/standard.yaml
+python scripts/assess_project_standards.py path/to/panorama.html `
+  --project-root path/to/project --standard path/to/standard.yaml
+```
+
+规范失败可以自动披露为 Standard Assessment 和 Risk Candidate，但不得自动选择缓解方案、修改优先级或批准豁免。
+
 ## PROPOSE UPDATE
 
 不得修改目标 HTML。
@@ -237,4 +277,4 @@ python scripts/validate_panorama.py path/to/project-panorama.html --json
 
 ## 停止边界
 
-不要新增主视图、后端、React/Vue、Kanban、人员/预算/日历管理、云协作、自动 Git 提交、自动凭据迁移或通用 Agent 平台。不要自动读取正式知识库或修改业务项目。除非用户单独批准，不得执行 V0.2 Schema Migration。
+不要新增主视图、后端、React/Vue、Kanban、人员/预算/日历管理、云协作、业务分支自动 Git 提交、自动凭据迁移或通用 Agent 平台。不要自动读取正式知识库或修改业务项目。Panorama-owned State Ref 默认关闭，只有用户单独授权才可启用。
