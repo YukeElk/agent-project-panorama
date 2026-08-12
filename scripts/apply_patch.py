@@ -354,7 +354,7 @@ def _exclusive_update_lock(source: Path):
 def _apply_update_package_locked(
     html_path: str | os.PathLike[str],
     package: dict[str, Any],
-    schema_path: str | os.PathLike[str],
+    schema_path: str | os.PathLike[str] | None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Validate, stage, and atomically apply one approved update package."""
 
@@ -441,7 +441,7 @@ def _apply_update_package_locked(
 def apply_update_package(
     html_path: str | os.PathLike[str],
     package: dict[str, Any],
-    schema_path: str | os.PathLike[str],
+    schema_path: str | os.PathLike[str] | None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Lock, validate, stage, and atomically apply one approved package."""
 
@@ -451,17 +451,12 @@ def apply_update_package(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    default_schema = (
-        Path(__file__).resolve().parents[1]
-        / "schema"
-        / "panorama.schema.v0.1.json"
-    )
     parser = ChineseArgumentParser(
         description="应用经过批准且受 Revision 保护的 Panorama 更新包。"
     )
     parser.add_argument("html", type=Path, help="目标 Panorama HTML")
     parser.add_argument("patch", type=Path, help="待应用更新包 JSON")
-    parser.add_argument("--schema", type=Path, default=default_schema)
+    parser.add_argument("--schema", type=Path, default=None, help="覆盖按 schemaVersion 自动选择的 Schema")
     return parser
 
 

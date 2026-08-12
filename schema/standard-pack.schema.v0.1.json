@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent-project-panorama/standard-pack.schema.v0.1.json",
+  "title": "Agent Project Panorama Standard Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "id", "title", "version", "source", "rules", "extensions"],
+  "properties": {
+    "formatVersion": { "const": "standard-pack.v0.1" },
+    "id": { "$ref": "#/$defs/entityId" },
+    "title": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "location"],
+      "properties": {
+        "type": { "type": "string", "enum": ["local_file", "reference"] },
+        "location": { "type": "string" }
+      }
+    },
+    "appliesTo": { "type": "array", "items": { "type": "string" } },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "entityId": { "type": "string", "pattern": "^[A-Z][A-Z0-9._:-]{1,127}$" },
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "$ref": "#/$defs/entityId" }
+      }
+    },
+    "evaluator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "path_exists", "path_absent", "path_glob_exists", "git_tracked",
+            "panorama_pointer_exists", "panorama_pointer_equals", "manual"
+          ]
+        },
+        "path": { "type": "string" },
+        "pattern": { "type": "string" },
+        "pointer": { "type": "string", "pattern": "^/" },
+        "expected": true
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "enum": ["path_exists", "path_absent", "git_tracked"] } } },
+          "then": { "required": ["path"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "path_glob_exists" } } },
+          "then": { "required": ["pattern"] }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["panorama_pointer_exists", "panorama_pointer_equals"] } } },
+          "then": { "required": ["pointer"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "panorama_pointer_equals" } } },
+          "then": { "required": ["expected"] }
+        }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "title", "category", "severity", "requirement", "evaluator",
+        "relatedEntities", "extensions"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "title": { "type": "string", "minLength": 1 },
+        "category": {
+          "type": "string",
+          "enum": ["architecture", "security", "quality", "release", "runtime", "resource", "access", "documentation", "privacy", "other"]
+        },
+        "severity": { "type": "string", "enum": ["info", "low", "medium", "high", "critical"] },
+        "requirement": { "type": "string", "minLength": 1 },
+        "evaluator": { "$ref": "#/$defs/evaluator" },
+        "relatedEntities": { "type": "array", "items": { "$ref": "#/$defs/entityRef" } },
+        "extensions": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

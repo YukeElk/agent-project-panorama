@@ -20,9 +20,7 @@ from validate_panorama import validate_data
 
 
 DEFAULT_TEMPLATE = Path(__file__).resolve().parents[1] / "templates" / "panorama.html"
-DEFAULT_SCHEMA = (
-    Path(__file__).resolve().parents[1] / "schema" / "panorama.schema.v0.1.json"
-)
+DEFAULT_SCHEMA = None
 
 
 class RendererUpgradeError(RuntimeError):
@@ -33,7 +31,7 @@ def upgrade_renderer(
     source: Path,
     template: Path,
     output: Path,
-    schema: Path = DEFAULT_SCHEMA,
+    schema: Path | None = DEFAULT_SCHEMA,
     *,
     overwrite: bool = False,
 ) -> Path:

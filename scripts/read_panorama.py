@@ -84,7 +84,7 @@ def orientation_summary(data: dict[str, Any]) -> list[tuple[str, str]]:
         data.get("updateBatches", []), data.get("meta", {}).get("latestUpdateBatchId")
     )
 
-    return [
+    summary = [
         ("Schema 版本", str(data.get("schemaVersion", "未知"))),
         ("修订号", str(data.get("meta", {}).get("revision", "未知"))),
         ("项目", _display(project, "name")),
@@ -98,6 +98,17 @@ def orientation_summary(data: dict[str, Any]) -> list[tuple[str, str]]:
             "存在" if _contains_embedded_secret(data) else "不存在",
         ),
     ]
+    binding = data.get("sourceBinding")
+    if isinstance(binding, dict):
+        summary.extend(
+            [
+                ("自动追踪 HEAD", str(binding.get("gitHead") or "等待首次同步")),
+                ("最近观察批次", str(binding.get("lastObservationBatchId") or "无")),
+                ("事实来源记录", str(len(data.get("factProvenance", [])))),
+                ("规范评估", str(len(data.get("standardAssessments", [])))),
+            ]
+        )
+    return summary
 
 
 def build_parser() -> argparse.ArgumentParser:

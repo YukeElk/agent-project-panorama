@@ -202,7 +202,7 @@ def attention_from_findings(findings: list[ValidationIssue]) -> list[dict[str, A
 def build_proposal(
     current: dict[str, Any],
     candidate: dict[str, Any],
-    schema_path: Path,
+    schema_path: Path | None,
     *,
     base_dir: Path,
     source_path: Path | None = None,
@@ -284,7 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = ChineseArgumentParser(description="创建不修改源文件的 Panorama 更新提案。")
     parser.add_argument("panorama", type=Path)
     parser.add_argument("candidate", type=Path)
-    parser.add_argument("--schema", type=Path, default=root / "schema" / "panorama.schema.v0.1.json")
+    parser.add_argument("--schema", type=Path, default=None, help="覆盖按 schemaVersion 自动选择的 Schema")
     parser.add_argument("--output", type=Path)
     return parser
 

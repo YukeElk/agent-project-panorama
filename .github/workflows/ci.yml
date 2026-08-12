@@ -21,6 +21,10 @@ jobs:
       - run: python scripts/validate_panorama.py examples/reference-project.v0.1.json
       - run: python scripts/init_panorama.py --template templates/panorama.html --data examples/reference-project.v0.1.json --output generated-reference.html
       - run: python scripts/validate_panorama.py generated-reference.html
+      - run: python scripts/validate_standard_pack.py examples/standard-pack.example.yaml
+      - run: python scripts/validate_panorama.py examples/reference-project.v0.2.json
+      - run: python scripts/init_panorama.py --template templates/panorama.html --data examples/reference-project.v0.2.json --output generated-reference-v02.html
+      - run: python scripts/validate_panorama.py generated-reference-v02.html
       - name: Verify Presentation Hash
         run: |
           python - <<'PY'
