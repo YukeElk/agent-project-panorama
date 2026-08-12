@@ -10,7 +10,7 @@ from upgrade_renderer import RendererUpgradeError
 def test_renderer_exposes_complete_zh_cn_surface(template_path: Path):
     source = template_path.read_text(encoding="utf-8")
 
-    assert 'var RENDERER_VERSION = "0.1.2"' in source
+    assert 'var RENDERER_VERSION = "0.2.0"' in source
     assert 'var UI_LOCALE = "zh-CN"' in source
     assert "var ZH_LABELS" in source
     assert source.index("var ZH_LABELS") < source.index("renderAll();")
@@ -35,7 +35,7 @@ def test_renderer_keeps_machine_protocol_in_english(template_path: Path):
     source = template_path.read_text(encoding="utf-8")
 
     for token in (
-        'SUPPORTED_SCHEMA_VERSIONS = ["0.1"]',
+        'SUPPORTED_SCHEMA_VERSIONS = ["0.1", "0.2"]',
         'data-view="control"',
         'data-system-view="runtime"',
         'state.architectureMode === "transition"',

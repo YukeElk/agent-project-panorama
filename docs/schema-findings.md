@@ -121,8 +121,49 @@
 - 建议：V0.2 将当次 Next Focus Snapshot（Options 与 Recommended/Selected）保存到对应
   Update Batch，顶层 Guidance 只代表当前建议，并提供 v0.1 → v0.2 Migration。
 
-## 结论
+## SF-16 事实观察更新与治理变更共用 Review/UpdateBatch
+
+- 证据：Schema v0.1 的正式更新只能通过带人工批准语义的 Review、Change 与 UpdateBatch
+  表达；持续 Git、运行态、验证与规范观察并不是项目决策，也不存在真实的逐次批准人。
+- 影响：如果自动追踪复用人工 Apply，会伪造 Review/Approval；如果坚持逐次批准，Current
+  又会因长期未维护而与实际项目割裂。
+- 决策：V0.2 新增 `observationPolicy`、`sourceBinding` 与 `observationBatches`，使用持久策略
+  授权事实更新；人工 Proposal/Review/Apply 保留给治理变更。
+
+## SF-17 实体字段缺少 Fact Authority 与 Evidence Provenance
+
+- 证据：v0.1 只能在零散 `extensions` 中保存来源，无法统一区分 observed、declared、
+  inferred、unknown 与 conflict。
+- 影响：自动重建 Current 时可能把代码推断误写为已确认架构，或无法解释某个状态来自哪个
+  Commit、规范或运行观察。
+- 决策：V0.2 新增 `factProvenance`；每个自动变更路径必须记录 authority、confidence、
+  evidence、Commit 与时间。推断可披露但不得伪装成批准事实。
+
+## SF-18 Current Architecture 缺少 Git Commit 绑定的可重建快照
+
+- 证据：v0.1 `architecture.currentVersionId` 指向人工维护的 Architecture Version，不能证明
+  当前数据覆盖哪个 Git HEAD，也不能在 Hook 遗漏后检测和补偿。
+- 影响：长期开发后 Current 与源码实际状态可能无声漂移。
+- 决策：V0.2 新增 `currentArchitectureSnapshots`，绑定 Commit、Source Snapshot、模块路径
+  观察与未映射变更；`sourceBinding` 明确最后已物化的 HEAD。启动和每次 Hook 均执行补偿检查。
+
+## SF-19 缺少持续规范评估与结果快照
+
+- 证据：v0.1 可以登记规范 Reference，但没有 Standard Pack、Rule、Assessment Result 或
+  Pack Hash 的稳定结构。
+- 影响：无法证明某次风险披露使用了哪个版本的项目规范，也无法增量复评。
+- 决策：规范定义使用独立 `standard-pack.schema.v0.1.json`；V0.2 Panorama 保存
+  `standardAssessments` 快照及 Pack Hash，不把规范正文复制进 HTML。
+
+## V0.1 结论
 
 - 本轮未修改或重构 Schema。
 - 上述 Finding 均有显式兼容策略，不阻塞 Reference Project V0.1 的读取、校验和渲染。
 - SF-01、SF-03、SF-08、SF-09、SF-13 建议作为下一版 Schema 设计的优先议题。
+
+## V0.2 Migration 结论
+
+- SF-16～SF-19 已获得用户明确批准，允许建立 V0.2 Migration。
+- V0.2 只取得“观察、记录和披露”授权；不得修改业务项目、自动作出治理决策、伪造批准、
+  验收或豁免。
+- V0.1 继续只读兼容；迁移必须输出新文件，默认不覆盖原 Panorama。

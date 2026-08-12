@@ -1,0 +1,31 @@
+formatVersion: standard-pack.v0.1
+id: STD-PANORAMA-EXAMPLE
+title: Panorama 示例项目规范
+version: 1.0.0
+source:
+  type: local_file
+  location: examples/standard-pack.example.yaml
+appliesTo:
+  - project
+rules:
+  - id: STD-RULE-README
+    title: 项目必须提供 README
+    category: documentation
+    severity: medium
+    requirement: 项目根目录存在 README.md。
+    evaluator:
+      type: path_exists
+      path: README.md
+    relatedEntities: []
+    extensions: {}
+  - id: STD-RULE-CI
+    title: 项目必须提供 CI 工作流
+    category: quality
+    severity: high
+    requirement: 至少存在一个 GitHub Actions 工作流。
+    evaluator:
+      type: path_glob_exists
+      pattern: .github/workflows/*.yml
+    relatedEntities: []
+    extensions: {}
+extensions: {}
