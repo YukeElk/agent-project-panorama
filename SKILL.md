@@ -182,6 +182,22 @@ python scripts/init_panorama.py `
 - Evidence 字符串默认纯文本；只有与正式 Reference ID 或 location 精确匹配时才激活 Reference，且继续
   遵守敏感标记与 URL 协议白名单。
 
+### Trace Route 与治理投影解释规则
+
+- 只从 Schema 已有 ID 字段建立 Trace 边；为每条边保留字段所有者和精确 JSON Pointer。展示多跳 Route
+  时必须列出每个中间实体和每一跳来源，不得虚构直接关系。
+- 将 Renderer 派生的 uncovered Requirement、orphan WorkItem、未解析引用或缺失 Evidence 标为
+  `Trace Gap Candidate`。只有实际 Validator 输出才能使用 Formal Finding Code；`not_detected` 不等于
+  `absent`，引用或证据不完整时保持 `unknown`。
+- 仅当所有相关 required Gate 为 `passed` 且 Evidence Reference 完整时显示 `verified`；仅当相关
+  Acceptance 为 `accepted`、`verificationStatus=passed` 且 Evidence Reference 完整时显示 `accepted`。
+- 仅当 active Deployment 的 Release 与 Architecture Version 精确匹配，并且包含相关 Module
+  Deployment 时显示 `deployed_observed`。不使用含义模糊的 `integrated`。
+- 仅当 Proposal、活动 Candidate、Session Revision、Formal Validation、Data/Git/Source 基线与 CAS
+  均当前时显示 `change_ready`。这些状态均为只读投影；不得写回 Gate、Acceptance、Review 或部署事实。
+- Proposal Diff 必须直接展示 `propose_update.py` 返回的 JSON Patch、Affected Entities 与 Validation；
+  不在 Renderer 中重算第二套 reconciliation，也不引入 Mission 执行器、Agent 调度或 Git Promote。
+
 ## CONTINUOUS OBSERVATION
 
 Schema `0.2` 每次使用 Skill 时先比较 `sourceBinding.gitHead` 与项目 HEAD；不一致即执行补偿同步，不等待用户提醒：

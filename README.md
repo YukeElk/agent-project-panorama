@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.4（Evidence Inspector + Studio Journal）
+# Agent Project Panorama V0.4（Evidence + Journal + Trace Projection）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.4 P0A / P0B / P0C 能力
+## V0.4 P0 / P1 能力
 
 - 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
   Bridge 模式只访问同源 `127.0.0.1` API；
@@ -37,6 +37,14 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - Studio 候选使用完整 Tab 键盘模型；画布节点支持 `Alt + 方向键` 布局移动，每条 SVG 数据流同时
   提供可聚焦文本列表；Drawer/Dialog 具备焦点进入、闭环、Esc 关闭与触发控件返回。840px 以下使用
   组件 / 画布 / 属性检查分段面板。本阶段提供 WCAG 相关实现与键盘测试证据，不宣称完整 WCAG 认证。
+- Module、Requirement、WorkItem、Acceptance、Gate、Release 与 Deployment Drawer 提供 Trace Route；
+  每条边显示真实 ID 字段的 JSON Pointer，多跳 Route 保留所有中间实体。Renderer 派生缺口只标为
+  `Trace Gap Candidate`，不会冒充 Validator 的 Formal Finding。
+- Drawer 从现有 Gate、Acceptance、Evidence Reference、Release 与 active Deployment 派生
+  `verified / accepted / deployed_observed`；Studio 从当前 Proposal、Formal Validation、Session/CAS 与
+  Source 状态派生 `change_ready`。证据不足时只显示 `blocked / unknown`，不写回治理状态。
+- Studio Proposal 区直接投影 Bridge 返回的真实 JSON Patch、Affected Entities 和 Validation；这些字段
+  来自 `propose_update.py`，Renderer 不建立第二套 Reconciliation Preview。
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
@@ -369,7 +377,7 @@ Revision/Data Hash、可选 Source Binding、Schema、跨引用、Presentation H
 ## 兼容性
 
 - Data Schema：`0.1`、`0.2`
-- Renderer：`0.4.0`（zh-CN，含 Architecture Studio 与 Evidence Inspector）
+- Renderer：`0.4.0`（zh-CN，含 Architecture Studio、Evidence Inspector 与 Trace/Gate Projection）
 - Studio Bridge：`0.4.0`（新增脱敏 `sourceFreshness` 实时比较）
 - 支持 Template：`0.1.0`、`0.1.1`
 - Skill 支持 Schema：`0.1`、`0.2`
@@ -449,6 +457,23 @@ Source Content Digest 会在本机读取纳入范围文件的字节，只计算�
 若用上方 Architecture Studio 命令从受控 Bridge 打开同一 Panorama，Inspector 会读取只含 Hash、
 文件计数与覆盖状态的 `sourceFreshness` 比较结果，显示检测时间和漂移原因；源码正文不会返回浏览器。
 
+## Trace Route 与 Gate Projection
+
+从 Control 的 Requirement、System 的 Module，或任意 WorkItem / Acceptance / Gate / Release /
+Deployment 入口打开右侧 Drawer。`Trace Route` 只呈现 Schema 已有 ID 字段形成的边，并显示精确 JSON
+Pointer；没有直接边时，多跳 Route 会保留中间实体，不把它压缩成想象中的直接关系。
+
+`Trace Gap Candidate` 是 Renderer 基于缺少引用或证据派生的注意候选；Formal Finding 只来自已记录的
+Validator Finding Code，两者在 UI 中分区显示。`Gate / Acceptance Projection` 的四个结果都是只读派生：
+
+- `change_ready`：Proposal、活动 Candidate、Session Revision、Formal Validation、基线和 CAS 均当前；
+- `verified`：相关 required Gate 均为 `passed`，且 Evidence Reference 存在并为 `available`；
+- `accepted`：相关 Acceptance 为 `accepted`、`verificationStatus=passed`，且 Evidence Reference 完整；
+- `deployed_observed`：存在 Release / Architecture 精确匹配且包含相关 Module Deployment 的 active Deployment。
+
+条件不足时显示 `blocked` 或 `unknown` 及原因。页面不会生成 `integrated` 布尔值、推进 Gate/Acceptance，
+也不会执行 Mission、Agent 调度或 Git Promote。
+
 ## 自动测试与 CI
 
 ```powershell
@@ -474,7 +499,7 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 - V0.1 冻结 Schema 为 `schema/panorama.schema.v0.1.json`；V0.2 Continuous Observation Schema 为 `schema/panorama.schema.v0.2.json`；
 - 建模缺口记录在 `docs/schema-findings.md`；
 - V0.2 不覆盖 v0.1；迁移默认输出新文件。当前 Presentation 升级 Renderer 为
-  `0.4.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，Evidence Inspector 只派生
-  现有事实，不重构 Panorama Schema。
+  `0.4.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，Evidence Inspector 与
+  Trace/Gate Projection 只派生现有事实，不重构 Panorama Schema。
 
 V0.2 已实现 Observation Snapshot；原 SF-03、SF-08、SF-09、SF-13 所述完整 Architecture Version Snapshot、Artifact Manifest、结构化 Replacement 和 Next Focus Snapshot 仍未实现。

@@ -435,6 +435,32 @@
     .unsafe-link { color: var(--muted); text-decoration: line-through; text-decoration-style: dotted; }
     .copy-row { display: flex; align-items: center; gap: 8px; }
     .copy-value { flex: 1; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; padding: 8px; overflow: auto; white-space: nowrap; }
+    .trace-route { display: grid; gap: 12px; }
+    .trace-summary { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+    .trace-edge, .trace-path, .trace-gap, .governance-card { border: 1px solid var(--rule); border-radius: 6px; background: #fff; padding: 10px 11px; }
+    .trace-edge-head, .trace-node-chain { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+    .trace-arrow { color: var(--muted); font: 700 12px/1 var(--mono); }
+    .trace-pointer { display: block; margin-top: 7px; padding: 5px 7px; border-radius: 4px; background: var(--band); color: var(--muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
+    .trace-path { background: #fbfcff; }
+    .trace-path-hops { display: grid; gap: 4px; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .trace-gap { border-left: 4px solid var(--warning); background: #fffaf1; }
+    .trace-gap strong { color: #6c4810; }
+    .trace-boundary { color: var(--muted); font-size: 12px; }
+    .governance-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+    .governance-card { min-width: 0; }
+    .governance-card.is-passed { border-left: 4px solid var(--passed); background: #f7fcfa; }
+    .governance-card.is-blocked { border-left: 4px solid var(--critical); background: #fff8f8; }
+    .governance-card.is-unknown { border-left: 4px solid var(--muted); background: var(--band); }
+    .governance-card-head { display: flex; gap: 7px; justify-content: space-between; align-items: start; }
+    .governance-card ul { margin: 8px 0 0 17px; padding: 0; font-size: 12px; }
+    .governance-evidence { margin-top: 7px; color: var(--muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
+    .proposal-projection { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(260px,.75fr); gap: 10px; margin-top: 8px; }
+    .proposal-projection-panel { min-width: 0; border: 1px solid var(--rule); border-radius: 6px; padding: 10px; background: #fbfcff; }
+    .proposal-projection-panel h4 { margin: 0 0 8px; font-size: 12px; }
+    .proposal-operation { border-top: 1px solid var(--rule); padding: 7px 0; }
+    .proposal-operation:first-of-type { border-top: 0; }
+    .proposal-operation summary { cursor: pointer; color: var(--ink); }
+    .proposal-operation-value { margin-top: 5px; max-height: 120px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.4 var(--mono); }
 
     .security-notice {
       border-left: 4px solid var(--warning); background: #fffaf1; color: #6c4810; padding: 11px 14px; margin-bottom: 14px;
@@ -589,6 +615,7 @@
       .project-strip .project-identity { grid-column: 1 / -1; }
       .meta-cell { border-top: 1px solid var(--rule); }
       .focus-body-grid, .drawer-two-col, .design-compare { grid-template-columns: 1fr; }
+      .governance-grid, .proposal-projection { grid-template-columns: 1fr; }
       .module-drawer { width: min(92vw,560px); min-width: 0; }
       .toolbar { align-items: flex-start; flex-direction: column; }
       .arch-lane { grid-template-columns: 95px minmax(0,1fr); }
@@ -4869,6 +4896,7 @@
       studioDialogReturnAction: null,
       studioEventStaleReasons: [],
       studioSaveTimer: null,
+      studioRenderQueued: false,
       studioGeneration: 0,
       studioBridge: {
         capability: null,
@@ -5053,6 +5081,255 @@
         return "<button class='entity-link' type='button' data-open-entity='" + e(id) + "' data-entity-type='" + e(type) + "' title='" + e(id) + "'>" + e(entityName(type, id)) + "</button>";
       }).join("") + "</div>";
     }
+    var TRACE_RELATION_SPECS = [
+      { type: "requirement", base: "/requirements", refs: [
+        ["moduleIds", "module", "Module"], ["acceptanceCriteriaIds", "acceptance", "Acceptance"],
+        ["sourceReferenceIds", "reference", "Reference"], ["reviewId", "review", "Review", true]
+      ] },
+      { type: "module", base: "/architecture/modules", refs: [
+        ["requirementIds", "requirement", "Requirement"], ["decisionIds", "decision", "Decision"],
+        ["workItemIds", "work_item", "WorkItem"], ["acceptanceCriteriaIds", "acceptance", "Acceptance"],
+        ["gateIds", "gate", "Gate"], ["reviewIds", "review", "Review"]
+      ] },
+      { type: "work_item", base: "/workItems", refs: [
+        ["requirementIds", "requirement", "Requirement"], ["moduleIds", "module", "Module"],
+        ["decisionIds", "decision", "Decision"], ["acceptanceCriteriaIds", "acceptance", "Acceptance"],
+        ["referenceIds", "reference", "Reference"]
+      ] },
+      { type: "acceptance", base: "/acceptanceCriteria", refs: [
+        ["evidenceReferenceIds", "reference", "Evidence Reference"], ["reviewId", "review", "Review", true]
+      ], scope: true },
+      { type: "gate", base: "/gates", refs: [
+        ["acceptanceCriteriaIds", "acceptance", "Acceptance"], ["evidenceReferenceIds", "reference", "Evidence Reference"],
+        ["referenceIds", "reference", "Reference"], ["reviewId", "review", "Review", true]
+      ], scope: true },
+      { type: "release", base: "/releases", refs: [
+        ["moduleIds", "module", "Module"], ["deploymentIds", "deployment", "Deployment"],
+        ["architectureVersionId", "architecture_version", "Architecture Version", true]
+      ] },
+      { type: "deployment", base: "/deployments", refs: [
+        ["releaseId", "release", "Release", true], ["architectureVersionId", "architecture_version", "Architecture Version", true]
+      ], moduleDeployments: true }
+    ];
+    var traceIndexCache = null;
+    function traceKey(type, id) { return type + ":" + id; }
+    function traceRegisterEdge(index, fromType, fromId, toType, toId, relation, sourcePath) {
+      if (!fromId || !toId) return;
+      var edge = { fromType: fromType, fromId: fromId, toType: toType, toId: toId, relation: relation, sourcePath: sourcePath, resolved: Boolean(byId(toType, toId)) };
+      index.edges.push(edge);
+      [traceKey(fromType, fromId), traceKey(toType, toId)].forEach(function (key) {
+        if (!index.adjacency[key]) index.adjacency[key] = [];
+        index.adjacency[key].push(edge);
+      });
+    }
+    function traceIndex() {
+      if (traceIndexCache) return traceIndexCache;
+      var index = { edges: [], adjacency: {} };
+      TRACE_RELATION_SPECS.forEach(function (spec) {
+        arr(entityCollections[spec.type]).forEach(function (item, itemIndex) {
+          spec.refs.forEach(function (refSpec) {
+            var field = refSpec[0]; var targetType = refSpec[1]; var relation = refSpec[2]; var single = refSpec[3];
+            var ids = single ? (item[field] ? [item[field]] : []) : arr(item[field]);
+            ids.forEach(function (id, idIndex) {
+              traceRegisterEdge(index, spec.type, item.id, targetType, id, relation, spec.base + "/" + itemIndex + "/" + field + (single ? "" : "/" + idIndex));
+            });
+          });
+          if (spec.scope && item.scopeType && item.scopeId) {
+            traceRegisterEdge(index, spec.type, item.id, item.scopeType, item.scopeId, "Scoped Entity", spec.base + "/" + itemIndex + "/scopeId");
+          }
+          if (spec.moduleDeployments) {
+            arr(item.moduleDeployments).forEach(function (deployment, deploymentIndex) {
+              traceRegisterEdge(index, spec.type, item.id, "module", deployment.moduleId, "Module Deployment", spec.base + "/" + itemIndex + "/moduleDeployments/" + deploymentIndex + "/moduleId");
+            });
+          }
+        });
+      });
+      traceIndexCache = index;
+      return index;
+    }
+    function traceOtherEnd(edge, type, id) {
+      return edge.fromType === type && edge.fromId === id ? { type: edge.toType, id: edge.toId } : { type: edge.fromType, id: edge.fromId };
+    }
+    function traceEntityButton(type, id) {
+      return "<button class='entity-link' type='button' data-open-entity='" + e(id) + "' data-entity-type='" + e(type) + "'><span class='mono'>" + e(id) + "</span> · " + e(entityName(type, id)) + "</button>";
+    }
+    function traceDirectEdges(type, id) { return arr(traceIndex().adjacency[traceKey(type, id)]); }
+    function traceRoutes(type, id, maxDepth) {
+      var endpoints = { acceptance: true, gate: true, reference: true, review: true, release: true, deployment: true, architecture_version: true };
+      var start = { type: type, id: id }; var queue = [{ node: start, nodes: [start], edges: [] }]; var routes = [];
+      while (queue.length && routes.length < 8) {
+        var route = queue.shift();
+        if (route.edges.length >= maxDepth) continue;
+        traceDirectEdges(route.node.type, route.node.id).forEach(function (edge) {
+          if (routes.length >= 8) return;
+          var next = traceOtherEnd(edge, route.node.type, route.node.id);
+          if (route.nodes.some(function (node) { return node.type === next.type && node.id === next.id; })) return;
+          var expanded = { node: next, nodes: route.nodes.concat([next]), edges: route.edges.concat([edge]) };
+          if (expanded.edges.length > 1 && endpoints[next.type]) routes.push(expanded);
+          queue.push(expanded);
+        });
+      }
+      return routes;
+    }
+    function traceTargets(type, id, targetType, maxDepth) {
+      if (type === targetType) return [byId(type, id)].filter(Boolean);
+      var start = traceKey(type, id); var queue = [{ type: type, id: id, depth: 0 }]; var visited = {}; visited[start] = true; var result = [];
+      while (queue.length) {
+        var node = queue.shift();
+        if (node.depth >= maxDepth) continue;
+        traceDirectEdges(node.type, node.id).forEach(function (edge) {
+          var next = traceOtherEnd(edge, node.type, node.id); var key = traceKey(next.type, next.id);
+          if (visited[key]) return; visited[key] = true;
+          if (next.type === targetType) { var entity = byId(next.type, next.id); if (entity) result.push(entity); }
+          queue.push({ type: next.type, id: next.id, depth: node.depth + 1 });
+        });
+      }
+      return result;
+    }
+    function traceGapCandidates(type, id) {
+      var direct = traceDirectEdges(type, id); var candidates = [];
+      direct.filter(function (edge) { return !edge.resolved; }).forEach(function (edge) {
+        candidates.push({ kind: "unresolved_reference", message: "引用目标不存在或当前数据未包含：" + traceOtherEnd(edge, type, id).id, path: edge.sourcePath });
+      });
+      var item = byId(type, id);
+      if (type === "requirement" && item && ["deferred", "rejected", "superseded"].indexOf(item.definitionStatus) < 0) {
+        var covered = direct.some(function (edge) { var other = traceOtherEnd(edge, type, id); return other.type === "module" || other.type === "acceptance"; });
+        if (!covered) candidates.push({ kind: "uncovered_requirement", message: "活动 Requirement 未发现 Module 或 Acceptance ID 引用。", path: "/requirements" });
+      }
+      if (type === "work_item") {
+        var linked = direct.some(function (edge) { return ["requirement", "module", "decision", "acceptance", "reference"].indexOf(traceOtherEnd(edge, type, id).type) >= 0; });
+        if (!linked) candidates.push({ kind: "orphan_work_item", message: "WorkItem 未发现允许的追踪引用。", path: "/workItems" });
+      }
+      if ((type === "acceptance" || type === "gate") && item && !arr(item.evidenceReferenceIds).length) {
+        candidates.push({ kind: "evidence_gap", message: "未记录 Evidence Reference；不能据此声明验证或验收完成。", path: (type === "acceptance" ? "/acceptanceCriteria" : "/gates") + "/" + arr(entityCollections[type]).indexOf(item) + "/evidenceReferenceIds" });
+      }
+      return candidates;
+    }
+    function traceFormalFindings(type, id) {
+      var findings = [];
+      arr(data.observationBatches).forEach(function (batch) {
+        arr(batch.findings).forEach(function (finding) {
+          if (!finding || !finding.code) return;
+          var related = arr(finding.relatedEntities || finding.entityRefs);
+          if (related.some(function (ref) { return ref && ref.type === type && ref.id === id; })) findings.push(finding);
+        });
+      });
+      return findings;
+    }
+    function traceRouteHtml(type, id) {
+      var direct = traceDirectEdges(type, id); var routes = traceRoutes(type, id, 3); var gaps = traceGapCandidates(type, id); var formal = traceFormalFindings(type, id);
+      var directHtml = direct.length ? direct.map(function (edge) {
+        return "<article class='trace-edge'><div class='trace-edge-head'>" + traceEntityButton(edge.fromType, edge.fromId) + "<span class='trace-arrow' aria-hidden='true'>→</span>" + traceEntityButton(edge.toType, edge.toId) + "<span class='status tone-info'><span class='status-dot'></span>" + e(edge.relation) + "</span></div><code class='trace-pointer'>" + e(edge.sourcePath) + "</code></article>";
+      }).join("") : "<p class='cell-sub'>未记录直接 ID 引用；not_detected 不等于 absent。</p>";
+      var routeHtml = routes.length ? routes.map(function (route) {
+        var chain = route.nodes.map(function (node) { return traceEntityButton(node.type, node.id); }).join("<span class='trace-arrow' aria-hidden='true'>→</span>");
+        var hops = route.edges.map(function (edge, index) { return "<div>Hop " + (index + 1) + " · " + e(edge.relation) + " · <code>" + e(edge.sourcePath) + "</code></div>"; }).join("");
+        return "<article class='trace-path'><div class='trace-node-chain'>" + chain + "</div><div class='trace-path-hops'>" + hops + "</div></article>";
+      }).join("") : "<p class='cell-sub'>没有可显示的多跳 Route。</p>";
+      var gapHtml = gaps.length ? gaps.map(function (gap) { return "<article class='trace-gap'><strong>△ Trace Gap Candidate · " + e(gap.kind) + "</strong><p>" + e(gap.message) + "</p><code class='trace-pointer'>" + e(gap.path) + "</code></article>"; }).join("") : "<p class='cell-sub'>Renderer 未派生 Trace Gap Candidate；这不等于 Formal Validator 已证明不存在缺口。</p>";
+      var formalHtml = formal.length ? formal.map(function (finding) { return "<article class='trace-edge'><strong>Formal Finding · <span class='mono'>" + e(finding.code) + "</span></strong><p>" + e(finding.message || finding.summary || "Validator finding") + "</p>" + (finding.path ? "<code class='trace-pointer'>" + e(finding.path) + "</code>" : "") + "</article>"; }).join("") : "<p class='cell-sub'>当前实体没有带精确 Entity Ref 的 Formal Finding 记录。</p>";
+      return "<div class='trace-route'><div class='trace-summary'><span class='status tone-info'><span class='status-dot'></span>" + direct.length + " 条直接边</span><span class='status tone-muted'><span class='status-dot'></span>" + routes.length + " 条多跳 Route</span></div><div><strong>直接 ID 边</strong>" + directHtml + "</div><div><strong>多跳 Route · 保留中间实体</strong>" + routeHtml + "</div><div><strong>Trace Gap Candidates</strong>" + gapHtml + "</div><div><strong>Formal Findings</strong>" + formalHtml + "</div><p class='trace-boundary'>Trace 只读取正式 ID 字段；Candidate 与 Formal Finding 保持语义分离，不执行 Mission、调度或治理决策。</p></div>";
+    }
+    function evidenceReferencesComplete(ids) {
+      ids = arr(ids);
+      return ids.length > 0 && ids.every(function (id) { var reference = byId("reference", id); return reference && reference.status === "available"; });
+    }
+    function uniqueEntities(items) {
+      var seen = {};
+      return arr(items).filter(function (item) { if (!item || seen[item.id]) return false; seen[item.id] = true; return true; });
+    }
+    function entitiesByIds(type, ids) { return arr(ids).map(function (id) { return byId(type, id); }).filter(Boolean); }
+    function scopedEntities(type, scopeType, scopeId) {
+      return arr(entityCollections[type]).filter(function (item) { return item.scopeType === scopeType && item.scopeId === scopeId; });
+    }
+    function governanceRelationships(type, id) {
+      var item = byId(type, id); var acceptances = []; var gates = []; var releases = []; var deployments = []; var moduleIds = [];
+      if (!item) return { acceptances: [], gates: [], releases: [], deployments: [], moduleIds: [] };
+      if (type === "acceptance") acceptances.push(item);
+      if (type === "gate") { gates.push(item); acceptances = acceptances.concat(entitiesByIds("acceptance", item.acceptanceCriteriaIds)); }
+      if (type === "module") {
+        moduleIds = [item.id]; acceptances = acceptances.concat(entitiesByIds("acceptance", item.acceptanceCriteriaIds), scopedEntities("acceptance", "module", item.id));
+        gates = gates.concat(entitiesByIds("gate", item.gateIds), scopedEntities("gate", "module", item.id));
+      }
+      if (type === "requirement") {
+        moduleIds = arr(item.moduleIds); acceptances = acceptances.concat(entitiesByIds("acceptance", item.acceptanceCriteriaIds), scopedEntities("acceptance", "requirement", item.id));
+        gates = gates.concat(scopedEntities("gate", "requirement", item.id));
+        releases = releases.concat(entitiesByIds("release", item.targetReleaseIds));
+      }
+      if (type === "work_item") {
+        moduleIds = arr(item.moduleIds); acceptances = acceptances.concat(entitiesByIds("acceptance", item.acceptanceCriteriaIds));
+        gates = gates.concat(arr(data.gates).filter(function (gate) { return arr(gate.acceptanceCriteriaIds).some(function (acceptanceId) { return arr(item.acceptanceCriteriaIds).indexOf(acceptanceId) >= 0; }); }));
+      }
+      if (type === "release") {
+        releases.push(item); moduleIds = arr(item.moduleIds); acceptances = acceptances.concat(scopedEntities("acceptance", "release", item.id)); gates = gates.concat(scopedEntities("gate", "release", item.id));
+      }
+      if (type === "deployment") {
+        deployments.push(item); releases = releases.concat(entitiesByIds("release", [item.releaseId])); moduleIds = arr(item.moduleDeployments).map(function (deployment) { return deployment.moduleId; });
+        acceptances = acceptances.concat(scopedEntities("acceptance", "deployment", item.id)); gates = gates.concat(scopedEntities("gate", "deployment", item.id));
+      }
+      if ((type === "acceptance" || type === "gate") && item.scopeType) {
+        if (item.scopeType === "module") moduleIds.push(item.scopeId);
+        if (item.scopeType === "requirement") { var requirement = byId("requirement", item.scopeId); moduleIds = moduleIds.concat(requirement ? arr(requirement.moduleIds) : []); }
+        if (item.scopeType === "release") releases = releases.concat(entitiesByIds("release", [item.scopeId]));
+        if (item.scopeType === "deployment") { var scopedDeployment = byId("deployment", item.scopeId); if (scopedDeployment) { deployments.push(scopedDeployment); releases = releases.concat(entitiesByIds("release", [scopedDeployment.releaseId])); } }
+      }
+      acceptances = uniqueEntities(acceptances);
+      var acceptanceIds = acceptances.map(function (acceptance) { return acceptance.id; });
+      gates = gates.concat(arr(data.gates).filter(function (gate) { return arr(gate.acceptanceCriteriaIds).some(function (acceptanceId) { return acceptanceIds.indexOf(acceptanceId) >= 0; }); }));
+      if (!releases.length && moduleIds.length) {
+        releases = arr(data.releases).filter(function (release) { return moduleIds.every(function (moduleId) { return arr(release.moduleIds).indexOf(moduleId) >= 0; }); });
+      }
+      return { acceptances: acceptances, gates: uniqueEntities(gates), releases: uniqueEntities(releases), deployments: uniqueEntities(deployments), moduleIds: Array.from(new Set(moduleIds)) };
+    }
+    function governanceProjection(type, id) {
+      var relationships = governanceRelationships(type, id);
+      var acceptances = relationships.acceptances;
+      var gates = relationships.gates.filter(function (gate) { return gate.required === true; });
+      var releases = relationships.releases;
+      var verifiedReasons = []; var verifiedEvidence = [];
+      if (!gates.length) verifiedReasons.push("未发现相关 required Gate ID Route");
+      gates.forEach(function (gate) {
+        if (gate.status !== "passed") verifiedReasons.push(gate.id + " status=" + gate.status);
+        if (!evidenceReferencesComplete(gate.evidenceReferenceIds)) verifiedReasons.push(gate.id + " Evidence Reference 不完整");
+        else verifiedEvidence = verifiedEvidence.concat(gate.evidenceReferenceIds);
+      });
+      var acceptedReasons = []; var acceptedEvidence = [];
+      if (!acceptances.length) acceptedReasons.push("未发现相关 Acceptance ID Route");
+      acceptances.forEach(function (acceptance) {
+        if (acceptance.status !== "accepted") acceptedReasons.push(acceptance.id + " status=" + acceptance.status);
+        if (acceptance.verificationStatus !== "passed") acceptedReasons.push(acceptance.id + " verificationStatus=" + acceptance.verificationStatus);
+        if (!evidenceReferencesComplete(acceptance.evidenceReferenceIds)) acceptedReasons.push(acceptance.id + " Evidence Reference 不完整");
+        else acceptedEvidence = acceptedEvidence.concat(acceptance.evidenceReferenceIds);
+      });
+      var matchingDeployments = [];
+      releases.forEach(function (release) {
+        arr(data.deployments).forEach(function (deployment) {
+          var deployedModuleIds = arr(deployment.moduleDeployments).map(function (moduleDeployment) { return moduleDeployment.moduleId; });
+          var modulesObserved = relationships.moduleIds.every(function (moduleId) { return deployedModuleIds.indexOf(moduleId) >= 0; });
+          if (deployment.status === "active" && deployment.releaseId === release.id && deployment.architectureVersionId === release.architectureVersionId && modulesObserved) matchingDeployments.push(deployment);
+        });
+      });
+      if (type === "deployment") {
+        var deployment = byId("deployment", id); var release = deployment && byId("release", deployment.releaseId);
+        if (deployment && release && deployment.status === "active" && deployment.architectureVersionId === release.architectureVersionId) matchingDeployments.push(deployment);
+      }
+      matchingDeployments = uniqueEntities(matchingDeployments);
+      return {
+        verified: { state: !gates.length ? "unknown" : (verifiedReasons.length ? "blocked" : "passed"), reasons: verifiedReasons, evidence: uniqueEntities(verifiedEvidence.map(function (evidenceId) { return byId("reference", evidenceId); })).map(function (item) { return item.id; }) },
+        accepted: { state: !acceptances.length ? "unknown" : (acceptedReasons.length ? "blocked" : "passed"), reasons: acceptedReasons, evidence: uniqueEntities(acceptedEvidence.map(function (evidenceId) { return byId("reference", evidenceId); })).map(function (item) { return item.id; }) },
+        deployed_observed: { state: !releases.length && type !== "deployment" ? "unknown" : (matchingDeployments.length ? "passed" : "blocked"), reasons: matchingDeployments.length ? [] : [releases.length ? "未发现与 Release / Architecture 匹配的 active Deployment" : "没有可判定的 Release Route"], evidence: matchingDeployments.map(function (deployment) { return deployment.id + " · " + deployment.releaseId + " · " + deployment.architectureVersionId; }) }
+      };
+    }
+    function governanceCardHtml(name, projection) {
+      var passed = projection.state === "passed"; var label = passed ? name : projection.state;
+      var reasons = arr(projection.reasons).map(function (reason) { return "<li>" + e(reason) + "</li>"; }).join("");
+      var evidence = arr(projection.evidence).length ? arr(projection.evidence).join(" · ") : "no complete evidence";
+      return "<article class='governance-card is-" + e(projection.state) + "'><div class='governance-card-head'><strong>" + e(name) + "</strong>" + status(passed ? "passed" : projection.state, label) + "</div>" + (reasons ? "<ul>" + reasons + "</ul>" : "<p class='cell-sub'>全部派生条件满足。</p>") + "<div class='governance-evidence'>Evidence · " + e(evidence) + "</div></article>";
+    }
+    function governanceProjectionHtml(type, id) {
+      var projection = governanceProjection(type, id);
+      return "<div class='governance-grid' aria-label='验证与治理状态投影'>" + governanceCardHtml("verified", projection.verified) + governanceCardHtml("accepted", projection.accepted) + governanceCardHtml("deployed_observed", projection.deployed_observed) + "</div><p class='trace-boundary'>状态由 Gate、Acceptance、Evidence Reference、Release 与 active Deployment 的真实字段派生，不是客户端可写治理事实；V0.4 不使用 integrated。</p>";
+    }
     function pendingReview(module) {
       return arr(module.reviewIds).some(function (id) {
         var review = byId("review", id);
@@ -5192,7 +5469,7 @@
           (state.requirementFilters.fulfillment === "all" || requirement.fulfillmentStatus === state.requirementFilters.fulfillment);
       });
       var rows = requirements.map(function (requirement) {
-        return "<tr><td><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></td><td>" + e(requirementTypeLabel(requirement.type)) + "</td><td>" + status(requirement.definitionStatus) + "</td><td>" + status(requirement.fulfillmentStatus) + "</td><td>" +
+        return "<tr><td><button class='entity-link' type='button' data-open-entity='" + e(requirement.id) + "' data-entity-type='requirement'><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></button></td><td>" + e(requirementTypeLabel(requirement.type)) + "</td><td>" + status(requirement.definitionStatus) + "</td><td>" + status(requirement.fulfillmentStatus) + "</td><td>" +
           arr(requirement.targetReleaseIds).map(function (id) { return "<span class='mono'>" + e(entityName("release", id)) + "</span>"; }).join(", ") +
           "</td><td>" + (requirement.moduleIds.length ? e(requirement.moduleIds.length + " · " + requirement.moduleIds.map(function (id) { return entityName("module", id); }).join(", ")) : "<span class='severity-text'>未覆盖</span>") + "</td></tr>";
       }).join("");
@@ -5291,7 +5568,7 @@
     async function connectStudioBridge() {
       if (!state.studioBridge.capability) return;
       state.studioBridge.status = "connecting"; state.studioBridge.busy = "连接 Bridge"; state.studioBridge.lastError = null;
-      if (state.studioMode === "studio") renderStudio();
+      if (state.studioMode === "studio") scheduleStudioRender();
       try {
         var healthEnvelope = await window.fetch("/api/v1/health", { headers: { "Accept": "application/json", "X-Panorama-Capability": state.studioBridge.capability }, credentials: "same-origin", cache: "no-store" });
         var healthPayload = await healthEnvelope.json();
@@ -5310,7 +5587,7 @@
         state.studioBridge.lastError = studioBridgeErrorMessage(error);
       } finally {
         state.studioBridge.busy = null;
-        if (state.studioMode === "studio") renderStudio();
+        if (state.studioMode === "studio") scheduleStudioRender();
         else if (state.view === "system" && state.systemView === "source") renderSource();
       }
     }
@@ -5435,7 +5712,7 @@
       finally {
         state.studioBridge.savePromise = null;
         state.studioBridge.busy = null;
-        if (state.studioMode === "studio") renderStudio();
+        if (state.studioMode === "studio") scheduleStudioRender();
       }
     }
 
@@ -5729,7 +6006,7 @@
         session_cas_conflict: "session_cas_conflict · Session Revision 冲突",
         coverage_incomplete: "coverage_incomplete · 来源覆盖不完整",
         formal_source_uninitialized: "formal_source_uninitialized · 正式 Source Binding 未初始化",
-        formal_source_unbound: "formal_source_uninitialized · 正式 Source Binding 尚未建立"
+        formal_source_unbound: "formal_source_unbound · V0.1 未绑定正式 Source，由 Bridge live baseline 锚定（不阻断）"
       };
       return labels[reason] || reason;
     }
@@ -5825,6 +6102,34 @@
       }).join("");
     }
 
+    function studioChangeReadyProjection() {
+      var bridge = state.studioBridge; var session = state.studioSession; var proposal = bridge.proposal;
+      var formal = bridge.formalValidation; var validation = formal && (formal.validation || (formal.result && formal.result.validation)) || {};
+      var counts = validation.counts || validation.summary || {};
+      var blockingStaleReasons = studioStaleReasons().filter(function (reason) { return reason !== "formal_source_unbound"; });
+      var conditions = [
+        { label: "Proposal 与活动 Candidate Semantic Hash 一致", ok: Boolean(proposal && studioArtifactIsCurrent(proposal)) },
+        { label: "Formal Validation 当前且 errors=0", ok: Boolean(formal && studioArtifactIsCurrent(formal) && validation.valid !== false && Number(counts.errors || 0) === 0) },
+        { label: "Session 已由 Bridge 保存且 Revision 已绑定", ok: Boolean(session && session.mode === "bridge" && state.studioStorage === "bridge" && bridge.lastSavedGeneration >= state.studioGeneration && proposal && Number(proposal.sessionRevision) === Number(session.sessionRevision)) },
+        { label: "Panorama / Data / Git / Source 基线满足正式化门禁", ok: blockingStaleReasons.length === 0 },
+        { label: "没有 Session CAS Conflict", ok: !bridge.conflict }
+      ];
+      var passed = conditions.every(function (condition) { return condition.ok; });
+      return { state: proposal ? (passed ? "passed" : "blocked") : "unknown", reasons: conditions.filter(function (condition) { return !condition.ok; }).map(function (condition) { return condition.label; }), evidence: proposal ? ["Proposal " + proposal.proposalHash, "Session Revision " + proposal.sessionRevision] : [] };
+    }
+
+    function studioProposalProjectionHtml(proposal) {
+      if (!proposal) return "";
+      var operations = arr(proposal.operations); var affected = arr(proposal.affectedEntities); var validation = proposal.validation || {}; var counts = validation.counts || validation.summary || {};
+      var operationHtml = operations.length ? operations.map(function (operation, index) {
+        var hasValue = Object.prototype.hasOwnProperty.call(operation, "value");
+        return "<details class='proposal-operation'><summary><strong>" + e(index + 1) + ". <span class='mono'>" + e(operation.op) + "</span></strong> · <code>" + e(operation.path) + "</code></summary>" + (hasValue ? "<pre class='proposal-operation-value'>" + e(JSON.stringify(operation.value, null, 2)) + "</pre>" : "<p class='cell-sub'>此操作没有 value。</p>") + "</details>";
+      }).join("") : "<p class='cell-sub'>propose_update.py 返回 0 条 operations。</p>";
+      var affectedHtml = affected.length ? affected.map(function (ref) { return typeof ref === "string" ? "<div class='mono'>" + e(ref) + "</div>" : "<div>" + traceEntityButton(ref.type, ref.id) + "</div>"; }).join("") : "<p class='cell-sub'>没有 Affected Entities。</p>";
+      var changeReady = studioChangeReadyProjection();
+      return "<div class='proposal-projection'><section class='proposal-projection-panel'><h4>JSON Patch · propose_update.py 原样输出</h4>" + operationHtml + "</section><section class='proposal-projection-panel'><h4>Affected Entities · 原样输出</h4>" + affectedHtml + "<h4 style='margin-top:12px'>Validation · 原样输出</h4><dl class='key-value'><dt>valid</dt><dd>" + e(validation.valid === true ? "true" : validation.valid === false ? "false" : "unknown") + "</dd><dt>errors</dt><dd>" + e(Number(counts.errors || 0)) + "</dd><dt>warnings</dt><dd>" + e(Number(counts.warnings || 0)) + "</dd><dt>findings</dt><dd>" + e(arr(validation.findings).length) + "</dd></dl><h4 style='margin-top:12px'>Gate Projection</h4>" + governanceCardHtml("change_ready", changeReady) + "</section></div>";
+    }
+
     function studioArtifactHtml() {
       var bridge = state.studioBridge;
       var formal = bridge.formalValidation;
@@ -5846,7 +6151,7 @@
         lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(reviewResult) ? "" : "is-stale") + "'><strong>Codex 评审</strong><span>" + e(review.status || advisoryReview.status || advisoryReview.verdict || "已完成") + " · " + e(advisoryReview.summary || advisoryReview.rationale || "只读分析结果已返回") + "<div class='studio-result'>" + studioFindingsHtml(advisoryReview.findings, "Codex 未返回具体发现项") + "</div></span></div>");
       } else if (bridge.reviewJobId) lines.push("<div class='studio-artifact-line'><strong>Codex 评审</strong><span>任务 " + e(bridge.reviewJobId) + " 执行中</span></div>");
       else if (bridge.reviewError) lines.push("<div class='studio-artifact-line is-error' role='alert'><strong>Codex 评审</strong><span>失败 · " + e(bridge.reviewError) + "（不阻断人工 Proposal）</span></div>");
-      if (proposal) lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(proposal) ? "" : "is-stale") + "'><strong>Proposal</strong><span class='mono'>" + e(proposal.proposalHash || "") + "</span></div>");
+      if (proposal) lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(proposal) ? "" : "is-stale") + "'><strong>Proposal</strong><span><span class='mono'>" + e(proposal.proposalHash || "") + "</span>" + studioProposalProjectionHtml(proposal) + "</span></div>");
       if (approval) lines.push("<div class='studio-artifact-line'><strong>Approval</strong><span>已记录 · " + e(approval.recordedAt || approval.approvalId || "") + "</span></div>");
       if (bridge.applyResult) lines.push("<div class='studio-artifact-line'><strong>Apply</strong><span>修订 " + e(bridge.applyResult.revision) + " · 备份 " + e(bridge.applyResult.backupPath || "已创建") + "</span></div>");
       if (bridge.lastError && bridge.status === "online") lines.push("<div class='studio-artifact-line is-error' role='alert'><strong>Bridge 错误</strong><span>" + e(bridge.lastError) + "</span></div>");
@@ -6335,6 +6640,15 @@
       window.requestAnimationFrame(drawStudioEdges);
     }
 
+    function scheduleStudioRender() {
+      if (state.studioRenderQueued) return;
+      state.studioRenderQueued = true;
+      window.requestAnimationFrame(function () {
+        state.studioRenderQueued = false;
+        if (state.studioMode === "studio" && state.view === "system" && state.systemView === "logical") renderStudio();
+      });
+    }
+
     function studioInspectorHtml(node, layers) {
       var candidate = activeStudioCandidate();
       var otherNodes = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId; });
@@ -6710,7 +7024,9 @@
         drawerSection("部署 / 资源", deployments.length ? deployments.map(function (deployment) {
           var moduleDeployment = arr(deployment.moduleDeployments).find(function (item) { return item.moduleId === module.id; });
           return "<p><strong>" + e(deployment.name) + "</strong> · " + status(deployment.status) + "<br><span class='mono'>" + e(moduleDeployment ? moduleDeployment.artifactVersion : "—") + "</span> · " + e(moduleDeployment ? moduleDeployment.resourceIds.map(function (id) { return entityName("resource", id); }).join(", ") : "无制品") + "</p>";
-        }).join("") : "<span class='cell-sub'>尚未部署。</span>");
+        }).join("") : "<span class='cell-sub'>尚未部署。</span>") +
+        drawerSection("Trace Route", traceRouteHtml("module", module.id)) +
+        drawerSection("Gate / Acceptance Projection", governanceProjectionHtml("module", module.id));
       openDrawer();
     }
     function renderEntityInspector(type, id) {
@@ -6721,6 +7037,16 @@
       document.getElementById("drawer-subtitle").textContent = item.id + " · " + humanize(type);
       var body = "";
       switch (type) {
+        case "requirement":
+          body = drawerSection("Requirement", "<dl class='key-value'>" + kvRow("类型", requirementTypeLabel(item.type)) + kvRow("优先级", item.priority) + kvRow("定义状态", humanize(item.definitionStatus)) + kvRow("实现状态", humanize(item.fulfillmentStatus)) + kvRow("摘要", item.summary) + kvRow("备注", item.notes || "—") + "</dl>") +
+            drawerSection("目标发布 / 模块 / 验收", entityLinks("release", item.targetReleaseIds) + entityLinks("module", item.moduleIds) + entityLinks("acceptance", item.acceptanceCriteriaIds)) +
+            drawerSection("来源 / 评审", entityLinks("reference", item.sourceReferenceIds) + entityLinks("review", item.reviewId ? [item.reviewId] : []));
+          break;
+        case "work_item":
+          body = drawerSection("WorkItem", "<dl class='key-value'>" + kvRow("类型", humanize(item.type)) + kvRow("状态", humanize(item.status)) + kvRow("阶段", entityName("stage", item.stageId)) + kvRow("目的", item.purpose) + kvRow("问题", item.problem) + kvRow("预期影响", item.expectedImpact) + kvRow("实际影响", item.actualImpact || "—") + "</dl>") +
+            drawerSection("需求 / 模块 / 决策", entityLinks("requirement", item.requirementIds) + entityLinks("module", item.moduleIds) + entityLinks("decision", item.decisionIds)) +
+            drawerSection("验收 / 参考资料", entityLinks("acceptance", item.acceptanceCriteriaIds) + entityLinks("reference", item.referenceIds));
+          break;
         case "decision":
           body = drawerSection("决策上下文", "<dl class='key-value'>" + kvRow("问题", item.question) + kvRow("触发原因", item.trigger) + kvRow("背景", item.context) + kvRow("影响级别", humanize(item.impactLevel)) + kvRow("要求完成时间", item.requiredBy || "—") + kvRow("状态", humanize(item.status)) + "</dl>") +
             drawerSection("关联实体", entityLinks("module", item.relatedModuleIds) + entityLinks("requirement", item.relatedRequirementIds) + entityLinks("release", item.relatedReleaseIds)) +
@@ -6742,8 +7068,21 @@
         case "reference":
           body = drawerSection("参考资料", "<dl class='key-value'>" + kvRow("类型", humanize(item.type)) + kvRow("位置类型", humanize(item.locationType)) + kvRow("敏感", item.sensitive ? "是" : "否") + kvRow("状态", humanize(item.status)) + kvRow("备注", item.notes || "—") + "</dl><p>" + referenceLink(item) + "</p>") + drawerSection("关联实体", arr(item.relatedEntities).map(function (ref) { return entityLinks(ref.type, [ref.id]); }).join(""));
           break;
+        case "release":
+          body = drawerSection("Release", "<dl class='key-value'>" + kvRow("版本", item.version) + kvRow("状态", humanize(item.status)) + kvRow("架构版本", entityName("architecture_version", item.architectureVersionId)) + kvRow("阶段", entityName("stage", item.stageId)) + kvRow("发布时间", dateTime(item.releasedAt)) + "</dl>" + list(item.goals, "未记录目标")) +
+            drawerSection("模块 / 部署 / 参考资料", entityLinks("module", item.moduleIds) + entityLinks("deployment", item.deploymentIds) + entityLinks("reference", item.referenceIds));
+          break;
+        case "deployment":
+          body = drawerSection("Deployment", "<dl class='key-value'>" + kvRow("环境", humanize(item.environment)) + kvRow("状态", humanize(item.status)) + kvRow("Release", entityName("release", item.releaseId)) + kvRow("架构版本", entityName("architecture_version", item.architectureVersionId)) + kvRow("部署时间", dateTime(item.deployedAt)) + kvRow("备注", item.notes || "—") + "</dl>") +
+            drawerSection("Module Deployments", arr(item.moduleDeployments).map(function (moduleDeployment) { return "<p>" + traceEntityButton("module", moduleDeployment.moduleId) + "<br><span class='mono'>" + e(moduleDeployment.artifactVersion || "version unknown") + "</span></p>"; }).join("") || "<span class='cell-sub'>无</span>") +
+            drawerSection("资源 / 配置", entityLinks("resource", item.resourceIds) + entityLinks("resource", item.externalResourceIds) + entityLinks("reference", item.configReferenceIds));
+          break;
         default:
           body = drawerSection("实体", "<pre class='mono'>" + e(JSON.stringify(item, null, 2)) + "</pre>");
+      }
+      if (["requirement", "work_item", "acceptance", "gate", "release", "deployment"].indexOf(type) >= 0) {
+        body += drawerSection("Trace Route", traceRouteHtml(type, item.id));
+        body += drawerSection("Gate / Acceptance Projection", governanceProjectionHtml(type, item.id));
       }
       document.getElementById("drawer-body").innerHTML = body;
       openDrawer();

@@ -471,6 +471,9 @@ def test_formal_proposal_approval_apply_end_to_end(bridge):
     assert proposal["sessionRevision"] > session["sessionRevision"]
     assert review_binding["studioSourceDigest"]["coverageComplete"] is True
     assert review_binding["sessionRevision"] == proposal["sessionRevision"]
+    assert proposal["operations"] == package["operations"]
+    assert proposal["affectedEntities"] == wrapper["facts"]["affectedEntities"]
+    assert proposal["validation"] == wrapper["validation"]
 
     status, _, rejected = _post(
         app,

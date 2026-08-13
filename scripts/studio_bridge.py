@@ -1144,7 +1144,14 @@ class StudioBridge:
                 ),
                 "binding": binding,
                 "artifact": str(proposal_path.relative_to(self.project_root)),
-                "validation": result["validation"],
+                # These are the exact propose_update.py outputs.  The Renderer
+                # projects them without recomputing a second diff or affected
+                # entity set in the browser.
+                "operations": copy.deepcopy(package["operations"]),
+                "affectedEntities": copy.deepcopy(
+                    wrapper["facts"]["affectedEntities"]
+                ),
+                "validation": copy.deepcopy(wrapper["validation"]),
             }
 
     def _proposal_path(self, proposal_id: str) -> Path:

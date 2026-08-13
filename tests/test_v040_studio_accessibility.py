@@ -107,3 +107,13 @@ def test_important_studio_errors_remain_persistent_alerts(template_path: Path):
     assert "class='studio-conflict' role='alert'" in source
     assert "class='studio-artifact-line is-error' role='alert'" in source
     assert "状态同时使用文字" not in source  # Contract is implemented, not claimed in UI copy.
+
+
+def test_async_bridge_updates_coalesce_studio_renders(template_path: Path):
+    source = template_path.read_text(encoding="utf-8")
+
+    assert "studioRenderQueued: false" in source
+    assert "function scheduleStudioRender()" in source
+    assert "if (state.studioRenderQueued) return" in source
+    assert "state.studioRenderQueued = true" in source
+    assert 'if (state.studioMode === "studio") scheduleStudioRender();' in source

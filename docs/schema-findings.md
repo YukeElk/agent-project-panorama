@@ -261,3 +261,6 @@
 - P0 首版只使用现有数据派生 Presentation；实时 Freshness 只能由 Bridge 观察，离线 HTML 不得声称
   当前 Git/Source 仍匹配。
 - 不新增主视图，不引入通用 Run/Mission/Agent/Trial 平台，不自动执行测试或推进治理状态。
+- P1 已在不修改 Schema 的前提下从现有 ID 字段派生 Trace Route 与四类治理投影；缺少引用、证据或
+  实时绑定时保持 Candidate/unknown/blocked。若未来需要持久 Trace Edge、用户处置 Gap 或可写投影状态，
+  必须另立 Schema Finding，不能复用本次 Presentation 授权。
