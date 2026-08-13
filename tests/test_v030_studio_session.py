@@ -12,6 +12,7 @@ from studio_session import (
     SessionConflictError,
     StudioSessionError,
     archive_candidate,
+    candidate_semantic_diff,
     candidate_to_panorama,
     clone_candidate,
     create_candidate,
@@ -82,6 +83,87 @@ def test_semantic_and_layout_projections_are_independent(reference_data: dict):
     assert layout_hash(candidate) != layout_before
     candidate["nodes"][0]["purpose"] += " changed"
     assert semantic_hash(candidate) != semantic_before
+
+
+def test_candidate_semantic_diff_aligns_by_reference_and_excludes_layout(
+    reference_data: dict,
+):
+    session = create_session(reference_data)
+    base = deepcopy(_candidate(session))
+    compare = deepcopy(base)
+    compare["candidateId"] = "CANDIDATE-COMPARE"
+    compare["nodes"][0]["x"] += 99
+    compare["nodes"][0]["y"] += 17
+
+    assert candidate_semantic_diff(base, compare)["hasChanges"] is False
+
+    compare["nodes"][0]["purpose"] += " changed"
+    compare["nodes"][0]["responsibilities"].append("New responsibility")
+    compare["assumptions"] = ["External event delivery is available"]
+    result = candidate_semantic_diff(base, compare)
+
+    assert result["hasChanges"] is True
+    assert result["summary"] == {
+        "candidateFieldsModified": 1,
+        "nodesAdded": 0,
+        "nodesRemoved": 0,
+        "nodesModified": 1,
+        "edgesAdded": 0,
+        "edgesRemoved": 0,
+        "edgesModified": 0,
+    }
+    changed_fields = {
+        item["field"] for item in result["nodes"]["modified"][0]["fields"]
+    }
+    assert changed_fields == {"purpose", "responsibilities"}
+    assert all(item["field"] not in {"x", "y"} for item in result["nodes"]["modified"][0]["fields"])
+
+
+def test_candidate_semantic_diff_never_aligns_drafts_by_display_name(
+    reference_data: dict,
+):
+    base = deepcopy(_candidate(create_session(reference_data)))
+    draft = {
+        "nodeId": "DRAFT-NODE-A",
+        "entityRef": None,
+        "name": "Same display name",
+        "purpose": "Base draft",
+        "responsibilities": [],
+        "stateOwnership": "none",
+        "layerId": base["nodes"][0]["layerId"],
+        "category": "service",
+        "isDraft": True,
+        "x": 1,
+        "y": 1,
+    }
+    base["nodes"].append(draft)
+    compare = deepcopy(base)
+    compare["candidateId"] = "CANDIDATE-COMPARE"
+    compare["nodes"][-1]["nodeId"] = "DRAFT-NODE-B"
+    compare["nodes"][-1]["purpose"] = "Different draft"
+
+    result = candidate_semantic_diff(base, compare)
+
+    assert result["nodes"]["added"] == ["node:DRAFT-NODE-B"]
+    assert result["nodes"]["removed"] == ["node:DRAFT-NODE-A"]
+    assert result["nodes"]["modified"] == []
+
+
+def test_operations_bind_active_candidate_and_preserve_dual_track(reference_data: dict):
+    session = create_session(reference_data)
+    candidate_id = session["activeCandidateId"]
+
+    semantic = record_semantic_operation(
+        session, "node.update", {"nodeId": "NODE-X"}, "before", "after"
+    )
+    layout = record_layout_operation(
+        session, "layout.move", {"nodeId": "NODE-X"}, {"x": 1}, {"x": 2}
+    )
+
+    assert semantic["target"]["candidateId"] == candidate_id
+    assert semantic["affectsSemanticHash"] is True
+    assert layout["target"]["candidateId"] == candidate_id
+    assert layout["affectsSemanticHash"] is False
 
 
 def test_candidate_lifecycle_is_isolated(reference_data: dict):

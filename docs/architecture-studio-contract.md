@@ -57,6 +57,14 @@ header 获取受保护的 `/studio/document`，fragment 随即从地址栏移除
 - Candidate 节点使用 session-local `nodeId`；已有正式实体另带 `entityRef`。草稿 ID 不冒充正式
   Module/Connection ID。
 - 语义操作与布局操作分开记录。Proposal 只包含候选到正式数据的语义差异。
+- 只把 Bridge 保存后返回的完整 `semanticHash / layoutHash` 称为权威 Hash；离线页面显示
+  `not_computed_by_bridge`。Session Operations 是可观察的会话记录，不宣称为不可变审计 Journal。
+- 候选 Semantic Diff 中正式节点/连线只按 `entityRef.type + entityRef.id` 对齐，草稿只按
+  session-local `nodeId/edgeId` 对齐；显示名称不是身份。坐标、缩放、折叠、视觉顺序和操作时间
+  不进入 Semantic Diff。
+- semantic edit、candidate switch、Panorama/Data/Git/Source drift、CAS Conflict、coverage
+  incomplete 与 formal source uninitialized 等 stale 原因可同时派生显示，但 V0.4 不将其写入
+  Panorama Schema 或冒充正式 Finding。
 - 页面不能生成 Approval 时间、Formal Finding Code、verified/accepted/deployed/waived 等治理事实。
 - Agent review 的 `ready` 只表示建议已完成，不是用户批准。
 - Apply 只修改正式 JSON payload；Presentation Layer 与 Renderer Hash 保持不变。

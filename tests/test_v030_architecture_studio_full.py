@@ -71,6 +71,8 @@ def test_studio_has_candidate_management_comparison_and_cas_conflict_ui(
         "function createStudioCandidate(",
         "function renameStudioCandidate(",
         "function archiveStudioCandidate(",
+        "function studioCandidateDialogHtml(",
+        "function submitStudioCandidateDialog(",
         "studioCompareIds",
         "最多同时比较 3 个候选方案",
         "expectedRevision: expected",
@@ -79,6 +81,7 @@ def test_studio_has_candidate_management_comparison_and_cas_conflict_ui(
         "scheduleStudioBridgeSave()",
     ):
         assert token in source
+    assert "window.prompt(" not in source
 
 
 def test_semantic_operations_invalidate_artifacts_but_layout_does_not(
@@ -86,10 +89,88 @@ def test_semantic_operations_invalidate_artifacts_but_layout_does_not(
 ):
     source = template_path.read_text(encoding="utf-8")
 
-    assert "if (semantic) invalidateStudioArtifacts();" in source
+    assert 'if (semantic) invalidateStudioArtifacts("candidate_semantic_changed");' in source
     assert 'appendStudioOperation("layout.move"' in source
     assert "affectsSemanticHash: Boolean(semantic)" in source
     assert "布局操作不影响语义" in source
+
+
+def test_studio_exposes_bridge_authoritative_dual_hash_and_dual_track_journal(
+    template_path: Path,
+):
+    source = template_path.read_text(encoding="utf-8")
+
+    for token in (
+        "function studioHashStripHtml(",
+        "Bridge 权威双 Hash",
+        "not_computed_by_bridge",
+        "Bridge 权威值 · 语义编辑会改变",
+        "Bridge 权威值 · 仅布局坐标会改变",
+        "function studioJournalHtml(",
+        "Session Operations",
+        "data-studio-journal='semantic'",
+        "data-studio-journal='layout'",
+        "affectsSemanticHash",
+        "before\\n",
+        "after\\n",
+    ):
+        assert token in source
+
+
+def test_studio_semantic_diff_is_field_level_and_excludes_layout_coordinates(
+    template_path: Path,
+):
+    source = template_path.read_text(encoding="utf-8")
+
+    for token in (
+        "function studioSemanticIdentity(",
+        "function studioSemanticDiff(",
+        'return "entity:" + ref.type + ":" + ref.id',
+        "候选方案字段级 Semantic Diff",
+        "模块字段级 Diff",
+        "数据流字段级 Diff",
+        "按 entityRef / session-local ID 对齐",
+        "坐标已排除",
+        'fieldChanges(base, compare, ["assumptions", "unknowns"])',
+        '"responsibilities", "nonResponsibilities"',
+        '"protocol", "communicationMode", "flowDirection", "dataSummary"',
+    ):
+        assert token in source
+
+    semantic_diff = source[source.index("function studioSemanticDiff("):source.index("function studioDiffValue(")]
+    assert '"x"' not in semantic_diff
+    assert '"y"' not in semantic_diff
+
+
+def test_studio_discloses_multiple_concrete_stale_reasons_and_field_impact(
+    template_path: Path,
+):
+    source = template_path.read_text(encoding="utf-8")
+
+    for token in (
+        "function studioStaleReasons(",
+        "function studioStaleStripHtml(",
+        "candidate_semantic_changed",
+        "candidate_switched",
+        "panorama_revision_changed",
+        "data_hash_changed",
+        "git_head_changed",
+        "source_snapshot_changed",
+        "source_content_changed",
+        "session_cas_conflict",
+        "coverage_incomplete",
+        "formal_source_uninitialized",
+        "STALE 原因",
+        "影响 Semantic Hash",
+        "仅影响 Layout Hash",
+        'invalidateStudioArtifacts("candidate_switched")',
+        "function updateStudioEdgeField(",
+        'data-studio-edge-field=\'protocol\'',
+        'data-studio-edge-field=\'communicationMode\'',
+        'data-studio-edge-field=\'flowDirection\'',
+        'data-studio-edge-field=\'reliabilitySummary\'',
+    ):
+        assert token in source
 
 
 def test_offline_copy_explains_how_to_enable_complete_bridge_loop(

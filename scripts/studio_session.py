@@ -247,6 +247,118 @@ def layout_hash(candidate: dict[str, Any]) -> str:
     return compute_canonical_hash(_layout_projection(candidate))
 
 
+def _semantic_identity(item: dict[str, Any], local_key: str, kind: str) -> str:
+    entity_ref = item.get("entityRef")
+    if isinstance(entity_ref, dict) and entity_ref.get("type") and entity_ref.get("id"):
+        return f"entity:{entity_ref['type']}:{entity_ref['id']}"
+    return f"{kind}:{item.get(local_key, '')}"
+
+
+def _semantic_field_changes(
+    before: dict[str, Any], after: dict[str, Any], fields: tuple[str, ...]
+) -> list[dict[str, Any]]:
+    return [
+        {"field": field, "before": _clone(before.get(field)), "after": _clone(after.get(field))}
+        for field in fields
+        if before.get(field) != after.get(field)
+    ]
+
+
+def candidate_semantic_diff(
+    base_candidate: dict[str, Any], compare_candidate: dict[str, Any]
+) -> dict[str, Any]:
+    """Return a deterministic field-level semantic diff between two candidates.
+
+    Formal entities align only by ``entityRef.type + entityRef.id``. Draft
+    entities align only by their session-local ID; display names are never an
+    identity. Canvas coordinates and operation timestamps are intentionally
+    absent from this projection.
+    """
+
+    if not isinstance(base_candidate, dict) or not isinstance(compare_candidate, dict):
+        raise StudioSessionError("candidates must be objects")
+
+    node_fields = (
+        "name", "purpose", "responsibilities", "nonResponsibilities",
+        "stateOwnership", "layerId", "category", "technologies", "dataHandled",
+        "interfaceSummary", "deploymentRole", "referenceIds", "notes",
+        "designExtensions", "rationale", "requirementIds", "isDraft",
+    )
+    edge_fields = (
+        "fromNodeRef", "toNodeRef", "name", "label", "protocol",
+        "communicationMode", "flowDirection", "dataSummary",
+        "contractReferenceIds", "authSummary", "reliabilitySummary", "rationale",
+        "transitionId", "extensions", "isDraft",
+    )
+
+    def nodes(candidate: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        return {
+            _semantic_identity(item, "nodeId", "node"): item
+            for item in candidate.get("nodes", [])
+        }
+
+    def edges(candidate: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        node_refs = {
+            item.get("nodeId"): _semantic_identity(item, "nodeId", "node")
+            for item in candidate.get("nodes", [])
+        }
+        result: dict[str, dict[str, Any]] = {}
+        for item in candidate.get("edges", []):
+            projected = _clone(item)
+            projected["fromNodeRef"] = node_refs.get(
+                item.get("fromNodeId"), f"node:{item.get('fromNodeId', '')}"
+            )
+            projected["toNodeRef"] = node_refs.get(
+                item.get("toNodeId"), f"node:{item.get('toNodeId', '')}"
+            )
+            result[_semantic_identity(item, "edgeId", "edge")] = projected
+        return result
+
+    def entity_diff(
+        base_items: dict[str, dict[str, Any]],
+        compare_items: dict[str, dict[str, Any]],
+        fields: tuple[str, ...],
+    ) -> dict[str, list[Any]]:
+        base_keys = set(base_items)
+        compare_keys = set(compare_items)
+        modified = []
+        for identity in sorted(base_keys & compare_keys):
+            changes = _semantic_field_changes(
+                base_items[identity], compare_items[identity], fields
+            )
+            if changes:
+                modified.append({"identity": identity, "fields": changes})
+        return {
+            "added": sorted(compare_keys - base_keys),
+            "removed": sorted(base_keys - compare_keys),
+            "modified": modified,
+        }
+
+    node_diff = entity_diff(nodes(base_candidate), nodes(compare_candidate), node_fields)
+    edge_diff = entity_diff(edges(base_candidate), edges(compare_candidate), edge_fields)
+    candidate_changes = _semantic_field_changes(
+        base_candidate, compare_candidate, ("assumptions", "unknowns")
+    )
+    summary = {
+        "candidateFieldsModified": len(candidate_changes),
+        "nodesAdded": len(node_diff["added"]),
+        "nodesRemoved": len(node_diff["removed"]),
+        "nodesModified": len(node_diff["modified"]),
+        "edgesAdded": len(edge_diff["added"]),
+        "edgesRemoved": len(edge_diff["removed"]),
+        "edgesModified": len(edge_diff["modified"]),
+    }
+    return {
+        "baseCandidateId": base_candidate.get("candidateId"),
+        "compareCandidateId": compare_candidate.get("candidateId"),
+        "candidateFields": candidate_changes,
+        "nodes": node_diff,
+        "edges": edge_diff,
+        "summary": summary,
+        "hasChanges": any(summary.values()),
+    }
+
+
 def _refresh_hashes(session: dict[str, Any]) -> None:
     candidate = _candidate(session, None)
     session["semanticHash"] = semantic_hash(candidate)
@@ -482,10 +594,12 @@ def _append_operation(session: dict[str, Any], kind: str, target: dict[str, Any]
     total = len(session.get("semanticOperations", [])) + len(session.get("layoutOperations", []))
     if total >= MAX_OPERATIONS:
         raise StudioSessionError("operation limit reached")
+    operation_target = _clone(target)
+    operation_target.setdefault("candidateId", session.get("activeCandidateId"))
     operation = {
         "opId": _unique_id("OP", {"session": session.get("sessionId"), "seq": total + 1, "kind": kind, "target": target}, set()),
         "seq": total + 1, "at": _now(), "actor": "human", "kind": kind,
-        "target": _clone(target), "before": _clone(before), "after": _clone(after),
+        "target": operation_target, "before": _clone(before), "after": _clone(after),
         "affectsSemanticHash": semantic,
     }
     operations.append(operation)

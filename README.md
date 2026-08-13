@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.4（Evidence Inspector P0A）
+# Agent Project Panorama V0.4（Evidence Inspector + Studio Journal）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.4 P0A 能力
+## V0.4 P0A / P0B 能力
 
 - 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
   Bridge 模式只访问同源 `127.0.0.1` API；
@@ -31,6 +31,9 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
   Bridge 模式显示实时 `match / drift / uninitialized / incomplete` 与具体原因。
 - Observation Conflict 只显示 Batch 级 Summary；缺少结构化两侧证据时固定标记
   `Needs Human Review — structured sides unavailable`，Renderer 不自动裁决。
+- Studio 持续显示 Bridge 权威 `semanticHash / layoutHash`、Semantic/Layout 双轨 Session
+  Operations、字段级候选 Semantic Diff，以及可同时保留的具体 stale 原因。离线模式固定显示
+  `not_computed_by_bridge`，不把浏览器计算冒充权威 Hash。
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
@@ -401,8 +404,12 @@ Studio 支持：
 - 编辑名称、用途、架构层、职责与状态所有权；
 - 增加和移除草稿数据流；
 - 撤销、重做、浏览器基础检查、本地浏览器保存和 JSON 导入/导出；
-- 将语义操作与纯布局操作分开记录。
-- 新建、克隆、重命名、归档和最多三个候选的指标对比；
+- 将语义操作与纯布局操作分开记录，并在 Inspector 中展示 `seq/at/actor/kind/target/before/after`
+  与 `affectsSemanticHash`；
+- 显示 Bridge 返回的完整 64 位 Semantic/Layout Hash；离线模式不计算权威 Hash；
+- 新建、克隆、重命名、归档和最多三个候选的字段级 Semantic Diff；正式实体按
+  `entityRef.type + entityRef.id` 对齐，草稿按 session-local ID 对齐，坐标与操作时间排除；
+- 同时显示 semantic edit、候选切换、Data/Git/Source 漂移、CAS Conflict、覆盖不完整等 stale 原因；
 - Session Revision 冲突保护、正式 Schema/跨引用/风险规则校验；
 - 有界源码内容摘要与 Git/Source Binding 漂移门禁；覆盖不完整时保留草稿但阻止正式化；
 - 可选 Codex advisory review，以及独立 Proposal、write-once Approval 与原子 Apply。

@@ -286,6 +286,25 @@
     .studio-compare-card { background: #fff; border: 1px solid var(--rule); border-radius: 5px; padding: 10px; min-width: 0; }
     .studio-compare-card h3 { font-size: 12px; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .studio-compare-card p { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .studio-diff { margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 10px; }
+    .studio-diff-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .studio-diff-head strong { font-size: 11px; }
+    .studio-diff-summary { display: flex; gap: 7px; flex-wrap: wrap; color: var(--muted); font-size: 10px; }
+    .studio-diff-group { border: 1px solid var(--rule); border-radius: 4px; background: #fff; margin-top: 6px; }
+    .studio-diff-group summary { min-height: 36px; padding: 8px; cursor: pointer; color: var(--ink); font-size: 11px; font-weight: 720; }
+    .studio-diff-list { display: grid; gap: 7px; padding: 0 8px 8px; }
+    .studio-diff-item { padding: 7px; background: var(--band); border-radius: 3px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+    .studio-diff-item strong { display: block; color: var(--ink); margin-bottom: 3px; }
+    .studio-hash-strip { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: #fff; }
+    .studio-hash-card { min-width: 0; border: 1px solid var(--rule); border-radius: 4px; padding: 8px; }
+    .studio-hash-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .studio-hash-card strong { font-size: 11px; }
+    .studio-hash-value { color: var(--muted); font: 10px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
+    .studio-hash-state { color: var(--faint); font-size: 10px; margin-top: 4px; }
+    .studio-stale-strip { display: flex; align-items: flex-start; gap: 9px; padding: 9px 13px; border-bottom: 1px solid #e1c98f; background: #fff8eb; color: #6c4810; }
+    .studio-stale-strip strong { flex: 0 0 auto; font-size: 11px; }
+    .studio-stale-list { display: flex; flex-wrap: wrap; gap: 5px; list-style: none; padding: 0; }
+    .studio-stale-list li { border: 1px solid #e1c98f; border-radius: 999px; background: #fff; padding: 2px 7px; font: 10px/1.45 var(--mono); }
     .studio-artifact-strip { display: grid; gap: 7px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: #fff; }
     .studio-artifact-line { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
     .studio-artifact-line strong { color: var(--ink); min-width: 72px; }
@@ -340,6 +359,17 @@
     .studio-check-item::before { content: ""; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: var(--passed); }
     .studio-check-item.is-warning::before { background: var(--warning); }
     .studio-check-item.is-error::before { background: var(--critical); }
+    .studio-impact { color: var(--primary); font-size: 10px; font-weight: 700; }
+    .studio-impact.is-layout { color: #5c6578; }
+    .studio-journal-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+    .studio-journal-tab { min-height: 32px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 0 8px; color: var(--muted); font-size: 11px; }
+    .studio-journal-tab[aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: var(--primary-tint); }
+    .studio-journal { display: grid; gap: 7px; max-height: 330px; overflow: auto; }
+    .studio-journal-item { border: 1px solid var(--rule); border-radius: 4px; background: var(--band); }
+    .studio-journal-item summary { min-height: 36px; padding: 7px; cursor: pointer; font-size: 10px; color: var(--ink); }
+    .studio-journal-meta { display: flex; gap: 5px; flex-wrap: wrap; color: var(--muted); font: 9px/1.4 var(--mono); }
+    .studio-journal-body { padding: 0 7px 7px; }
+    .studio-journal-value { max-height: 120px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font: 9px/1.45 var(--mono); }
     .studio-empty-inspector { padding: 28px 18px; color: var(--muted); text-align: center; }
     .studio-footer {
       min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 13px;
@@ -579,6 +609,7 @@
       .studio-context-group, .studio-actions { width: 100%; }
       .studio-context-control { min-width: 0; flex: 1; }
       .studio-compare-grid { grid-template-columns: 1fr; }
+      .studio-hash-strip { grid-template-columns: 1fr; }
       .studio-candidatebar { align-items: stretch; }
       .studio-candidate-chip { flex: 1 1 140px; }
       .system-content { padding-left: 12px; padding-right: 12px; }
@@ -4753,12 +4784,16 @@
       studioMode: "view",
       studioSession: null,
       studioSelectedNodeId: null,
+      studioSelectedEdgeId: null,
       studioUndoStack: [],
       studioRedoStack: [],
       studioStorage: "memory",
       studioFieldBaseline: null,
       studioCompareIds: [],
       studioCompareOpen: false,
+      studioCandidateDraft: null,
+      studioJournalTrack: "semantic",
+      studioEventStaleReasons: [],
       studioSaveTimer: null,
       studioGeneration: 0,
       studioBridge: {
@@ -5220,6 +5255,7 @@
           if (error.status === 409) {
             state.studioBridge.detached = true;
             state.studioBridge.conflict = studioBridgeErrorMessage(error);
+            addStudioStaleReason("session_cas_conflict");
             state.studioBridge.notice = "本地草稿仍保留；请选择导出备份或显式加载服务端版本";
             return;
           }
@@ -5235,6 +5271,8 @@
       session.mode = "bridge";
       state.studioSession = session;
       state.studioStorage = "bridge";
+      state.studioBridge.lastSavedGeneration = Math.max(state.studioBridge.lastSavedGeneration, state.studioGeneration);
+      if (!state.studioBridge.conflict) removeStudioStaleReasons(["session_cas_conflict"]);
       state.studioUndoStack = []; state.studioRedoStack = [];
       var candidate = activeStudioCandidate();
       state.studioSelectedNodeId = candidate && candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
@@ -5250,7 +5288,16 @@
       }
     }
 
-    function invalidateStudioArtifacts() {
+    function addStudioStaleReason(reason) {
+      if (reason && state.studioEventStaleReasons.indexOf(reason) < 0) state.studioEventStaleReasons.push(reason);
+    }
+
+    function removeStudioStaleReasons(reasons) {
+      state.studioEventStaleReasons = state.studioEventStaleReasons.filter(function (item) { return reasons.indexOf(item) < 0; });
+    }
+
+    function invalidateStudioArtifacts(reason) {
+      addStudioStaleReason(reason || "candidate_semantic_changed");
       state.studioBridge.formalValidation = null;
       state.studioBridge.review = null;
       if (state.studioBridge.reviewJobId && String(state.studioBridge.busy || "").indexOf("Codex") >= 0) state.studioBridge.busy = null;
@@ -5304,7 +5351,7 @@
           if (explicit) showToast("服务端草稿已保存");
           return true;
         } catch (error) {
-          if (error.status === 409) state.studioBridge.conflict = studioBridgeErrorMessage(error);
+          if (error.status === 409) { state.studioBridge.conflict = studioBridgeErrorMessage(error); addStudioStaleReason("session_cas_conflict"); }
           else state.studioBridge.lastError = studioBridgeErrorMessage(error);
           return false;
         }
@@ -5322,7 +5369,7 @@
       state.studioBridge.busy = "加载服务端草稿"; renderStudio();
       try {
         var result = await studioBridgeRequest("/api/v1/sessions/" + encodeURIComponent(state.studioSession.sessionId));
-        acceptServerStudioSession((result && result.session) || result); state.studioBridge.conflict = null;
+        state.studioBridge.conflict = null; removeStudioStaleReasons(["session_cas_conflict"]); acceptServerStudioSession((result && result.session) || result);
         showToast("已加载服务端最新草稿");
       } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
       finally { state.studioBridge.busy = null; renderStudio(); }
@@ -5501,7 +5548,7 @@
       var semanticChanged = studioSemanticProjection(state.studioSession) !== studioSemanticProjection(snapshot.session);
       state.studioSession = cloneForStudio(snapshot.session);
       state.studioSelectedNodeId = snapshot.selected;
-      if (semanticChanged) invalidateStudioArtifacts();
+      if (semanticChanged) invalidateStudioArtifacts("candidate_semantic_changed");
       validateStudioSession();
       persistStudioSession();
       renderStudio();
@@ -5515,19 +5562,21 @@
 
     function appendStudioOperation(kind, target, before, after, semantic) {
       var list = semantic ? state.studioSession.semanticOperations : state.studioSession.layoutOperations;
+      var operationTarget = cloneForStudio(target || {});
+      if (!operationTarget.candidateId) operationTarget.candidateId = state.studioSession.activeCandidateId;
       list.push({
         opId: "OP-" + String(Date.now()) + "-" + String(list.length + 1),
         seq: state.studioSession.semanticOperations.length + state.studioSession.layoutOperations.length + 1,
         at: new Date().toISOString(),
         actor: "human",
         kind: kind,
-        target: target,
+        target: operationTarget,
         before: before,
         after: after,
         affectsSemanticHash: Boolean(semantic)
       });
       if (state.studioSession.status !== "stale") state.studioSession.status = "dirty";
-      if (semantic) invalidateStudioArtifacts();
+      if (semantic) invalidateStudioArtifacts("candidate_semantic_changed");
     }
 
     function validateStudioSession() {
@@ -5573,6 +5622,96 @@
       return checks.slice(0, 8).map(function (check) {
         return "<li class='studio-check-item is-" + e(check.level) + "'>" + e(check.message) + "</li>";
       }).join("");
+    }
+
+    function studioFullHash(value) {
+      return /^[a-f0-9]{64}$/.test(String(value || "")) ? String(value) : null;
+    }
+
+    function studioHashStripHtml(session) {
+      var authoritative = session.mode === "bridge" && state.studioStorage === "bridge" && state.studioBridge.lastSavedGeneration >= state.studioGeneration;
+      var semantic = authoritative ? studioFullHash(session.semanticHash) : null;
+      var layout = authoritative ? studioFullHash(session.layoutHash) : null;
+      function card(label, value, explanation) {
+        var shown = value || "not_computed_by_bridge";
+        return "<article class='studio-hash-card'><header><strong>" + e(label) + "</strong>" + (value ? "<button class='studio-action' type='button' data-copy-value='" + e(value) + "'>复制</button>" : "") + "</header><div class='studio-hash-value'>" + e(shown) + "</div><div class='studio-hash-state'>" + e(explanation) + "</div></article>";
+      }
+      return "<section class='studio-hash-strip' aria-label='Bridge 权威双 Hash'>" +
+        card("Semantic Hash", semantic, semantic ? "Bridge 权威值 · 语义编辑会改变" : "离线页面不计算权威 Hash") +
+        card("Layout Hash", layout, layout ? "Bridge 权威值 · 仅布局坐标会改变" : "离线页面不计算权威 Hash") + "</section>";
+    }
+
+    function studioStaleReasonLabel(reason) {
+      var labels = {
+        candidate_semantic_changed: "candidate_semantic_changed · 候选语义已编辑",
+        candidate_switched: "candidate_switched · 已切换活动候选",
+        panorama_revision_changed: "panorama_revision_changed · Panorama Revision 已变化",
+        data_hash_changed: "data_hash_changed · Data Hash 已变化",
+        git_head_changed: "git_head_changed · Git HEAD 已漂移",
+        bridge_baseline_git_changed: "git_head_changed · Bridge 启动后 Git HEAD 已变化",
+        source_snapshot_changed: "source_snapshot_changed · Source Snapshot 已漂移",
+        source_content_changed: "source_content_changed · Source Content Digest 已漂移",
+        session_cas_conflict: "session_cas_conflict · Session Revision 冲突",
+        coverage_incomplete: "coverage_incomplete · 来源覆盖不完整",
+        formal_source_uninitialized: "formal_source_uninitialized · 正式 Source Binding 未初始化",
+        formal_source_unbound: "formal_source_uninitialized · 正式 Source Binding 尚未建立"
+      };
+      return labels[reason] || reason;
+    }
+
+    function studioStaleReasons() {
+      var reasons = state.studioEventStaleReasons.slice();
+      var session = state.studioSession;
+      var context = state.studioBridge.context || {};
+      var panorama = context.panorama || {};
+      var freshness = context.sourceFreshness || {};
+      if (state.studioBridge.conflict) reasons.push("session_cas_conflict");
+      if (session && session.projectBinding) {
+        if (panorama.revision != null && session.projectBinding.baseRevision !== panorama.revision) reasons.push("panorama_revision_changed");
+        if (panorama.dataHash && session.projectBinding.baseDataHash && session.projectBinding.baseDataHash !== panorama.dataHash) reasons.push("data_hash_changed");
+      }
+      arr(freshness.reasons).forEach(function (reason) {
+        if (["git_head_changed", "bridge_baseline_git_changed", "source_snapshot_changed", "source_content_changed", "coverage_incomplete", "formal_source_uninitialized", "formal_source_unbound"].indexOf(reason) >= 0) reasons.push(reason);
+      });
+      if (session && session.formalSourceBindingStatus === "uninitialized") reasons.push("formal_source_uninitialized");
+      var unique = [];
+      reasons.forEach(function (reason) { if (reason && unique.indexOf(reason) < 0) unique.push(reason); });
+      return unique;
+    }
+
+    function studioStaleStripHtml() {
+      var reasons = studioStaleReasons();
+      if (!reasons.length) return "";
+      return "<section class='studio-stale-strip' aria-label='当前失效原因'><strong>STALE 原因</strong><ul class='studio-stale-list'>" + reasons.map(function (reason) { return "<li>" + e(studioStaleReasonLabel(reason)) + "</li>"; }).join("") + "</ul></section>";
+    }
+
+    function studioJournalValue(value) {
+      if (value === undefined) return "undefined";
+      try { return JSON.stringify(value, null, 2); } catch (error) { return String(value); }
+    }
+
+    function studioJournalHtml(session) {
+      var semantic = state.studioJournalTrack === "semantic";
+      var operations = (semantic ? arr(session.semanticOperations) : arr(session.layoutOperations)).slice().sort(function (a, b) { return Number(b.seq || 0) - Number(a.seq || 0); });
+      var items = operations.slice(0, 40).map(function (operation) {
+        var target = operation.target || {};
+        var targetLabel = [target.candidateId, target.nodeId || target.edgeId || target.sessionId, target.field].filter(Boolean).join(" · ");
+        return "<details class='studio-journal-item'><summary><strong>#" + e(operation.seq || "?") + " · " + e(operation.kind || "operation") + "</strong><div class='studio-journal-meta'><span>" + e(operation.at || "time unavailable") + "</span><span>actor=" + e(operation.actor || "unknown") + "</span><span>semantic=" + e(operation.affectsSemanticHash === true ? "true" : "false") + "</span></div></summary><div class='studio-journal-body'><p class='cell-sub'>target · " + e(targetLabel || studioJournalValue(target)) + "</p><div class='studio-journal-value'>before\n" + e(studioJournalValue(operation.before)) + "\n\nafter\n" + e(studioJournalValue(operation.after)) + "</div></div></details>";
+      }).join("");
+      return "<div class='studio-inspector-section'><h3>Session Operations</h3><div class='studio-journal-tabs' aria-label='操作轨道'><button class='studio-journal-tab' type='button' data-studio-journal='semantic' aria-pressed='" + (semantic ? "true" : "false") + "'>Semantic · " + session.semanticOperations.length + "</button><button class='studio-journal-tab' type='button' data-studio-journal='layout' aria-pressed='" + (!semantic ? "true" : "false") + "'>Layout · " + session.layoutOperations.length + "</button></div><p class='cell-sub'>Semantic 操作使校验、评审、Proposal 与批准失效；Layout 操作只改变画布 Hash。</p><div class='studio-journal'>" + (items || "<p class='cell-sub'>该轨道尚无操作。</p>") + "</div></div>";
+    }
+
+    function studioCandidateSemanticsHtml(candidate) {
+      return "<div class='studio-inspector-section'><h3>候选语义</h3><label class='studio-field'><span>假设（每行一项）</span><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' data-studio-candidate-field='assumptions'>" + e(arr(candidate.assumptions).join("\n")) + "</textarea></label><label class='studio-field'><span>未知项（每行一项）</span><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' data-studio-candidate-field='unknowns'>" + e(arr(candidate.unknowns).join("\n")) + "</textarea></label></div>";
+    }
+
+    function studioFieldSemanticsLabel() {
+      return "<span class='studio-impact'>影响 Semantic Hash</span>";
+    }
+
+    function studioEdgeInspectorHtml(candidate, edge) {
+      if (!edge) return "";
+      return "<div class='studio-inspector-section'><h3>所选数据流</h3><p class='cell-sub mono'>" + e(edge.entityRef ? edge.entityRef.id : edge.edgeId) + "</p><label class='studio-field'><span>标签</span>" + studioFieldSemanticsLabel() + "<input class='studio-input' data-studio-edge-field='label' value='" + e(edge.label || "") + "'></label><label class='studio-field'><span>协议</span>" + studioFieldSemanticsLabel() + "<input class='studio-input' data-studio-edge-field='protocol' value='" + e(edge.protocol || "") + "'></label><label class='studio-field'><span>通信模式</span>" + studioFieldSemanticsLabel() + "<input class='studio-input' data-studio-edge-field='communicationMode' value='" + e(edge.communicationMode || "") + "'></label><label class='studio-field'><span>流向</span>" + studioFieldSemanticsLabel() + "<input class='studio-input' data-studio-edge-field='flowDirection' value='" + e(edge.flowDirection || "") + "'></label><label class='studio-field'><span>数据说明</span>" + studioFieldSemanticsLabel() + "<textarea class='studio-textarea' data-studio-edge-field='dataSummary'>" + e(edge.dataSummary || "") + "</textarea></label><label class='studio-field'><span>可靠性说明</span>" + studioFieldSemanticsLabel() + "<textarea class='studio-textarea' data-studio-edge-field='reliabilitySummary'>" + e(edge.reliabilitySummary || "") + "</textarea></label><p class='cell-sub'>" + e((studioNode(edge.fromNodeId) || {}).name || edge.fromNodeId) + " → " + e((studioNode(edge.toNodeId) || {}).name || edge.toNodeId) + "</p>" + (edge.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-delete-edge='" + e(edge.edgeId) + "'>移除草稿数据流</button>" : "") + "</div>";
     }
 
     function studioArtifactIsCurrent(artifact) {
@@ -5652,14 +5791,82 @@
       return "<div class='studio-candidatebar'><span class='cell-sub'>对比（最多 3 个）</span>" + chips + "<button class='studio-action' type='button' data-studio-action='compare' " + (state.studioCompareIds.length > 1 ? "" : "disabled") + ">" + (state.studioCompareOpen ? "收起对比" : "对比方案") + "</button></div>";
     }
 
+    function studioSemanticIdentity(item, localKey, kind) {
+      var ref = item && item.entityRef;
+      if (ref && ref.type && ref.id) return "entity:" + ref.type + ":" + ref.id;
+      return kind + ":" + String(item && item[localKey] || "");
+    }
+
+    function studioSemanticDiff(base, compare) {
+      var nodeFields = ["name", "purpose", "responsibilities", "nonResponsibilities", "stateOwnership", "layerId", "category", "technologies", "dataHandled", "interfaceSummary", "deploymentRole", "referenceIds", "notes", "designExtensions", "rationale", "requirementIds", "isDraft"];
+      var edgeFields = ["fromNodeRef", "toNodeRef", "name", "label", "protocol", "communicationMode", "flowDirection", "dataSummary", "contractReferenceIds", "authSummary", "reliabilitySummary", "rationale", "transitionId", "extensions", "isDraft"];
+      function fieldChanges(before, after, fields) {
+        return fields.filter(function (field) { return JSON.stringify(before[field]) !== JSON.stringify(after[field]); }).map(function (field) { return { field: field, before: cloneForStudio(before[field]), after: cloneForStudio(after[field]) }; });
+      }
+      function nodeMap(candidate) {
+        var result = {};
+        arr(candidate.nodes).forEach(function (node) { result[studioSemanticIdentity(node, "nodeId", "node")] = node; });
+        return result;
+      }
+      function edgeMap(candidate) {
+        var refs = {};
+        arr(candidate.nodes).forEach(function (node) { refs[node.nodeId] = studioSemanticIdentity(node, "nodeId", "node"); });
+        var result = {};
+        arr(candidate.edges).forEach(function (edge) {
+          var copy = cloneForStudio(edge);
+          copy.fromNodeRef = refs[edge.fromNodeId] || "node:" + edge.fromNodeId;
+          copy.toNodeRef = refs[edge.toNodeId] || "node:" + edge.toNodeId;
+          result[studioSemanticIdentity(edge, "edgeId", "edge")] = copy;
+        });
+        return result;
+      }
+      function entityDiff(beforeMap, afterMap, fields) {
+        var beforeKeys = Object.keys(beforeMap);
+        var afterKeys = Object.keys(afterMap);
+        var modified = beforeKeys.filter(function (key) { return Object.prototype.hasOwnProperty.call(afterMap, key); }).map(function (key) { return { identity: key, fields: fieldChanges(beforeMap[key], afterMap[key], fields) }; }).filter(function (item) { return item.fields.length; });
+        return {
+          added: afterKeys.filter(function (key) { return !Object.prototype.hasOwnProperty.call(beforeMap, key); }).sort(),
+          removed: beforeKeys.filter(function (key) { return !Object.prototype.hasOwnProperty.call(afterMap, key); }).sort(),
+          modified: modified.sort(function (a, b) { return a.identity.localeCompare(b.identity); })
+        };
+      }
+      return {
+        candidateFields: fieldChanges(base, compare, ["assumptions", "unknowns"]),
+        nodes: entityDiff(nodeMap(base), nodeMap(compare), nodeFields),
+        edges: entityDiff(edgeMap(base), edgeMap(compare), edgeFields)
+      };
+    }
+
+    function studioDiffValue(value) {
+      if (value === undefined) return "undefined";
+      try { return JSON.stringify(value); } catch (error) { return String(value); }
+    }
+
+    function studioDiffEntityGroup(label, diff) {
+      var count = diff.added.length + diff.removed.length + diff.modified.length;
+      if (!count) return "";
+      var rows = diff.added.map(function (identity) { return "<div class='studio-diff-item'><strong>＋ " + e(identity) + "</strong>新增实体</div>"; })
+        .concat(diff.removed.map(function (identity) { return "<div class='studio-diff-item'><strong>－ " + e(identity) + "</strong>移除实体</div>"; }))
+        .concat(diff.modified.map(function (item) { return "<div class='studio-diff-item'><strong>△ " + e(item.identity) + "</strong>" + item.fields.map(function (change) { return "<div><span class='mono'>" + e(change.field) + "</span><br>before: " + e(studioDiffValue(change.before)) + "<br>after: " + e(studioDiffValue(change.after)) + "</div>"; }).join("<br>") + "</div>"; }));
+      return "<details class='studio-diff-group' open><summary>" + e(label) + " · " + count + "</summary><div class='studio-diff-list'>" + rows.join("") + "</div></details>";
+    }
+
     function studioCompareHtml(session) {
       if (!state.studioCompareOpen) return "";
       var selected = state.studioCompareIds.map(function (id) { return session.candidates.find(function (item) { return item.candidateId === id; }); }).filter(Boolean).slice(0, 3);
       if (selected.length < 2) return "";
-      return "<section class='studio-compare' aria-label='候选方案比较'><div class='studio-compare-grid' style='--compare-count:" + selected.length + "'>" + selected.map(function (candidate) {
+      var base = selected[0];
+      var comparisons = selected.slice(1).map(function (candidate) {
+        var diff = studioSemanticDiff(base, candidate);
+        var candidateRows = diff.candidateFields.map(function (change) { return "<div class='studio-diff-item'><strong>△ candidate." + e(change.field) + "</strong>before: " + e(studioDiffValue(change.before)) + "<br>after: " + e(studioDiffValue(change.after)) + "</div>"; });
+        var nodeCount = diff.nodes.added.length + diff.nodes.removed.length + diff.nodes.modified.length;
+        var edgeCount = diff.edges.added.length + diff.edges.removed.length + diff.edges.modified.length;
+        return "<article class='studio-diff'><div class='studio-diff-head'><strong>" + e(base.label) + " → " + e(candidate.label) + "</strong><span class='cell-sub'>按 entityRef / session-local ID 对齐</span></div><div class='studio-diff-summary'><span>节点差异 " + nodeCount + "</span><span>连线差异 " + edgeCount + "</span><span>候选字段 " + candidateRows.length + "</span><span>坐标已排除</span></div>" + (candidateRows.length ? "<details class='studio-diff-group' open><summary>候选语义 · " + candidateRows.length + "</summary><div class='studio-diff-list'>" + candidateRows.join("") + "</div></details>" : "") + studioDiffEntityGroup("模块字段级 Diff", diff.nodes) + studioDiffEntityGroup("数据流字段级 Diff", diff.edges) + (!candidateRows.length && !nodeCount && !edgeCount ? "<p class='cell-sub'>没有语义差异；布局坐标和操作时间不参与比较。</p>" : "") + "</article>";
+      }).join("");
+      return "<section class='studio-compare' aria-label='候选方案字段级 Semantic Diff'><div class='studio-compare-grid' style='--compare-count:" + selected.length + "'>" + selected.map(function (candidate) {
         var isolated = candidate.nodes.filter(function (node) { return !candidate.edges.some(function (edge) { return edge.fromNodeId === node.nodeId || edge.toNodeId === node.nodeId; }); }).length;
         return "<article class='studio-compare-card'><h3>" + e(candidate.label) + "</h3><p>模块 " + candidate.nodes.length + " · 数据流 " + candidate.edges.length + " · 孤立模块 " + isolated + "</p><p>假设 " + arr(candidate.assumptions).length + " · 未知项 " + arr(candidate.unknowns).length + "</p><button class='studio-action' type='button' data-studio-select-candidate='" + e(candidate.candidateId) + "'>切换到此方案</button></article>";
-      }).join("") + "</div></section>";
+      }).join("") + "</div>" + comparisons + "</section>";
     }
 
     function studioApprovalDialogHtml() {
@@ -5676,32 +5883,67 @@
       return "<dialog class='studio-dialog' id='studio-proposal-dialog' aria-labelledby='studio-proposal-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-proposal-title'>生成正式 Architecture Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>Proposal 会重新运行正式校验，并绑定当前 session Revision、Candidate Semantic Hash、Panorama Data Hash 与源码快照。</p><label class='studio-field'><span>Proposal 摘要</span><input class='studio-input' id='studio-proposal-summary' maxlength='512' value='" + e(draft.summary) + "' required></label><label class='studio-field'><span>变更原因</span><textarea class='studio-textarea' id='studio-proposal-reason' maxlength='4000' required>" + e(draft.reason) + "</textarea></label></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel' data-studio-action='cancel-proposal'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-proposal'>生成并冻结 Hash</button></div></form></dialog>";
     }
 
+    function studioCandidateDialogHtml() {
+      var draft = state.studioCandidateDraft;
+      if (!draft) return "";
+      var titles = { create: "新建架构候选", clone: "克隆当前候选", rename: "重命名当前候选" };
+      return "<dialog class='studio-dialog' id='studio-candidate-dialog' aria-labelledby='studio-candidate-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-candidate-title'>" + e(titles[draft.mode] || "编辑候选") + "</h2></div><div class='studio-dialog-body'><p class='cell-sub'>候选只保存在隔离 Studio Session；不会直接修改正式 Target。</p><label class='studio-field'><span>候选名称</span><input class='studio-input' id='studio-candidate-label' maxlength='256' value='" + e(draft.label || "") + "' required></label></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel' data-studio-action='cancel-candidate'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-candidate'>确认</button></div></form></dialog>";
+    }
+
     function createStudioCandidate(cloneActive) {
       var session = ensureStudioSession();
       if (session.candidates.length >= 12) { showToast("候选方案已达到 12 个上限"); return; }
-      var requested = window.prompt(cloneActive ? "克隆方案名称" : "新方案名称", cloneActive ? activeStudioCandidate().label + " 副本" : "新架构方案");
-      if (!requested || !requested.trim()) return;
+      state.studioCandidateDraft = { mode: cloneActive ? "clone" : "create", label: cloneActive ? activeStudioCandidate().label + " 副本" : "新架构方案" };
+      renderStudio();
+      var dialog = document.getElementById("studio-candidate-dialog");
+      if (dialog && typeof dialog.showModal === "function") { dialog.showModal(); var input = document.getElementById("studio-candidate-label"); if (input) { input.focus(); input.select(); } }
+      else { state.studioCandidateDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法编辑候选"; renderStudio(); }
+    }
+
+    function submitStudioCandidateDialog() {
+      var draft = state.studioCandidateDraft;
+      var requested = String((document.getElementById("studio-candidate-label") || {}).value || "").trim();
+      if (!draft || !requested) { showToast("请填写候选名称"); return; }
+      if (draft.mode === "rename") {
+        var existing = activeStudioCandidate();
+        if (!existing || requested === existing.label) { state.studioCandidateDraft = null; renderStudio(); return; }
+        pushStudioUndo(); var oldLabel = existing.label; existing.label = requested; existing.updatedAt = new Date().toISOString();
+        appendStudioOperation("candidate.rename", { candidateId: existing.candidateId }, oldLabel, existing.label, true);
+        state.studioCandidateDraft = null; persistStudioSession(); renderStudio(); return;
+      }
+      var cloneActive = draft.mode === "clone";
+      var session = ensureStudioSession();
       pushStudioUndo();
       var now = new Date().toISOString();
       var base = cloneActive ? cloneForStudio(activeStudioCandidate()) : { assumptions: [], unknowns: [], nodes: [], edges: [] };
       var occupied = new Set(session.candidates.map(function (item) { return item.candidateId; }));
       var candidateId = "CANDIDATE-" + String(Date.now());
       while (occupied.has(candidateId)) candidateId += "X";
-      base.candidateId = candidateId; base.label = requested.trim(); base.kind = "alternative"; base.status = "active"; base.createdAt = now; base.updatedAt = now;
+      base.candidateId = candidateId; base.label = requested; base.kind = "alternative"; base.status = "active"; base.createdAt = now; base.updatedAt = now;
       session.candidates.push(base); session.activeCandidateId = candidateId;
       state.studioSelectedNodeId = base.nodes[0] ? base.nodes[0].nodeId : null;
       appendStudioOperation("candidate.create", { candidateId: candidateId }, null, { label: base.label, cloned: Boolean(cloneActive) }, true);
+      state.studioCandidateDraft = null;
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function selectStudioCandidate(candidateId) {
+      if (!state.studioSession || candidateId === state.studioSession.activeCandidateId) return;
+      var candidate = state.studioSession.candidates.find(function (item) { return item.candidateId === candidateId && item.status !== "archived"; });
+      if (!candidate) return;
+      state.studioSession.activeCandidateId = candidateId;
+      state.studioSelectedNodeId = candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
+      invalidateStudioArtifacts("candidate_switched");
       validateStudioSession(); persistStudioSession(); renderStudio();
     }
 
     function renameStudioCandidate() {
       var candidate = activeStudioCandidate();
       if (!candidate) return;
-      var requested = window.prompt("候选方案名称", candidate.label);
-      if (!requested || !requested.trim() || requested.trim() === candidate.label) return;
-      pushStudioUndo(); var before = candidate.label; candidate.label = requested.trim(); candidate.updatedAt = new Date().toISOString();
-      appendStudioOperation("candidate.rename", { candidateId: candidate.candidateId }, before, candidate.label, true);
-      persistStudioSession(); renderStudio();
+      state.studioCandidateDraft = { mode: "rename", label: candidate.label };
+      renderStudio();
+      var dialog = document.getElementById("studio-candidate-dialog");
+      if (dialog && typeof dialog.showModal === "function") { dialog.showModal(); var input = document.getElementById("studio-candidate-label"); if (input) { input.focus(); input.select(); } }
     }
 
     function archiveStudioCandidate() {
@@ -5737,6 +5979,7 @@
           state.studioBridge.notice = "正式校验期间候选发生变化；旧结果已丢弃，请重新校验";
         } else {
           state.studioBridge.formalValidation = artifact;
+          removeStudioStaleReasons(["candidate_semantic_changed", "candidate_switched"]);
           showToast("正式校验已完成");
         }
       } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); showToast("正式校验失败"); }
@@ -5891,7 +6134,7 @@
         return "<li><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></li>";
       }).join("");
       var selected = studioNode(state.studioSelectedNodeId);
-      var inspector = selected ? studioInspectorHtml(selected, layers) : "<div class='studio-empty-inspector'>选择一个模块以编辑草稿属性。</div>";
+      var inspector = selected ? studioInspectorHtml(selected, layers) : "<div class='studio-empty-inspector'>选择一个模块以编辑草稿属性。</div>" + studioCandidateSemanticsHtml(candidate) + studioJournalHtml(session);
       var errors = session.clientValidation.filter(function (check) { return check.level === "error"; }).length;
       var warnings = session.clientValidation.filter(function (check) { return check.level === "warning"; }).length;
       var bridge = state.studioBridge;
@@ -5915,7 +6158,7 @@
         "<button class='studio-action' type='button' data-studio-action='reset'>重置草稿</button>" +
         "<button class='studio-action' type='button' data-studio-action='import'>导入 JSON</button><input id='studio-import-input' type='file' accept='application/json,.json' data-studio-import hidden>" +
         "<button class='studio-action' type='button' data-studio-action='export'>导出 JSON</button>" + (online ? "<button class='studio-action' type='button' data-studio-action='save' " + (bridge.busy || bridge.conflict ? "disabled" : "") + ">保存</button>" : "") + "</div></div>" + conflictHtml +
-        studioCandidateBarHtml(session) + studioCompareHtml(session) + studioArtifactHtml() +
+        studioCandidateBarHtml(session) + studioCompareHtml(session) + studioHashStripHtml(session) + studioStaleStripHtml() + studioArtifactHtml() +
         "<div class='studio-workspace'><aside class='studio-library'><div class='studio-panel-head'><strong>组件库</strong><span class='count'>草稿</span></div>" +
         "<div class='studio-library-section'><h3>添加组件</h3><div class='studio-library-list'><button class='studio-library-btn' type='button' data-studio-add-node='agent'>＋ Agent</button><button class='studio-library-btn' type='button' data-studio-add-node='service'>＋ 服务</button><button class='studio-library-btn' type='button' data-studio-add-node='data'>＋ 数据存储</button></div></div>" +
         "<div class='studio-library-section'><h3>需求基线</h3><ul class='studio-requirements'>" + requirements + "</ul></div></aside>" +
@@ -5929,7 +6172,7 @@
         "<button class='studio-action' type='button' data-studio-action='review' " + (!online || !studioBridgeFeature("review") || bridge.busy || !formalPassed ? "disabled" : "") + " title='在只读 sandbox 中请求 Codex 评审'>Codex 只读评审</button>" +
         "<button class='studio-action is-primary' type='button' data-studio-action='proposal' " + (!online || !studioBridgeFeature("proposals") || bridge.busy || !formalPassed ? "disabled" : "") + ">生成正式提案</button>" +
         "<button class='studio-action' type='button' data-studio-action='approve' " + (!online || !studioBridgeFeature("approvals") || bridge.busy || !proposalCurrent || bridge.approval ? "disabled" : "") + ">精确批准</button>" +
-        "<button class='studio-action is-primary' type='button' data-studio-action='apply' " + (!online || !studioBridgeFeature("apply") || bridge.busy || !proposalCurrent || !approvalCurrent || frozen ? "disabled" : "") + ">Apply</button></div></footer>" + studioProposalDialogHtml() + studioApprovalDialogHtml() + "</section>";
+        "<button class='studio-action is-primary' type='button' data-studio-action='apply' " + (!online || !studioBridgeFeature("apply") || bridge.busy || !proposalCurrent || !approvalCurrent || frozen ? "disabled" : "") + ">Apply</button></div></footer>" + studioCandidateDialogHtml() + studioProposalDialogHtml() + studioApprovalDialogHtml() + "</section>";
       var scope = document.querySelector("[data-studio-scope]");
       if (scope) scope.value = session.scope.level;
       var candidateSelect = document.querySelector("[data-studio-candidate]");
@@ -5941,16 +6184,41 @@
       var candidate = activeStudioCandidate();
       var otherNodes = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId; });
       var outgoing = candidate.edges.filter(function (edge) { return edge.fromNodeId === node.nodeId; });
-      return "<div class='studio-inspector-section'><div class='studio-field'><label for='studio-node-name'>模块名称</label><input class='studio-input' id='studio-node-name' data-studio-field='name' value='" + e(node.name) + "'></div>" +
-        "<div class='studio-field'><label for='studio-node-purpose'>用途说明</label><textarea class='studio-textarea' id='studio-node-purpose' data-studio-field='purpose'>" + e(node.purpose) + "</textarea></div>" +
-        "<div class='studio-field'><label for='studio-node-layer'>架构层</label><select class='studio-select' id='studio-node-layer' data-studio-field='layerId'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === node.layerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></div>" +
-        "<div class='studio-field'><label for='studio-node-state'>状态所有权</label><textarea class='studio-textarea' id='studio-node-state' data-studio-field='stateOwnership'>" + e(node.stateOwnership) + "</textarea></div>" +
-        "<div class='studio-field'><label for='studio-node-responsibilities'>职责（每行一项）</label><textarea class='studio-textarea' id='studio-node-responsibilities' data-studio-field='responsibilities'>" + e(arr(node.responsibilities).join("\n")) + "</textarea></div>" +
+      return "<div class='studio-inspector-section'><div class='studio-field'><label for='studio-node-name'>模块名称</label><span class='studio-impact'>影响 Semantic Hash</span><input class='studio-input' id='studio-node-name' data-studio-field='name' value='" + e(node.name) + "'></div>" +
+        "<div class='studio-field'><label for='studio-node-purpose'>用途说明</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-purpose' data-studio-field='purpose'>" + e(node.purpose) + "</textarea></div>" +
+        "<div class='studio-field'><label for='studio-node-layer'>架构层</label><span class='studio-impact'>影响 Semantic Hash；画布坐标仅影响 Layout Hash</span><select class='studio-select' id='studio-node-layer' data-studio-field='layerId'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === node.layerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-state'>状态所有权</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-state' data-studio-field='stateOwnership'>" + e(node.stateOwnership) + "</textarea></div>" +
+        "<div class='studio-field'><label for='studio-node-responsibilities'>职责（每行一项）</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-responsibilities' data-studio-field='responsibilities'>" + e(arr(node.responsibilities).join("\n")) + "</textarea></div>" +
         (node.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-action='delete-node'>删除草稿模块</button>" : "") + "</div>" +
         "<div class='studio-inspector-section'><h3>数据流</h3>" + (otherNodes.length ? "<div class='studio-field'><label for='studio-edge-target'>新增下游连接</label><select class='studio-select' id='studio-edge-target' data-studio-edge-target>" + otherNodes.map(function (item) { return "<option value='" + e(item.nodeId) + "'>" + e(item.name) + "</option>"; }).join("") + "</select></div><button class='studio-action' type='button' data-studio-action='add-edge'>＋ 添加数据流</button>" : "<p class='cell-sub'>没有可连接的其他模块。</p>") +
-        (outgoing.length ? "<div class='studio-library-list' style='margin-top:10px'>" + outgoing.map(function (edge) { var target = studioNode(edge.toNodeId); return "<div class='copy-row'><span class='cell-sub' style='flex:1'>→ " + e(target ? target.name : edge.toNodeId) + " · " + e(edge.label || "data") + "</span>" + (edge.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-delete-edge='" + e(edge.edgeId) + "'>移除</button>" : "") + "</div>"; }).join("") + "</div>" : "") + "</div>" +
+        (outgoing.length ? "<div class='studio-library-list' style='margin-top:10px'>" + outgoing.map(function (edge) { var target = studioNode(edge.toNodeId); return "<button class='studio-library-btn' type='button' data-studio-select-edge='" + e(edge.edgeId) + "'>→ " + e(target ? target.name : edge.toNodeId) + " · " + e(edge.label || "data") + "</button>"; }).join("") + "</div>" : "") + "</div>" +
+        studioEdgeInspectorHtml(candidate, candidate.edges.find(function (edge) { return edge.edgeId === state.studioSelectedEdgeId; })) +
         "<div class='studio-inspector-section'><h3>浏览器基础检查</h3><ul class='studio-check-list'>" + studioCheckHtml() + "</ul></div>" +
+        studioCandidateSemanticsHtml(candidate) + studioJournalHtml(state.studioSession) +
         "<div class='studio-inspector-section'><h3>正式化边界</h3><p class='cell-sub'>此处只编辑隔离草稿。完整 Schema、跨引用、风险规则、Codex 复审与 Proposal Hash 需要连接本地 Bridge 后执行。</p></div>";
+    }
+
+    function updateStudioCandidateField(field, value) {
+      var candidate = activeStudioCandidate();
+      if (!candidate || ["assumptions", "unknowns"].indexOf(field) < 0) return;
+      var before = cloneForStudio(arr(candidate[field]));
+      var normalized = String(value).split(/\r?\n/).map(function (item) { return item.trim(); }).filter(Boolean);
+      if (JSON.stringify(before) === JSON.stringify(normalized)) return;
+      pushStudioUndo(); candidate[field] = normalized; candidate.updatedAt = new Date().toISOString();
+      appendStudioOperation("candidate.update", { candidateId: candidate.candidateId, field: field }, before, cloneForStudio(normalized), true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function updateStudioEdgeField(field, value) {
+      var candidate = activeStudioCandidate();
+      var edge = candidate && candidate.edges.find(function (item) { return item.edgeId === state.studioSelectedEdgeId; });
+      if (!edge || ["label", "protocol", "communicationMode", "flowDirection", "dataSummary", "reliabilitySummary"].indexOf(field) < 0) return;
+      var before = cloneForStudio(edge[field]);
+      var normalized = String(value);
+      if (before === normalized) return;
+      pushStudioUndo(); edge[field] = normalized; candidate.updatedAt = new Date().toISOString();
+      appendStudioOperation("edge.update", { edgeId: edge.edgeId, field: field }, before, normalized, true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
     }
 
     function drawStudioEdges() {
@@ -6038,6 +6306,7 @@
       pushStudioUndo();
       var edge = { edgeId: "DRAFT-EDGE-" + String(Date.now()), entityRef: null, fromNodeId: from.nodeId, toNodeId: to.nodeId, label: "data", dataSummary: "待补充数据契约", isDraft: true };
       candidate.edges.push(edge);
+      state.studioSelectedEdgeId = edge.edgeId;
       appendStudioOperation("edge.add", { edgeId: edge.edgeId }, null, cloneForStudio(edge), true);
       validateStudioSession(); persistStudioSession(); renderStudio();
     }
@@ -6049,6 +6318,7 @@
       if (!edge) return;
       pushStudioUndo();
       candidate.edges = candidate.edges.filter(function (item) { return item.edgeId !== edgeId; });
+      if (state.studioSelectedEdgeId === edgeId) state.studioSelectedEdgeId = null;
       appendStudioOperation("edge.remove", { edgeId: edgeId }, cloneForStudio(edge), null, true);
       validateStudioSession(); persistStudioSession(); renderStudio();
     }
@@ -6692,8 +6962,9 @@
       if (target.dataset.view) { state.view = target.dataset.view; updateVisibleView(); if (state.view === "system") renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.systemView) { state.systemView = target.dataset.systemView; if (state.systemView !== "logical") state.studioMode = "view"; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.studioMode) { state.studioMode = target.dataset.studioMode; if (state.studioMode === "studio") { state.systemView = "logical"; if (state.studioBridge.capability && state.studioBridge.status === "offline") connectStudioBridge(); } renderSystem(); return; }
-      if (target.dataset.studioNodeId) { state.studioSelectedNodeId = target.dataset.studioNodeId; renderStudio(); return; }
-      if (target.dataset.studioSelectCandidate) { state.studioSession.activeCandidateId = target.dataset.studioSelectCandidate; var selectedCandidate = activeStudioCandidate(); state.studioSelectedNodeId = selectedCandidate && selectedCandidate.nodes[0] ? selectedCandidate.nodes[0].nodeId : null; validateStudioSession(); persistStudioSession(); renderStudio(); return; }
+      if (target.dataset.studioNodeId) { state.studioSelectedNodeId = target.dataset.studioNodeId; state.studioSelectedEdgeId = null; renderStudio(); return; }
+      if (target.dataset.studioSelectEdge) { state.studioSelectedEdgeId = target.dataset.studioSelectEdge; renderStudio(); return; }
+      if (target.dataset.studioSelectCandidate) { selectStudioCandidate(target.dataset.studioSelectCandidate); return; }
       if (target.dataset.studioAddNode) { addStudioNode(target.dataset.studioAddNode); return; }
       if (target.dataset.studioAction === "undo" && state.studioUndoStack.length) { state.studioRedoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioUndoStack.pop()); return; }
       if (target.dataset.studioAction === "redo" && state.studioRedoStack.length) { state.studioUndoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioRedoStack.pop()); return; }
@@ -6706,8 +6977,11 @@
       if (target.dataset.studioAction === "new-candidate") { createStudioCandidate(false); return; }
       if (target.dataset.studioAction === "clone-candidate") { createStudioCandidate(true); return; }
       if (target.dataset.studioAction === "rename-candidate") { renameStudioCandidate(); return; }
+      if (target.dataset.studioAction === "submit-candidate") { submitStudioCandidateDialog(); return; }
+      if (target.dataset.studioAction === "cancel-candidate") { state.studioCandidateDraft = null; return; }
       if (target.dataset.studioAction === "archive-candidate") { archiveStudioCandidate(); return; }
       if (target.dataset.studioAction === "compare") { state.studioCompareOpen = !state.studioCompareOpen; renderStudio(); return; }
+      if (target.dataset.studioJournal) { state.studioJournalTrack = target.dataset.studioJournal; renderStudio(); return; }
       if (target.dataset.studioAction === "save") { saveStudioSessionToBridge(true); return; }
       if (target.dataset.studioAction === "reload-server") { reloadStudioSessionFromBridge(); return; }
       if (target.dataset.studioAction === "formal-validate") { runStudioFormalValidation(); return; }
@@ -6770,8 +7044,10 @@
         state.studioFieldBaseline = null;
         return;
       }
+      if (event.target.dataset.studioCandidateField) { updateStudioCandidateField(event.target.dataset.studioCandidateField, event.target.value); return; }
+      if (event.target.dataset.studioEdgeField) { updateStudioEdgeField(event.target.dataset.studioEdgeField, event.target.value); return; }
       if (event.target.dataset.studioScope !== undefined) { pushStudioUndo(); var beforeScope = state.studioSession.scope.level; state.studioSession.scope.level = event.target.value; appendStudioOperation("session.change_scope", { sessionId: state.studioSession.sessionId }, beforeScope, event.target.value, true); persistStudioSession(); renderStudio(); return; }
-      if (event.target.dataset.studioCandidate !== undefined) { state.studioSession.activeCandidateId = event.target.value; var candidate = activeStudioCandidate(); state.studioSelectedNodeId = candidate && candidate.nodes[0] ? candidate.nodes[0].nodeId : null; validateStudioSession(); persistStudioSession(); renderStudio(); return; }
+      if (event.target.dataset.studioCandidate !== undefined) { selectStudioCandidate(event.target.value); return; }
       var filter = event.target.dataset.filter;
       if (!filter) return;
       if (filter === "layer-filter") state.layerFilter = event.target.value;
