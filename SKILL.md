@@ -1,16 +1,16 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.2 Single HTML，持续自动追踪 Git/实现/验证/运行事实，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, assess declarative project standards, preserve fact provenance, or apply an architecture-centric Panorama update without making governance decisions."
+description: "操作 Agent Project Panorama V0.1–V0.3 Single HTML，持续自动追踪 Git/实现/验证/运行事实，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, compare and review architecture candidates, preserve fact provenance, or apply an architecture-centric Panorama update without making governance decisions."
 ---
 
 # Agent 项目全景
 
-将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.2 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.2.0`。
+将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.3 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.3.0`。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
 
 ## 不变量
 
-- 保持 HTML 对用户只读；已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
+- 保持正式 `project-panorama-data` 对页面直接写入只读；Renderer `0.3.0` 的 Architecture Studio 只编辑隔离 Session，不得把草稿冒充 Target、Review、Proposal 或 Finding。已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
 - 普通更新只能修改 `project-panorama-data` 内的 JSON payload。
 - 保留两个数据 Marker、DOM、CSS、Renderer JavaScript、未知字段与所有 `extensions`。
 - 治理变更 Apply 前要求用户评审并批准准确的 Proposal Hash；V0.2 事实观察只可按已启用 Policy 自动 Apply，不得制造或推断批准。
@@ -257,6 +257,23 @@ python scripts/upgrade_renderer.py `
 
 只有用户明确选择原文件时才使用 `--in-place`；该模式必须先生成时间戳备份。升级前后必须证明 Data Hash 和完整 JSON 相同，并让输出 Presentation Hash 与目标模板一致。不得顺便翻译用户项目数据、实体名称或技术标识。
 
+## ARCHITECTURE STUDIO
+
+完整读取 [Architecture Studio Contract](docs/architecture-studio-contract.md)。直接打开 HTML 时只使用离线草稿；完整闭环由显式启动的本机 Bridge 提供：
+
+```powershell
+python scripts/studio_bridge.py path/to/project-panorama.html `
+  --project-root path/to/project
+```
+
+只有用户明确要求 Agent 评审时才在启动参数中提供受信 Codex CLI 路径；页面/API 不得选择 executable、参数、cwd 或环境。Bridge 只探测 `--codex-cli` 指定的普通可执行文件，坏路径必须拒绝启动，未提供参数时不得从环境变量、PATH 或用户目录自动发现。Bridge 必须只绑定 `127.0.0.1` 随机端口，使用一次性 capability、同源 Origin、CSRF 与 no-store 响应；不要把它暴露到局域网、云端或多人环境。
+
+Studio Session 保存在 `.panorama-work/studio/`，正式 `project-panorama-data` 在画布编辑期间保持不变。支持多个候选与最多三个方案比较；浏览器 `CLIENT_*` 检查不是 Formal Finding。语义操作与布局操作必须分开，只有语义变化使正式校验、Agent Review、Proposal 与 Approval stale。
+
+正式化顺序固定为：Session CAS Save → Formal Validator → 可选只读 Agent Review → Proposal Freeze → 显示完整 64 位 Hash → 用户精确确认 `批准 Studio Proposal <HASH>` → 独立 write-once Approval → Apply。Agent 只能输出 advisory Risk Candidate，不能批准、Apply 或制造验证/部署事实。Bridge 必须以有界 Source Content Digest 补强元数据 Snapshot，并将完整覆盖状态绑定到 Session/Proposal；它在本机读取纳入范围文件字节只用于路径、大小与内容 SHA-256，源码正文不得写入制品、返回浏览器或进入 Agent bundle。超过 20,000 文件或 128 MiB、遇到不安全链接、覆盖不完整、Data/Git/Source/内容漂移或保存冲突时保留草稿并停止，不得自动 rebase、覆盖或重批。
+
+Codex Review 是可选 advisory：未配置、网络/认证失败或结构化输出不合同时必须在页面保留可见错误，不得伪装完成。它不替代 Formal Validator，也不自动阻断用户在正式校验通过后生成 Proposal。只有 Proposal Hash 的精确人工确认可以形成 Approval。
+
 ## VALIDATE
 
 ```powershell
@@ -277,4 +294,4 @@ python scripts/validate_panorama.py path/to/project-panorama.html --json
 
 ## 停止边界
 
-不要新增主视图、后端、React/Vue、Kanban、人员/预算/日历管理、云协作、业务分支自动 Git 提交、自动凭据迁移或通用 Agent 平台。不要自动读取正式知识库或修改业务项目。Panorama-owned State Ref 默认关闭，只有用户单独授权才可启用。
+不要新增主视图、云端/通用后端、React/Vue、Kanban、人员/预算/日历管理、云协作、业务分支自动 Git 提交、自动凭据迁移或通用 Agent 平台。本机 Studio Bridge 只能服务一个显式 Panorama，不能演化成通用 Agent 后端。不要自动读取正式知识库或修改业务项目。Panorama-owned State Ref 默认关闭，只有用户单独授权才可启用。

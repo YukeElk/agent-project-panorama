@@ -1,12 +1,13 @@
-# Agent Project Panorama V0.2（Continuous Observation）
+# Agent Project Panorama V0.3（Architecture Studio）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.2 能力
+## V0.3 能力
 
-- 无构建、无 CDN、无远程字体、无运行时网络请求的 Single HTML Renderer；
+- 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
+  Bridge 模式只访问同源 `127.0.0.1` API；
 - `控制台 / 系统 / 演进` 三主视图；
 - 当前 / 目标 / 迁移、原生 SVG 连接与通用实体详情；
 - 同环境多 Deployment、部署视图与完整资源池；
@@ -23,8 +24,11 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - 正式 Current 的 Continuous Observation：Git Hook、启动补偿、Source Binding、Fact Provenance、Current Architecture Snapshot 与 Observation Batch；
 - 项目规范 Standard Pack 输入、声明式安全评估、规范风险披露与 Commit/Pack/Data Hash 绑定；
 - 自动更新只记录 observed/declared/inferred/unknown/conflict 事实，保护 Intent、Target、Decision、Review、Acceptance、Waiver、Guidance 和 Credential。
+- SYSTEM 内嵌 Architecture Studio：隔离会话、多候选画布与对比、正式 Validator、可选 Codex
+  只读评审、精确 Proposal Hash 批准和受控 Apply。
 
-页面只读。核心实体编辑、评审批准和文件写回必须通过外部更新流程完成。
+正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
+会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
 
 ## Continuous Observation
 
@@ -82,7 +86,8 @@ python scripts/assess_project_standards.py project-panorama.v0.2.local.html `
 python -m pip install jsonschema pytest PyYAML tomli
 ```
 
-Renderer 不需要 Python；生成后的 HTML 可直接在桌面浏览器打开。
+只读 Renderer 与离线 Studio 不需要 Python，生成后的 HTML 可直接在桌面浏览器打开。
+完整 Studio 闭环使用本机 Python Bridge，并可选调用已安装且已登录的 Codex CLI 做只读架构评审。
 
 用户可见界面、CLI 帮助、Validator 说明与 Skill 工作流使用简体中文。Schema Key、枚举原值、
 ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文稳定，以兼容现有数据与自动化工具。
@@ -286,39 +291,49 @@ python scripts/propose_update.py `
   --output pending-update.json
 ```
 
-`pending-update.json` 初始为 `approval.status = pending`，不能 Apply。用户审阅完整 Proposal
-后，只填写审批记录：
+`propose_update.py` 输出的是严格 wrapper：`proposal` 是可 Apply 的更新包，`facts` 与
+`validation` 是审阅上下文。`proposal.approval.status` 初始为 `pending`；不要修改 wrapper，
+也不要由页面填写批准时间。用户核对完整 Proposal 并显式确认页面显示的精确
+`proposal.proposalHash` 后，由本机 recorder clock 生成独立、write-once 的批准 artifact：
 
-```json
-{
-  "status": "approved",
-  "approvedBy": "user",
-  "approvedAt": "2026-08-08T12:00:00Z",
-  "proposalHash": "<保持 propose_update 生成的值>"
-}
+```powershell
+python scripts/studio_approval.py `
+  pending-update.json `
+  --approved-hash <精确的-proposalHash> `
+  --approved-by "user" `
+  --output studio-approval.json
 ```
+
+需要把批准额外绑定到 Studio session 的项目/源码状态时，可传入
+`--source-binding studio-source-binding.json`。该对象只可包含 `projectId`、`schemaVersion`、
+`templateVersion`、`baseRevision`、`baseDataHash`、`gitHead`、`sourceSnapshotHash`；recorder 会
+补齐并核对 Proposal 的 Base Revision/Data Hash，Apply 会再与当前 Panorama 核对。
 
 不得在批准后继续修改 `baseRevision`、`baseDataHash`、`operations`、`changeRecords`、
 `reviewDraft`、`updateBatchDraft` 或 `guidanceDraft`。任一字段变化都会使 Approval Hash 失效，
 必须重新 Proposal 和 Review。
 
-Proposal 中 `reviewDraft` 保持 `pending`，`reviewedBy` 为空且 `reviewedAt` 为 `null`。用户只填写
-`approval`；Apply 再把实际 `approvedBy` / `approvedAt` 确定性写入最终 Review，避免把提案生成
-时间伪装成批准时间。新增、删除与修改实体均通过 JSON Pointer、结构化 value 及前后状态注册表
-计算 Affected Entities，不通过自由文本字符串碰撞推断。
+Proposal 中 `reviewDraft` 保持 `pending`，`reviewedBy` 为空且 `reviewedAt` 为 `null`。Apply
+验证独立 artifact 与当前 Proposal 的三方 Hash 一致后，只在内存中把 recorder 记录的
+`approvedBy` / `approvalRecordedAt` 适配成旧版 `approval`，再写入最终 Review；Proposal 文件
+本身始终不变。新增、删除与修改实体均通过 JSON Pointer、结构化 value 及前后状态注册表计算
+Affected Entities，不通过自由文本字符串碰撞推断。
 
 Apply：
 
 ```powershell
 python scripts/apply_patch.py `
   examples/reference-project.html `
-  pending-update.json
+  pending-update.json `
+  --approval studio-approval.json
 ```
 
-Apply 强制检查 Approval Hash、Review/UpdateBatch 关系、Base Revision/Data Hash、Schema、
-跨引用、Presentation Hash 和提交前并发状态。失败不覆盖原 HTML；进入 Apply 后创建的备份
-保留用于审计和恢复。历史 Next Focus 会在 v0.1.1 兼容层中保留为 inactive historical
-record，当前 UI 只显示当前 Guidance。
+Apply 严格区分 wrapper 与 legacy bare package；wrapper 与 bare 字段混合、独立批准与已经
+approved/waived 的 inline approval 混用都会被拒绝。为兼容已有自动化，bare package 和旧版
+inline approval 仍可直接 Apply。Apply 强制检查 Approval Hash、Review/UpdateBatch 关系、Base
+Revision/Data Hash、可选 Source Binding、Schema、跨引用、Presentation Hash 和提交前并发状态。
+失败不覆盖原 HTML；进入 Apply 后创建的备份保留用于审计和恢复。历史 Next Focus 会在 v0.1.1
+兼容层中保留为 inactive historical record，当前 UI 只显示当前 Guidance。
 
 ## Security
 
@@ -343,11 +358,66 @@ record，当前 UI 只显示当前 Guidance。
 ## 兼容性
 
 - Data Schema：`0.1`、`0.2`
-- Renderer：`0.2.0`（zh-CN）
+- Renderer：`0.3.0`（zh-CN，含 SYSTEM 内嵌 Architecture Studio）
 - 支持 Template：`0.1.0`、`0.1.1`
 - Skill 支持 Schema：`0.1`、`0.2`
 
 不支持的 Schema/Template 会显示或返回明确错误，不静默渲染。
+
+## Architecture Studio
+
+进入 `系统 → 逻辑架构`，使用右侧的 `全景查看 / 架构设计 Studio` 开关。直接打开 HTML 时
+使用离线模式，CSP 保持 `connect-src 'none'`；启动本机 Bridge 后，页面可进入完整治理闭环：
+
+```powershell
+Copy-Item examples/reference-project.html project-panorama.local.html
+python scripts/studio_bridge.py project-panorama.local.html `
+  --project-root . `
+  --open
+```
+
+Bridge 的 Apply 会更新传入的 Panorama HTML 并创建备份，因此试用时先复制为已被 `.gitignore`
+保护的 `*.local.html`，不要直接把受 Git 跟踪的 Reference HTML 当作可写目标。
+
+需要 Codex 只读架构评审时，显式追加受信 CLI 路径；Bridge 不会从页面接收 executable：
+
+```powershell
+python scripts/studio_bridge.py project-panorama.local.html `
+  --project-root . `
+  --codex-cli "C:\path\to\codex.exe" `
+  --open
+```
+
+Studio 支持：
+
+- 从正式 Target（无 Target 时回退到现有架构）建立隔离草稿；
+- 选择、拖动、增加和删除草稿节点；
+- 编辑名称、用途、架构层、职责与状态所有权；
+- 增加和移除草稿数据流；
+- 撤销、重做、浏览器基础检查、本地浏览器保存和 JSON 导入/导出；
+- 将语义操作与纯布局操作分开记录。
+- 新建、克隆、重命名、归档和最多三个候选的指标对比；
+- Session Revision 冲突保护、正式 Schema/跨引用/风险规则校验；
+- 有界源码内容摘要与 Git/Source Binding 漂移门禁；覆盖不完整时保留草稿但阻止正式化；
+- 可选 Codex advisory review，以及独立 Proposal、write-once Approval 与原子 Apply。
+
+`--open` 会在浏览器打开一次性 capability URL；不要把该 URL 分享或提交到 Git。启动 URL 先加载
+不含项目数据的 `/studio/` Launcher，经 capability header 验证后才读取受保护的
+`/studio/document`；fragment 只进入页面内存并立即从地址栏清除。未提供 `--codex-cli` 时，Bridge
+不会从环境变量、PATH 或用户目录自动发现 Codex，只有 Agent 评审不可用，正式 Validator、Proposal、
+精确批准和 Apply 仍可运行。提供该参数时只探测指定的普通可执行文件；路径无效会拒绝启动，不回退
+到其他 executable。
+Codex CLI 已启用但网络/认证/结构化输出失败时，页面会保留失败原因；advisory 失败不冒充成功，也
+不阻断用户基于 Formal Validator 继续生成 Proposal。
+
+Source Content Digest 会在本机读取纳入范围文件的字节，只计算路径、大小与内容 SHA-256。源码正文
+不会写入 Studio 制品、返回浏览器或进入 Agent bundle；超过 20,000 个文件或 128 MiB，或遇到不安全
+链接时，Bridge 将覆盖标为不完整并阻止 Review、Proposal 与 Apply。
+
+画布不会直接修改 `project-panorama-data`、正式 Target、业务代码或 Presentation；只有用户精确确认
+完整 Proposal Hash 后，Bridge 才可调用既有 Apply 事务写入正式 JSON。离线模式中的服务端动作保持
+禁用。完整安全、状态和故障恢复合同见
+[`docs/architecture-studio-contract.md`](docs/architecture-studio-contract.md)。
 
 ## 自动测试与 CI
 
@@ -373,6 +443,7 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 - 原始设计基线位于 `docs/design/`；
 - V0.1 冻结 Schema 为 `schema/panorama.schema.v0.1.json`；V0.2 Continuous Observation Schema 为 `schema/panorama.schema.v0.2.json`；
 - 建模缺口记录在 `docs/schema-findings.md`；
-- V0.2 不覆盖 v0.1；迁移默认输出新文件，Renderer 为 0.2.0。
+- V0.2 不覆盖 v0.1；迁移默认输出新文件。当前 Presentation 升级 Renderer 为
+  `0.3.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，未重构 Panorama Schema。
 
 V0.2 已实现 Observation Snapshot；原 SF-03、SF-08、SF-09、SF-13 所述完整 Architecture Version Snapshot、Artifact Manifest、结构化 Replacement 和 Next Focus Snapshot 仍未实现。

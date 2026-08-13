@@ -10,7 +10,7 @@ from upgrade_renderer import RendererUpgradeError
 def test_renderer_exposes_complete_zh_cn_surface(template_path: Path):
     source = template_path.read_text(encoding="utf-8")
 
-    assert 'var RENDERER_VERSION = "0.2.0"' in source
+    assert 'var RENDERER_VERSION = "0.3.0"' in source
     assert 'var UI_LOCALE = "zh-CN"' in source
     assert "var ZH_LABELS" in source
     assert source.index("var ZH_LABELS") < source.index("renderAll();")

@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-project-panorama.local/schema/architecture-review-output.schema.v0.1.json",
+  "title": "Architecture Studio Agent Review Output V0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reviewVersion",
+    "verdict",
+    "summary",
+    "strengths",
+    "findings",
+    "recommendations",
+    "assumptionsToVerify",
+    "unknowns"
+  ],
+  "properties": {
+    "reviewVersion": {
+      "type": "string",
+      "const": "panorama-architecture-agent-review.v0.1"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["ready", "changes_requested", "blocked"]
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "strengths": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {"type": "string", "maxLength": 1000}
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "category",
+          "title",
+          "detail",
+          "subjectNodeIds",
+          "evidence",
+          "confidence"
+        ],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["info", "low", "medium", "high", "critical"]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "requirement_coverage",
+              "responsibility_boundary",
+              "data_flow",
+              "state_ownership",
+              "reliability",
+              "security",
+              "operability",
+              "evolvability",
+              "verification",
+              "source_freshness",
+              "other"
+            ]
+          },
+          "title": {"type": "string", "maxLength": 500},
+          "detail": {"type": "string", "maxLength": 3000},
+          "subjectNodeIds": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {"type": "string", "maxLength": 160}
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {"type": "string", "maxLength": 1000}
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["priority", "action", "reason", "affectedNodeIds"],
+        "properties": {
+          "priority": {
+            "type": "string",
+            "enum": ["now", "next", "later"]
+          },
+          "action": {"type": "string", "maxLength": 2000},
+          "reason": {"type": "string", "maxLength": 2000},
+          "affectedNodeIds": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {"type": "string", "maxLength": 160}
+          }
+        }
+      }
+    },
+    "assumptionsToVerify": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {"type": "string", "maxLength": 1000}
+    },
+    "unknowns": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {"type": "string", "maxLength": 1000}
+    }
+  }
+}

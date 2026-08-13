@@ -155,6 +155,49 @@
 - 决策：规范定义使用独立 `standard-pack.schema.v0.1.json`；V0.2 Panorama 保存
   `standardAssessments` 快照及 Pack Hash，不把规范正文复制进 HTML。
 
+## SF-20 缺少 Architecture Session 与 Candidate 模型
+
+- 证据：Schema v0.1/v0.2 只能保存正式 Architecture Version、Module、Connection、Decision、
+  Review 与 Change，不能表达一个尚未批准、可能包含多个候选的架构设计会话。
+- 影响：若直接把画布草稿写入正式实体，会把不完整设计伪装成 Target 或污染治理历史。
+- V0.3 处理：使用独立 `panorama-architecture-session.v0.1` Schema 与本机持久化合同定义
+  Candidate、Assumption、Unknown、Operation 和 Project/Source Binding；不写入
+  `project-panorama-data`。正式化仍由 Proposal/Approval/Apply 完成。
+
+## SF-21 正式 Module/Connection 约束不适合不完整画布草稿
+
+- 证据：正式 Module 与 Connection 要求稳定 ID、职责、状态、来源、接口和跨实体引用；设计过程中
+  节点和数据流可能暂时缺少这些信息。
+- 影响：若对每一步画布编辑强制套用正式 Schema，正常的中间设计状态会被错误拒绝；若放宽正式
+  Schema，又会降低正式全景质量。
+- V0.3 处理：草稿使用 session-local `nodeId/edgeId` 和浏览器基础检查；不得将这些结果称为
+  Formal Finding。正式提案前保守转换为完整实体、保留未编辑正式字段且不因画布缺失而删除实体，
+  再运行正式 Validator。
+
+## SF-22 Layout 与 Architecture Semantics 缺少独立持久化边界
+
+- 证据：现有 Schema 不保存画布坐标、缩放或折叠状态，也没有声明哪些编辑影响架构语义 Hash。
+- 影响：若把布局变化混入正式语义，移动节点也会使 Approval 失效；若完全忽略操作记录，则难以
+  审计真实架构变更。
+- V0.3 处理：独立 Session 合同将 `semanticOperations` 与 `layoutOperations` 分离，只有前者标记
+  `affectsSemanticHash=true`；Semantic Hash 排除坐标，Proposal 只绑定语义投影。本轮不修改
+  Panorama Schema。
+
+## SF-23 Architecture Proposal 缺少完整 Source Snapshot Binding
+
+- 证据：当前人工 Proposal 绑定 Panorama Revision/Data Hash，但架构设计期间 Git HEAD 可能继续变化；
+  正式 Proposal 尚未保存完整的设计会话基线与 Source Snapshot。
+- 影响：长时间编辑后，候选可能仍基于旧实现事实，旧复审结果不应继续有效。
+- V0.3 处理：Bridge 冻结 Proposal 时把 Session ID/Revision、Candidate Semantic Hash、Panorama
+  Data Hash、Git HEAD 与 Source Snapshot Hash 放入受 Proposal Hash 覆盖的 Studio Binding；
+  独立 Approval 再次绑定该状态。发现变化时标记 `stale` 并阻止后续动作，不自动 rebase。
+- V0.3 加固：原 Source Snapshot 是有来源的元数据快照，不能单独证明同长度且恢复 mtime 的文件
+  内容未变化。Bridge 因此另计算有界的路径/大小/内容 SHA-256 `Source Content Digest`，并将完整
+  覆盖状态和摘要绑定到 Session live baseline 与 Proposal。当前独立 Session Schema 通过
+  `additionalProperties` 前向兼容承载 `liveBaseline/formalSourceBindingStatus`；若未来把它们升级为
+  稳定跨工具合同，应先新增 Schema Finding 并显式版本化，而不是静默改 Panorama Schema。
+- 剩余边界：generic 非 Studio Proposal 仍只强制 Revision/Data Hash；V0.3 不借机改变其兼容合同。
+
 ## V0.1 结论
 
 - 本轮未修改或重构 Schema。

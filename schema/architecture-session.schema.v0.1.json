@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openai.local/panorama/architecture-session.schema.v0.1.json",
+  "title": "Panorama Architecture Studio Session v0.1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "format", "sessionId", "sessionRevision", "projectBinding",
+    "sourceObservation", "mode",
+    "status", "scope", "layers", "candidates", "activeCandidateId",
+    "semanticOperations", "layoutOperations", "clientValidation",
+    "semanticHash", "layoutHash", "createdAt", "updatedAt"
+  ],
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "panorama-architecture-session.v0.1"
+    },
+    "sessionId": { "$ref": "#/$defs/id" },
+    "sessionRevision": { "type": "integer", "minimum": 0 },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "projectId", "schemaVersion", "templateVersion", "baseRevision",
+        "baseDataHash", "gitHead", "sourceSnapshotHash"
+      ],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/id" },
+        "schemaVersion": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "templateVersion": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "baseRevision": { "type": "integer", "minimum": 0 },
+        "baseDataHash": {
+          "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+        },
+        "gitHead": { "type": ["string", "null"], "maxLength": 256 },
+        "sourceSnapshotHash": { "type": ["string", "null"], "maxLength": 256 }
+      }
+    },
+    "sourceObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observedAt", "actualGitHead", "boundGitHead",
+        "formalSourceBindingPresent", "driftStatus"
+      ],
+      "properties": {
+        "observedAt": { "type": ["string", "null"], "format": "date-time" },
+        "actualGitHead": { "type": ["string", "null"], "maxLength": 256 },
+        "boundGitHead": { "type": ["string", "null"], "maxLength": 256 },
+        "formalSourceBindingPresent": { "type": "boolean" },
+        "driftStatus": {
+          "enum": ["match", "drift", "unbound", "not_observed"]
+        }
+      }
+    },
+    "mode": { "enum": ["offline", "bridge"] },
+    "status": { "enum": ["draft", "dirty", "stale", "archived"] },
+    "scope": { "type": "object", "additionalProperties": true },
+    "layers": { "type": "array", "maxItems": 64, "items": { "type": "object" } },
+    "candidates": {
+      "type": "array", "minItems": 1, "maxItems": 12,
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "activeCandidateId": { "$ref": "#/$defs/id" },
+    "semanticOperations": {
+      "type": "array", "maxItems": 5000,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "layoutOperations": {
+      "type": "array", "maxItems": 5000,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "clientValidation": {
+      "type": "array", "maxItems": 500,
+      "items": { "$ref": "#/$defs/clientFinding" }
+    },
+    "semanticHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "layoutHash": {
+      "oneOf": [{ "$ref": "#/$defs/hash" }, { "type": "null" }]
+    },
+    "formalValidation": { "type": ["object", "null"] },
+    "reviewArtifact": { "type": ["object", "null"] },
+    "proposalArtifact": { "type": ["object", "null"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Z][A-Z0-9._:-]{1,127}$" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "entityRef": {
+      "type": ["object", "null"], "additionalProperties": true,
+      "properties": {
+        "type": { "enum": ["module", "connection"] },
+        "id": { "$ref": "#/$defs/id" }
+      },
+      "required": ["type", "id"]
+    },
+    "node": {
+      "type": "object", "additionalProperties": true,
+      "required": [
+        "nodeId", "entityRef", "name", "purpose", "responsibilities",
+        "stateOwnership", "layerId", "category", "isDraft", "x", "y"
+      ],
+      "properties": {
+        "nodeId": { "$ref": "#/$defs/id" },
+        "entityRef": { "$ref": "#/$defs/entityRef" },
+        "name": { "type": "string", "maxLength": 512 },
+        "purpose": { "type": "string", "maxLength": 10000 },
+        "responsibilities": {
+          "type": "array", "maxItems": 256,
+          "items": { "type": "string", "maxLength": 2000 }
+        },
+        "nonResponsibilities": {
+          "type": "array", "maxItems": 256,
+          "items": { "type": "string", "maxLength": 2000 }
+        },
+        "technologies": {
+          "type": "array", "maxItems": 256,
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "stateOwnership": { "type": "string", "maxLength": 10000 },
+        "dataHandled": {
+          "type": "array", "maxItems": 256,
+          "items": { "type": "string", "maxLength": 2000 }
+        },
+        "interfaceSummary": {
+          "type": "array", "maxItems": 256,
+          "items": { "type": "string", "maxLength": 2000 }
+        },
+        "deploymentRole": { "type": "string", "maxLength": 10000 },
+        "referenceIds": {
+          "type": "array", "maxItems": 256,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "notes": { "type": "string", "maxLength": 10000 },
+        "designExtensions": { "type": "object", "additionalProperties": true },
+        "rationale": { "type": "string", "maxLength": 10000 },
+        "requirementIds": {
+          "type": "array", "maxItems": 256,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "layerId": { "$ref": "#/$defs/id" },
+        "baselineLayerId": { "$ref": "#/$defs/id" },
+        "category": { "type": "string", "maxLength": 64 },
+        "isDraft": { "type": "boolean" },
+        "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
+        "y": { "type": "number", "minimum": -100000, "maximum": 100000 }
+      }
+    },
+    "edge": {
+      "type": "object", "additionalProperties": true,
+      "required": [
+        "edgeId", "entityRef", "fromNodeId", "toNodeId", "label",
+        "dataSummary", "isDraft"
+      ],
+      "properties": {
+        "edgeId": { "$ref": "#/$defs/id" },
+        "entityRef": { "$ref": "#/$defs/entityRef" },
+        "fromNodeId": { "$ref": "#/$defs/id" },
+        "toNodeId": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "maxLength": 512 },
+        "label": { "type": "string", "maxLength": 512 },
+        "protocol": { "type": "string", "maxLength": 512 },
+        "communicationMode": { "type": "string", "maxLength": 64 },
+        "flowDirection": { "type": "string", "maxLength": 64 },
+        "dataSummary": { "type": "string", "maxLength": 10000 },
+        "contractReferenceIds": {
+          "type": "array", "maxItems": 256,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "authSummary": { "type": "string", "maxLength": 10000 },
+        "reliabilitySummary": { "type": "string", "maxLength": 10000 },
+        "rationale": { "type": "string", "maxLength": 10000 },
+        "transitionId": {
+          "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
+        },
+        "extensions": { "type": "object", "additionalProperties": true },
+        "isDraft": { "type": "boolean" }
+      }
+    },
+    "candidate": {
+      "type": "object", "additionalProperties": true,
+      "required": [
+        "candidateId", "label", "kind", "status", "assumptions", "unknowns",
+        "nodes", "edges", "createdAt", "updatedAt"
+      ],
+      "properties": {
+        "candidateId": { "$ref": "#/$defs/id" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "kind": { "enum": ["baseline_copy", "alternative"] },
+        "status": { "enum": ["active", "archived"] },
+        "assumptions": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+        "unknowns": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+        "nodes": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/node" } },
+        "edges": { "type": "array", "maxItems": 400, "items": { "$ref": "#/$defs/edge" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "operation": {
+      "type": "object", "additionalProperties": true,
+      "required": ["opId", "seq", "kind", "target", "affectsSemanticHash"],
+      "properties": {
+        "opId": { "$ref": "#/$defs/id" },
+        "seq": { "type": "integer", "minimum": 1 },
+        "kind": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "target": { "type": "object", "additionalProperties": true },
+        "affectsSemanticHash": { "type": "boolean" }
+      }
+    },
+    "clientFinding": {
+      "type": "object", "additionalProperties": true,
+      "required": ["level", "code", "message"],
+      "properties": {
+        "level": { "enum": ["error", "warning", "info"] },
+        "code": { "type": "string", "pattern": "^CLIENT_[A-Z0-9_]+$" },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string" },
+        "candidateId": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

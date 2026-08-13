@@ -49,6 +49,109 @@ PROPOSAL_FIELDS = (
     "guidanceDraft",
 )
 
+PROPOSAL_WRAPPER_FIELDS = {"proposal", "facts", "validation", "sourceBinding"}
+PROPOSAL_WRAPPER_REQUIRED_FIELDS = {"proposal", "facts", "validation"}
+STUDIO_APPROVAL_VERSION = "studio-update-approval.v0.1"
+STUDIO_APPROVAL_METHOD = "explicit_hash_confirmation"
+STUDIO_APPROVAL_TIME_SOURCE = "approval_recorder_clock"
+STUDIO_APPROVAL_REQUIRED_FIELDS = {
+    "approvalVersion",
+    "status",
+    "proposalHash",
+    "approvedBy",
+    "approvalRecordedAt",
+    "approvalMethod",
+    "approvalTimeSource",
+}
+STUDIO_SOURCE_BINDING_FIELDS = {
+    "projectId",
+    "schemaVersion",
+    "templateVersion",
+    "baseRevision",
+    "baseDataHash",
+    "gitHead",
+    "sourceSnapshotHash",
+}
+
+
+def parse_proposal_artifact(
+    artifact: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Strictly distinguish a proposer wrapper from a legacy bare package.
+
+    ``propose_update.py`` emits ``{proposal, facts, validation}``, while the
+    original Apply API accepted the inner proposal directly.  Accept both,
+    but never guess when fields from both shapes are present.
+    """
+
+    if not isinstance(artifact, dict):
+        raise ApplyPatchError("Proposal artifact 必须是 JSON 对象。")
+    has_wrapper = "proposal" in artifact
+    wrapper_only_fields = {"facts", "validation", "sourceBinding"}
+    package_top_level_fields = set(PROPOSAL_FIELDS) | {"proposalHash", "approval"}
+    if has_wrapper:
+        mixed = sorted(package_top_level_fields.intersection(artifact))
+        if mixed:
+            raise ApplyPatchError(
+                "Proposal artifact 混合了 wrapper 与 bare package 字段："
+                + ", ".join(mixed)
+            )
+        missing = sorted(PROPOSAL_WRAPPER_REQUIRED_FIELDS.difference(artifact))
+        unknown = sorted(set(artifact).difference(PROPOSAL_WRAPPER_FIELDS))
+        if missing or unknown:
+            details = []
+            if missing:
+                details.append("缺少 " + ", ".join(missing))
+            if unknown:
+                details.append("未知字段 " + ", ".join(unknown))
+            raise ApplyPatchError(
+                "Proposal wrapper 字段不符合严格合同：" + "；".join(details)
+            )
+        package = artifact.get("proposal")
+        facts = artifact.get("facts")
+        validation = artifact.get("validation")
+        if not isinstance(package, dict):
+            raise ApplyPatchError("Proposal wrapper.proposal 必须是对象。")
+        if not isinstance(facts, dict):
+            raise ApplyPatchError("Proposal wrapper.facts 必须是对象。")
+        if not isinstance(validation, dict):
+            raise ApplyPatchError("Proposal wrapper.validation 必须是对象。")
+        if facts.get("baseRevision") != package.get("baseRevision"):
+            raise ApplyPatchError(
+                "Proposal wrapper.facts.baseRevision 与 proposal 不一致。"
+            )
+        if facts.get("baseDataHash") != package.get("baseDataHash"):
+            raise ApplyPatchError(
+                "Proposal wrapper.facts.baseDataHash 与 proposal 不一致。"
+            )
+        operations = package.get("operations")
+        if (
+            "operationCount" in facts
+            and isinstance(operations, list)
+            and facts.get("operationCount") != len(operations)
+        ):
+            raise ApplyPatchError(
+                "Proposal wrapper.facts.operationCount 与 proposal 不一致。"
+            )
+        source_binding = artifact.get("sourceBinding")
+        if source_binding is not None and not isinstance(source_binding, dict):
+            raise ApplyPatchError("Proposal wrapper.sourceBinding 必须是对象。")
+        return copy.deepcopy(package), copy.deepcopy(source_binding)
+
+    mixed = sorted(wrapper_only_fields.intersection(artifact))
+    if mixed:
+        raise ApplyPatchError(
+            "Bare proposal 混入了 wrapper 字段：" + ", ".join(mixed)
+        )
+    return copy.deepcopy(artifact), None
+
+
+def unwrap_proposal_artifact(artifact: dict[str, Any]) -> dict[str, Any]:
+    """Return a detached inner package from a strict wrapper or bare input."""
+
+    package, _ = parse_proposal_artifact(artifact)
+    return package
+
 
 def proposal_semantics(package: dict[str, Any]) -> dict[str, Any]:
     """Return the exact stable semantics covered by user approval."""
@@ -78,6 +181,139 @@ def compute_proposal_hash(package: dict[str, Any]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
+
+
+def _validated_timestamp(value: Any, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ApplyPatchError(f"{field} 必须是非空时间戳。")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ApplyPatchError(f"{field} 必须是 ISO 8601 时间戳。") from exc
+    if parsed.utcoffset() is None:
+        raise ApplyPatchError(f"{field} 必须包含 UTC offset。")
+    return value
+
+
+def _validate_studio_source_binding(
+    source_binding: Any,
+    package: dict[str, Any],
+    current: dict[str, Any] | None,
+) -> None:
+    if source_binding is None:
+        return
+    if not isinstance(source_binding, dict) or not source_binding:
+        raise ApplyPatchError("Studio approval sourceBinding 必须是非空对象。")
+    unknown = sorted(set(source_binding).difference(STUDIO_SOURCE_BINDING_FIELDS))
+    if unknown:
+        raise ApplyPatchError(
+            "Studio approval sourceBinding 含未知字段：" + ", ".join(unknown)
+        )
+    if source_binding.get("baseRevision") != package.get("baseRevision"):
+        raise ApplyPatchError(
+            "Studio approval sourceBinding.baseRevision 与 Proposal 不一致。"
+        )
+    if source_binding.get("baseDataHash") != package.get("baseDataHash"):
+        raise ApplyPatchError(
+            "Studio approval sourceBinding.baseDataHash 与 Proposal 不一致。"
+        )
+    if current is None:
+        return
+    current_source = current.get("sourceBinding")
+    if not isinstance(current_source, dict):
+        current_source = {}
+    actual = {
+        "projectId": current.get("project", {}).get("id"),
+        "schemaVersion": str(current.get("schemaVersion", "")),
+        "templateVersion": str(current.get("meta", {}).get("templateVersion", "")),
+        "baseRevision": current.get("meta", {}).get("revision"),
+        "baseDataHash": compute_data_hash(current),
+        "gitHead": current_source.get("gitHead"),
+        "sourceSnapshotHash": current_source.get("sourceSnapshotHash"),
+    }
+    for field, expected in source_binding.items():
+        if actual.get(field) != expected:
+            raise RevisionConflictError(
+                f"Studio approval sourceBinding.{field} 不匹配："
+                f"批准={expected!r}，当前={actual.get(field)!r}。"
+            )
+
+
+def inject_studio_approval(
+    package: dict[str, Any],
+    approval_artifact: dict[str, Any],
+    *,
+    current: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate a separate approval and adapt it to the legacy package shape.
+
+    The returned package is a deep copy.  The stored Proposal remains pending
+    and immutable; only Apply's in-memory legacy adapter receives approval.
+    """
+
+    if not isinstance(package, dict):
+        raise ApplyPatchError("更新包必须是 JSON 对象。")
+    inline = package.get("approval")
+    if (
+        isinstance(inline, dict)
+        and inline.get("status") in {"approved", "waived"}
+    ):
+        raise ApplyPatchError(
+            "不能同时使用 inline approval 与独立 Studio approval。"
+        )
+    if not isinstance(approval_artifact, dict):
+        raise ApplyPatchError("Studio approval artifact 必须是 JSON 对象。")
+    allowed = STUDIO_APPROVAL_REQUIRED_FIELDS | {"sourceBinding"}
+    missing = sorted(STUDIO_APPROVAL_REQUIRED_FIELDS.difference(approval_artifact))
+    unknown = sorted(set(approval_artifact).difference(allowed))
+    if missing or unknown:
+        details = []
+        if missing:
+            details.append("缺少 " + ", ".join(missing))
+        if unknown:
+            details.append("未知字段 " + ", ".join(unknown))
+        raise ApplyPatchError(
+            "Studio approval artifact 字段不符合严格合同："
+            + "；".join(details)
+        )
+    if approval_artifact.get("approvalVersion") != STUDIO_APPROVAL_VERSION:
+        raise ApplyPatchError(
+            f"approvalVersion 必须为 {STUDIO_APPROVAL_VERSION}。"
+        )
+    if approval_artifact.get("status") != "approved":
+        raise ApplyPatchError("Studio approval status 必须为 'approved'。")
+    if approval_artifact.get("approvalMethod") != STUDIO_APPROVAL_METHOD:
+        raise ApplyPatchError(
+            f"approvalMethod 必须为 {STUDIO_APPROVAL_METHOD}。"
+        )
+    if approval_artifact.get("approvalTimeSource") != STUDIO_APPROVAL_TIME_SOURCE:
+        raise ApplyPatchError(
+            f"approvalTimeSource 必须为 {STUDIO_APPROVAL_TIME_SOURCE}。"
+        )
+    approved_by = approval_artifact.get("approvedBy")
+    if not isinstance(approved_by, str) or not approved_by.strip():
+        raise ApplyPatchError("Studio approval approvedBy 必须标识批准用户。")
+    recorded_at = _validated_timestamp(
+        approval_artifact.get("approvalRecordedAt"), "approvalRecordedAt"
+    )
+    proposal_hash = package.get("proposalHash")
+    actual_hash = compute_proposal_hash(package)
+    approved_hash = approval_artifact.get("proposalHash")
+    if proposal_hash != actual_hash or approved_hash != actual_hash:
+        raise ApplyPatchError(
+            "Studio approval、Proposal Hash 与当前 Proposal 语义不完全一致。"
+        )
+    _validate_studio_source_binding(
+        approval_artifact.get("sourceBinding"), package, current
+    )
+    adapted = copy.deepcopy(package)
+    adapted["approval"] = {
+        "status": "approved",
+        "approvedBy": approved_by.strip(),
+        "approvedAt": recorded_at,
+        "proposalHash": actual_hash,
+    }
+    return adapted
 
 
 def validate_package_approval(package: dict[str, Any]) -> None:
@@ -355,16 +591,21 @@ def _apply_update_package_locked(
     html_path: str | os.PathLike[str],
     package: dict[str, Any],
     schema_path: str | os.PathLike[str] | None,
+    approval_artifact: dict[str, Any] | None = None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Validate, stage, and atomically apply one approved update package."""
 
     source = Path(html_path)
     if not isinstance(package, dict):
         raise ApplyPatchError("更新包必须是 JSON 对象。")
-    validate_package_approval(package)
     original_text = _read_exact(source)
     original_presentation_hash = compute_presentation_hash(original_text)
     current = extract_data(source)
+    if approval_artifact is not None:
+        package = inject_studio_approval(
+            package, approval_artifact, current=current
+        )
+    validate_package_approval(package)
     expected_revision = package.get("baseRevision")
     expected_hash = package.get("baseDataHash")
     actual_revision = current.get("meta", {}).get("revision")
@@ -442,12 +683,15 @@ def apply_update_package(
     html_path: str | os.PathLike[str],
     package: dict[str, Any],
     schema_path: str | os.PathLike[str] | None,
+    approval_artifact: dict[str, Any] | None = None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Lock, validate, stage, and atomically apply one approved package."""
 
     source = Path(html_path)
     with _exclusive_update_lock(source):
-        return _apply_update_package_locked(source, package, schema_path)
+        return _apply_update_package_locked(
+            source, package, schema_path, approval_artifact
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -457,6 +701,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("html", type=Path, help="目标 Panorama HTML")
     parser.add_argument("patch", type=Path, help="待应用更新包 JSON")
     parser.add_argument("--schema", type=Path, default=None, help="覆盖按 schemaVersion 自动选择的 Schema")
+    parser.add_argument(
+        "--approval",
+        type=Path,
+        default=None,
+        help="独立的 Studio approval artifact；仅在内存中适配 legacy approval",
+    )
     return parser
 
 
@@ -464,9 +714,14 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         with args.patch.open("r", encoding="utf-8") as handle:
-            package = json.load(handle)
+            proposal_artifact = json.load(handle)
+        package = unwrap_proposal_artifact(proposal_artifact)
+        approval_artifact = None
+        if args.approval is not None:
+            with args.approval.open("r", encoding="utf-8") as handle:
+                approval_artifact = json.load(handle)
         backup, updated, warnings = apply_update_package(
-            args.html, package, args.schema
+            args.html, package, args.schema, approval_artifact
         )
     except RevisionConflictError as exc:
         print(f"冲突错误：{exc}", file=sys.stderr)

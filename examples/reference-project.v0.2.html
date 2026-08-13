@@ -200,6 +200,11 @@
     }
     .subnav-btn[aria-selected="true"] { color: var(--primary); }
     .subnav-btn[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--primary); }
+    .system-mode-switch { margin-left: auto; display: flex; align-items: center; padding-left: 20px; }
+    .mode-switch { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 5px; overflow: hidden; background: #fff; }
+    .mode-switch-btn { min-height: 32px; border: 0; border-right: 1px solid var(--rule); background: #fff; color: var(--muted); padding: 0 13px; font-size: 12px; }
+    .mode-switch-btn:last-child { border-right: 0; }
+    .mode-switch-btn[aria-pressed="true"] { color: var(--primary); background: var(--primary-tint); box-shadow: inset 0 0 0 1px var(--primary); }
     .system-content { padding: 18px clamp(20px, 2.6vw, 42px) 48px; }
     .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
     .segmented { display: inline-flex; border: 1px solid var(--rule-strong); border-radius: 5px; overflow: hidden; background: #fff; }
@@ -245,6 +250,111 @@
     .module-status-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 10px; }
     .module-transition-note { color: var(--primary); margin-top: 7px; font-size: 10px; font-style: italic; }
     .is-deprecating .module-transition-note { color: var(--critical); }
+
+    .studio-shell { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; min-height: 690px; background: #fff; }
+    .studio-contextbar {
+      min-height: 55px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 9px 12px; border-bottom: 1px solid var(--rule); background: var(--band); flex-wrap: wrap;
+    }
+    .studio-context-group, .studio-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    .studio-context-control { min-height: 34px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 9px; min-width: 140px; }
+    .studio-action {
+      min-height: 34px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 11px;
+      color: var(--ink); font-size: 12px;
+    }
+    .studio-action:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+    .studio-action:disabled { cursor: not-allowed; color: var(--faint); background: var(--band-strong); opacity: .72; }
+    .studio-action.is-primary { color: #fff; border-color: var(--primary); background: var(--primary); }
+    .studio-action.is-danger { color: var(--critical); }
+    .studio-status {
+      display: inline-flex; align-items: center; gap: 7px; color: #6c4810; border: 1px solid #e8c790;
+      background: #fff8eb; padding: 6px 9px; border-radius: 5px; font-size: 11px; font-weight: 720;
+    }
+    .studio-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); }
+    .studio-status.is-online { color: #245934; border-color: #a9d0b5; background: #f2fbf5; }
+    .studio-status.is-online::before { background: var(--passed); }
+    .studio-status.is-error, .studio-status.is-conflict { color: var(--critical); border-color: #e0b0b0; background: #fff4f4; }
+    .studio-status.is-error::before, .studio-status.is-conflict::before { background: var(--critical); }
+    .studio-status.is-busy::before { background: var(--primary); animation: studio-pulse 1s ease-in-out infinite; }
+    @keyframes studio-pulse { 50% { opacity: .28; } }
+    .studio-candidatebar { padding: 9px 13px; border-bottom: 1px solid var(--rule); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #fff; }
+    .studio-candidate-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 31px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 4px; color: var(--muted); font-size: 11px; }
+    .studio-candidate-chip.is-active { border-color: var(--primary); background: var(--primary-tint); color: var(--primary); }
+    .studio-candidate-chip input { accent-color: var(--primary); }
+    .studio-compare { padding: 12px 13px; border-bottom: 1px solid var(--rule); background: var(--band); }
+    .studio-compare-grid { display: grid; grid-template-columns: repeat(var(--compare-count, 2), minmax(0, 1fr)); gap: 8px; }
+    .studio-compare-card { background: #fff; border: 1px solid var(--rule); border-radius: 5px; padding: 10px; min-width: 0; }
+    .studio-compare-card h3 { font-size: 12px; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .studio-compare-card p { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .studio-artifact-strip { display: grid; gap: 7px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: #fff; }
+    .studio-artifact-line { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+    .studio-artifact-line strong { color: var(--ink); min-width: 72px; }
+    .studio-artifact-line.is-stale { color: #7a5712; }
+    .studio-artifact-line.is-error { color: var(--critical); }
+    .studio-result { max-height: 150px; overflow: auto; margin-top: 7px; padding: 8px; border: 1px solid var(--rule); background: var(--band); border-radius: 4px; color: var(--muted); font: 10px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .studio-result details + details { border-top: 1px solid var(--rule); }
+    .studio-result summary { cursor: pointer; padding: 5px 0; color: var(--ink); font-weight: 700; }
+    .studio-result p { margin: 4px 0 7px; }
+    .studio-conflict { padding: 9px 13px; border-bottom: 1px solid #e0b0b0; background: #fff4f4; color: var(--critical); font-size: 11px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .studio-workspace { display: grid; grid-template-columns: 220px minmax(480px, 1fr) 310px; min-height: 580px; }
+    .studio-library, .studio-inspector { min-width: 0; background: #fff; }
+    .studio-library { border-right: 1px solid var(--rule); }
+    .studio-inspector { border-left: 1px solid var(--rule); }
+    .studio-panel-head { height: 43px; padding: 0 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); font-size: 12px; }
+    .studio-library-section, .studio-inspector-section { padding: 13px; border-bottom: 1px solid var(--rule); }
+    .studio-library-section h3, .studio-inspector-section h3 { color: var(--muted); font-size: 11px; letter-spacing: .045em; text-transform: uppercase; margin-bottom: 9px; }
+    .studio-library-list { display: grid; gap: 7px; }
+    .studio-library-btn { width: 100%; min-height: 35px; text-align: left; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 8px 9px; font-size: 12px; }
+    .studio-library-btn:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-tint); }
+    .studio-requirements { list-style: none; padding: 0; max-height: 150px; overflow: auto; }
+    .studio-requirements li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
+    .studio-requirements li:last-child { border-bottom: 0; }
+    .studio-canvas-wrap { min-width: 0; display: flex; flex-direction: column; background: #fff; }
+    .studio-layer-toolbar { min-height: 43px; display: flex; align-items: center; gap: 14px; padding: 0 13px; border-bottom: 1px solid var(--rule); color: var(--muted); font-size: 11px; }
+    .studio-canvas { flex: 1; min-height: 536px; overflow: auto; position: relative; background: #fff; touch-action: none; }
+    .studio-canvas-surface { position: relative; min-width: 720px; min-height: 620px; }
+    .studio-layer-band { position: absolute; left: 0; right: 0; border-bottom: 1px dashed var(--rule); pointer-events: none; }
+    .studio-layer-label { position: absolute; left: 12px; top: 12px; width: 104px; color: var(--muted); font-size: 11px; }
+    .studio-layer-label strong { display: block; color: var(--ink); margin-bottom: 2px; }
+    .studio-edge-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+    .studio-edge { fill: none; stroke: #67738f; stroke-width: 1.5; }
+    .studio-edge.is-draft { stroke: var(--primary); stroke-dasharray: 6 4; }
+    .studio-node {
+      position: absolute; width: 176px; min-height: 78px; border: 1px solid var(--primary); border-radius: 5px;
+      background: #fff; padding: 9px 10px; z-index: 2; text-align: left; box-shadow: 0 1px 2px rgba(17,28,58,.06);
+      cursor: grab; user-select: none; touch-action: none;
+    }
+    .studio-node:hover, .studio-node.is-selected { background: var(--primary-tint); box-shadow: inset 0 0 0 1px var(--primary); }
+    .studio-node.is-draft { border-style: dashed; }
+    .studio-node.is-dragging { cursor: grabbing; box-shadow: 0 7px 18px rgba(17,28,58,.16); }
+    .studio-node-title { font-size: 12px; font-weight: 780; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .studio-node-meta { color: var(--muted); font: 600 10px/1.35 var(--mono); }
+    .studio-node-purpose { color: var(--muted); font-size: 10px; margin-top: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .studio-field { display: grid; gap: 5px; margin-bottom: 11px; }
+    .studio-field:last-child { margin-bottom: 0; }
+    .studio-field label, .studio-field > span { color: var(--muted); font-size: 11px; font-weight: 720; }
+    .studio-input, .studio-textarea, .studio-select { width: 100%; border: 1px solid var(--rule-strong); border-radius: 4px; background: #fff; padding: 8px 9px; font: 500 12px/1.4 var(--sans); }
+    .studio-textarea { min-height: 72px; resize: vertical; }
+    .studio-check-list { list-style: none; padding: 0; display: grid; gap: 7px; }
+    .studio-check-item { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 7px; color: var(--muted); font-size: 11px; }
+    .studio-check-item::before { content: ""; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: var(--passed); }
+    .studio-check-item.is-warning::before { background: var(--warning); }
+    .studio-check-item.is-error::before { background: var(--critical); }
+    .studio-empty-inspector { padding: 28px 18px; color: var(--muted); text-align: center; }
+    .studio-footer {
+      min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 13px;
+      border-top: 1px solid var(--rule); background: var(--band); flex-wrap: wrap;
+    }
+    .studio-footer-status { display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: 11px; flex-wrap: wrap; }
+    .studio-warning { color: #6c4810; font-weight: 720; }
+    .studio-storage-note { color: var(--faint); }
+    .studio-dialog { width: min(560px, calc(100vw - 28px)); border: 1px solid var(--rule-strong); border-radius: 7px; padding: 0; color: var(--ink); box-shadow: 0 24px 64px rgba(17,28,58,.22); }
+    .studio-dialog::backdrop { background: rgba(17,28,58,.45); }
+    .studio-dialog-head { padding: 15px 17px; border-bottom: 1px solid var(--rule); }
+    .studio-dialog-body { padding: 17px; display: grid; gap: 12px; }
+    .studio-dialog-actions { padding: 12px 17px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end; gap: 8px; }
+    .studio-hash { padding: 8px; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; font: 10px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
+    .studio-shell.is-frozen .studio-workspace, .studio-shell.is-frozen .studio-candidatebar, .studio-shell.is-frozen .studio-contextbar { pointer-events: none; opacity: .68; }
 
     .drawer-backdrop { position: fixed; inset: 0; background: rgba(17,28,58,.14); z-index: 70; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
     .drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
@@ -370,6 +480,7 @@
       .control-grid { grid-template-columns: 1fr; }
       .attention-rail { order: -1; }
       .runtime-grid { grid-template-columns: 1fr; }
+      .studio-workspace { grid-template-columns: 190px minmax(430px, 1fr) 270px; }
       .inspector-grid { grid-template-columns: 1fr 1fr; }
       .inspector-pane:last-child { grid-column: 1 / -1; border-top: 1px solid var(--rule); }
       .source-groups { grid-template-columns: 1fr 1fr; }
@@ -380,8 +491,9 @@
       .stage-detail > div:nth-child(n+4) { border-top: 1px solid var(--rule); }
     }
     @media (max-width: 840px) {
-      .topbar { grid-template-columns: 48px 1fr auto; }
+      .topbar { grid-template-columns: 48px minmax(258px,1fr); }
       .brand { padding: 0 10px; }
+      .brand > span:last-child, .topbar-meta { display: none; }
       .nav-btn { min-width: 86px; padding: 0 10px; font-size: 11px; }
       .topbar-meta { padding: 0 10px; }
       .project-strip { grid-template-columns: 1fr 1fr; }
@@ -399,12 +511,34 @@
       .source-group { border-right: 0; border-top: 1px solid var(--rule); }
       .stage-detail > div { border-right: 0; border-top: 1px solid var(--rule); }
       .timeline { grid-template-columns: repeat(var(--timeline-columns,4), minmax(230px,1fr)); }
+      .subnav { gap: 16px; overflow-x: auto; }
+      .system-mode-switch { padding-left: 0; }
+      .studio-shell { min-height: 0; }
+      .studio-workspace { display: flex; flex-direction: column; }
+      .studio-library, .studio-inspector { border: 0; }
+      .studio-library { border-bottom: 1px solid var(--rule); }
+      .studio-inspector { border-top: 1px solid var(--rule); }
+      .studio-library-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .studio-library-section h3 { grid-column: 1 / -1; }
+      .studio-requirements { grid-column: 1 / -1; }
+      .studio-canvas { min-height: 500px; }
+      .studio-contextbar, .studio-footer { align-items: stretch; }
+      .studio-context-group, .studio-actions { width: 100%; }
+      .studio-context-control { min-width: 0; flex: 1; }
+      .studio-compare-grid { grid-template-columns: 1fr; }
+      .studio-candidatebar { align-items: stretch; }
+      .studio-candidate-chip { flex: 1 1 140px; }
+      .system-content { padding-left: 12px; padding-right: 12px; }
+      .studio-shell { width: 100%; overflow: hidden; }
+      .studio-contextbar, .studio-workspace, .studio-footer { min-width: 0; }
+      .studio-canvas-wrap { width: 100%; overflow: hidden; }
+      .studio-canvas { width: 100%; overflow: auto; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
     }
     @media print {
-      .topbar, .subnav, .toolbar, .drawer-backdrop, .module-drawer, .toast, button { display: none !important; }
+      .topbar, .subnav, .toolbar, .studio-shell, .drawer-backdrop, .module-drawer, .toast, button { display: none !important; }
       .view, .system-content { padding: 0; }
       .table-wrap, .architecture-board { break-inside: avoid; }
     }
@@ -429,6 +563,12 @@
         <button class="subnav-btn" type="button" data-system-view="logical" aria-selected="true">逻辑架构</button>
         <button class="subnav-btn" type="button" data-system-view="runtime" aria-selected="false">运行时与资源</button>
         <button class="subnav-btn" type="button" data-system-view="source" aria-selected="false">架构来源</button>
+        <div class="system-mode-switch">
+          <div class="mode-switch" aria-label="系统工作模式">
+            <button class="mode-switch-btn" type="button" data-studio-mode="view" aria-pressed="true">全景查看</button>
+            <button class="mode-switch-btn" type="button" data-studio-mode="studio" aria-pressed="false">架构设计 Studio</button>
+          </div>
+        </div>
       </nav>
       <div class="system-content" id="system-content"></div>
     </section>
@@ -4583,7 +4723,7 @@
   (function () {
     "use strict";
 
-    var RENDERER_VERSION = "0.2.0";
+    var RENDERER_VERSION = "0.3.0";
     var UI_LOCALE = "zh-CN";
     var SUPPORTED_SCHEMA_VERSIONS = ["0.1", "0.2"];
     var SUPPORTED_TEMPLATE_VERSIONS = ["0.1.0", "0.1.1"];
@@ -4612,6 +4752,43 @@
     var state = {
       view: "control",
       systemView: "logical",
+      studioMode: "view",
+      studioSession: null,
+      studioSelectedNodeId: null,
+      studioUndoStack: [],
+      studioRedoStack: [],
+      studioStorage: "memory",
+      studioFieldBaseline: null,
+      studioCompareIds: [],
+      studioCompareOpen: false,
+      studioSaveTimer: null,
+      studioGeneration: 0,
+      studioBridge: {
+        capability: null,
+        status: "offline",
+        csrfToken: null,
+        features: {},
+        agent: null,
+        context: null,
+        lastError: null,
+        conflict: null,
+        busy: null,
+        formalValidation: null,
+        review: null,
+        reviewJobId: null,
+        reviewError: null,
+        proposal: null,
+        proposalDraft: null,
+        approval: null,
+        applyResult: null,
+        factsResult: null
+        ,savePromise: null
+        ,lastSavedGeneration: -1
+        ,reviewRequest: null
+        ,sessionMutationBusy: false
+        ,detached: false
+        ,notice: null
+      },
       architectureMode: "current",
       moduleSearch: "",
       layerFilter: "all",
@@ -4653,6 +4830,7 @@
       update_batch: data.updateBatches || []
     };
 
+    consumeStudioCapability();
     document.getElementById("revision-label").textContent = "修订 " + String(data.meta.revision) + " · Schema " + String(data.schemaVersion);
     if (String(data.schemaVersion) === "0.2" && data.sourceBinding) {
       var observationBadge = document.getElementById("observation-badge");
@@ -4720,6 +4898,7 @@
       return value === "functional" ? "功能需求" : humanize(value);
     }
     renderAll();
+    if (state.studioBridge.capability) connectStudioBridge();
     function shortDate(value) {
       if (!value) return "—";
       var parsed = new Date(value);
@@ -4918,9 +5097,1003 @@
       document.querySelectorAll("[data-system-view]").forEach(function (button) {
         button.setAttribute("aria-selected", button.getAttribute("data-system-view") === state.systemView ? "true" : "false");
       });
-      if (state.systemView === "logical") renderLogical();
+      document.querySelectorAll("[data-studio-mode]").forEach(function (button) {
+        button.setAttribute("aria-pressed", button.getAttribute("data-studio-mode") === state.studioMode ? "true" : "false");
+      });
+      if (state.systemView === "logical" && state.studioMode === "studio") renderStudio();
+      else if (state.systemView === "logical") renderLogical();
       if (state.systemView === "runtime") renderRuntime();
       if (state.systemView === "source") renderSource();
+    }
+
+    function cloneForStudio(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function consumeStudioCapability() {
+      var match = String(window.location.hash || "").match(/(?:^#|&)cap=([^&]+)/);
+      if (match) {
+        try { state.studioBridge.capability = decodeURIComponent(match[1]); }
+        catch (error) { state.studioBridge.capability = null; }
+      }
+      if (window.location.hash) {
+        try { window.history.replaceState(null, document.title, window.location.pathname + window.location.search); }
+        catch (error) { window.location.hash = ""; }
+      }
+    }
+
+    function studioBridgeFeature(name) {
+      var features = state.studioBridge.features || {};
+      if (features[name] === true) return true;
+      if (features[name] && typeof features[name] === "object") return features[name].available !== false && features[name].enabled !== false;
+      var aliases = {
+        sessions: ["session", "persistence"], formalValidation: ["formal_validation", "formal-validations", "validation"],
+        review: ["review_jobs", "agentReview", "codexReview"], proposals: ["proposal"], approvals: ["approval", "exactHashApproval"],
+        apply: ["patchApply", "patch_apply"], factsRefresh: ["facts", "factRefresh", "facts_refresh", "observation"]
+      };
+      return arr(aliases[name]).some(function (key) { return features[key] === true || (features[key] && features[key].available !== false && features[key].enabled !== false); });
+    }
+
+    function studioBridgeOnline() { return state.studioBridge.status === "online"; }
+
+    function studioBridgeErrorMessage(error) {
+      if (!error) return "未知错误";
+      if (error.payload && error.payload.error) {
+        if (typeof error.payload.error === "string") return error.payload.error;
+        return error.payload.error.message || error.payload.error.code || JSON.stringify(error.payload.error);
+      }
+      return error.message || String(error);
+    }
+
+    async function studioBridgeRequest(path, options) {
+      if (!state.studioBridge.capability) throw new Error("当前页面没有 Bridge capability");
+      options = options || {};
+      var method = String(options.method || "GET").toUpperCase();
+      var headers = { "Accept": "application/json", "X-Panorama-Capability": state.studioBridge.capability };
+      if (method !== "GET" && method !== "HEAD") {
+        headers["Content-Type"] = "application/json";
+        if (!state.studioBridge.csrfToken) throw new Error("Bridge 尚未建立 CSRF 会话");
+        headers["X-Panorama-CSRF"] = state.studioBridge.csrfToken;
+      }
+      var response;
+      try {
+        response = await window.fetch(path, { method: method, headers: headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), credentials: "same-origin", cache: "no-store" });
+      } catch (error) {
+        state.studioBridge.status = "error";
+        state.studioBridge.detached = true;
+        state.studioBridge.notice = "Bridge 连接中断；本地草稿保持 detached，重连时将使用 CAS 保存";
+        throw error;
+      }
+      var payload;
+      try { payload = await response.json(); }
+      catch (error) { throw new Error("Bridge 返回了非 JSON 响应（HTTP " + response.status + "）"); }
+      if (!response.ok || payload.ok === false) {
+        var failure = new Error((payload.error && (payload.error.message || payload.error.code)) || "Bridge 请求失败（HTTP " + response.status + "）");
+        failure.status = response.status; failure.payload = payload; throw failure;
+      }
+      return payload && Object.prototype.hasOwnProperty.call(payload, "data") ? payload.data : payload;
+    }
+
+    async function connectStudioBridge() {
+      if (!state.studioBridge.capability) return;
+      state.studioBridge.status = "connecting"; state.studioBridge.busy = "连接 Bridge"; state.studioBridge.lastError = null;
+      if (state.studioMode === "studio") renderStudio();
+      try {
+        var healthEnvelope = await window.fetch("/api/v1/health", { headers: { "Accept": "application/json", "X-Panorama-Capability": state.studioBridge.capability }, credentials: "same-origin", cache: "no-store" });
+        var healthPayload = await healthEnvelope.json();
+        if (!healthEnvelope.ok || healthPayload.ok === false) throw new Error((healthPayload.error && healthPayload.error.message) || "Bridge health 检查失败");
+        var health = healthPayload.data || healthPayload;
+        if (!health.csrfToken) throw new Error("Bridge 未返回 CSRF token");
+        state.studioBridge.csrfToken = health.csrfToken;
+        state.studioBridge.features = health.features || {};
+        state.studioBridge.agent = health.agent || null;
+        state.studioBridge.context = await studioBridgeRequest("/api/v1/context");
+        state.studioBridge.status = "online";
+        state.studioBridge.busy = "连接服务端会话";
+        await connectOrCreateStudioSession();
+      } catch (error) {
+        state.studioBridge.status = "error";
+        state.studioBridge.lastError = studioBridgeErrorMessage(error);
+      } finally {
+        state.studioBridge.busy = null;
+        if (state.studioMode === "studio") renderStudio();
+      }
+    }
+
+    async function connectOrCreateStudioSession() {
+      if (!studioBridgeOnline() || !studioBridgeFeature("sessions")) return;
+      var current = state.studioSession || loadStudioSession();
+      if (current && !state.studioSession) state.studioSession = current;
+      if (current && current.mode === "bridge" && current.sessionId) {
+        try {
+          var preserved = await studioBridgeRequest("/api/v1/sessions/" + encodeURIComponent(current.sessionId), { method: "PUT", body: { expectedRevision: Number(current.sessionRevision || 0), session: current } });
+          acceptServerStudioSession((preserved && preserved.session) || preserved);
+          state.studioBridge.detached = false; state.studioBridge.conflict = null;
+          state.studioBridge.notice = "本地草稿已通过 Session Revision CAS 重连；未从服务端静默覆盖";
+          return;
+        } catch (error) {
+          if (error.status === 409) {
+            state.studioBridge.detached = true;
+            state.studioBridge.conflict = studioBridgeErrorMessage(error);
+            state.studioBridge.notice = "本地草稿仍保留；请选择导出备份或显式加载服务端版本";
+            return;
+          }
+          if (error.status !== 404) throw error;
+        }
+      }
+      var created = await studioBridgeRequest("/api/v1/sessions", { method: "POST", body: {} });
+      acceptServerStudioSession((created && created.session) || created);
+    }
+
+    function acceptServerStudioSession(session) {
+      if (!studioSessionShapeValid(session)) throw new Error("Bridge 返回的 session 结构无效");
+      session.mode = "bridge";
+      state.studioSession = session;
+      state.studioStorage = "bridge";
+      state.studioUndoStack = []; state.studioRedoStack = [];
+      var candidate = activeStudioCandidate();
+      state.studioSelectedNodeId = candidate && candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
+      validateStudioSession();
+      try { window.localStorage.setItem(studioStorageKey(), JSON.stringify(session)); } catch (error) { /* Bridge is authoritative. */ }
+    }
+
+    function markStudioLocalMutation() {
+      state.studioGeneration += 1;
+      if (state.studioBridge.capability && !studioBridgeOnline()) {
+        state.studioBridge.detached = true;
+        state.studioBridge.notice = "Bridge 已断开；本地草稿已保留，重连时不会自动覆盖";
+      }
+    }
+
+    function invalidateStudioArtifacts() {
+      state.studioBridge.formalValidation = null;
+      state.studioBridge.review = null;
+      if (state.studioBridge.reviewJobId && String(state.studioBridge.busy || "").indexOf("Codex") >= 0) state.studioBridge.busy = null;
+      state.studioBridge.reviewJobId = null;
+      state.studioBridge.reviewRequest = null;
+      state.studioBridge.reviewError = null;
+      state.studioBridge.proposal = null;
+      state.studioBridge.proposalDraft = null;
+      state.studioBridge.approval = null;
+      state.studioBridge.applyResult = null;
+      if (!state.studioSession) return;
+      ["formalValidation", "reviewArtifact", "proposalArtifact"].forEach(function (key) { if (key in state.studioSession) state.studioSession[key] = null; });
+    }
+
+    function scheduleStudioBridgeSave() {
+      if (!studioBridgeOnline() || !state.studioSession || state.studioSession.mode !== "bridge") return;
+      window.clearTimeout(state.studioSaveTimer);
+      state.studioSaveTimer = window.setTimeout(function () {
+        if (state.studioBridge.sessionMutationBusy) { scheduleStudioBridgeSave(); return; }
+        saveStudioSessionToBridge(false);
+      }, 450);
+    }
+
+    async function saveStudioSessionToBridge(explicit) {
+      if (!studioBridgeOnline() || !studioBridgeFeature("sessions") || !state.studioSession) return false;
+      if (state.studioBridge.sessionMutationBusy) { scheduleStudioBridgeSave(); return false; }
+      if (state.studioBridge.savePromise) {
+        await state.studioBridge.savePromise;
+        if (state.studioBridge.conflict) return false;
+        if (state.studioBridge.lastSavedGeneration < state.studioGeneration) return saveStudioSessionToBridge(explicit);
+        return true;
+      }
+      window.clearTimeout(state.studioSaveTimer);
+      state.studioBridge.busy = "保存草稿"; state.studioBridge.lastError = null;
+      if (explicit) renderStudio();
+      var expected = Number(state.studioSession.sessionRevision || 0);
+      var requestGeneration = state.studioGeneration;
+      var outgoing = cloneForStudio(state.studioSession);
+      state.studioBridge.savePromise = (async function () {
+        try {
+          var result = await studioBridgeRequest("/api/v1/sessions/" + encodeURIComponent(outgoing.sessionId), { method: "PUT", body: { expectedRevision: expected, session: outgoing } });
+          var saved = (result && result.session) || result;
+          state.studioBridge.lastSavedGeneration = requestGeneration;
+          if (state.studioGeneration === requestGeneration) acceptServerStudioSession(saved);
+          else {
+            state.studioSession.sessionRevision = saved.sessionRevision;
+            state.studioBridge.notice = "保存期间检测到新编辑；旧响应未覆盖本地草稿，正在继续保存";
+            scheduleStudioBridgeSave();
+          }
+          state.studioBridge.conflict = null; state.studioBridge.detached = false;
+          if (explicit) showToast("服务端草稿已保存");
+          return true;
+        } catch (error) {
+          if (error.status === 409) state.studioBridge.conflict = studioBridgeErrorMessage(error);
+          else state.studioBridge.lastError = studioBridgeErrorMessage(error);
+          return false;
+        }
+      }());
+      try { return await state.studioBridge.savePromise; }
+      finally {
+        state.studioBridge.savePromise = null;
+        state.studioBridge.busy = null;
+        if (state.studioMode === "studio") renderStudio();
+      }
+    }
+
+    async function reloadStudioSessionFromBridge() {
+      if (!studioBridgeOnline() || !state.studioSession) return;
+      state.studioBridge.busy = "加载服务端草稿"; renderStudio();
+      try {
+        var result = await studioBridgeRequest("/api/v1/sessions/" + encodeURIComponent(state.studioSession.sessionId));
+        acceptServerStudioSession((result && result.session) || result); state.studioBridge.conflict = null;
+        showToast("已加载服务端最新草稿");
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
+      finally { state.studioBridge.busy = null; renderStudio(); }
+    }
+
+    function studioStorageKey() {
+      return "panorama.architecture-studio.v0.1:" + data.project.id;
+    }
+
+    function studioSessionShapeValid(session) {
+      if (!session || session.format !== "panorama-architecture-session.v0.1") return false;
+      if (!session.projectBinding || session.projectBinding.projectId !== data.project.id) return false;
+      if (session.sessionRevision != null && (!Number.isInteger(session.sessionRevision) || session.sessionRevision < 0)) return false;
+      if (!Array.isArray(session.layers) || !Array.isArray(session.candidates) || !session.candidates.length || session.candidates.length > 12) return false;
+      var totalNodes = 0;
+      var totalEdges = 0;
+      for (var index = 0; index < session.candidates.length; index += 1) {
+        var candidate = session.candidates[index];
+        if (!candidate || typeof candidate.candidateId !== "string" || !Array.isArray(candidate.nodes) || !Array.isArray(candidate.edges)) return false;
+        totalNodes += candidate.nodes.length;
+        totalEdges += candidate.edges.length;
+        if (totalNodes > 200 || totalEdges > 400) return false;
+      }
+      if (!Array.isArray(session.semanticOperations) || !Array.isArray(session.layoutOperations)) return false;
+      return true;
+    }
+
+    function loadStudioSession() {
+      try {
+        var serialized = window.localStorage.getItem(studioStorageKey());
+        if (!serialized) return null;
+        var restored = JSON.parse(serialized);
+        if (!studioSessionShapeValid(restored)) return null;
+        if (!state.studioBridge.capability && restored.mode === "bridge") restored.mode = "offline";
+        if (restored.projectBinding.baseRevision !== data.meta.revision || (restored.projectBinding.gitHead || null) !== ((data.sourceBinding && data.sourceBinding.gitHead) || null)) {
+          restored.status = "stale";
+        }
+        state.studioStorage = "local";
+        return restored;
+      } catch (error) {
+        state.studioStorage = "memory";
+        return null;
+      }
+    }
+
+    function persistStudioSession() {
+      if (!state.studioSession) return;
+      markStudioLocalMutation();
+      state.studioSession.updatedAt = new Date().toISOString();
+      try {
+        window.localStorage.setItem(studioStorageKey(), JSON.stringify(state.studioSession));
+        state.studioStorage = "local";
+      } catch (error) {
+        state.studioStorage = "memory";
+      }
+      scheduleStudioBridgeSave();
+    }
+
+    function createStudioSession() {
+      var layers = cloneForStudio(arr(data.architecture.layers).slice().sort(function (a, b) { return a.order - b.order; }));
+      var modules = cloneForStudio(arr(data.architecture.modules).filter(function (module) {
+        return ["target", "both"].indexOf(module.architectureScope) >= 0;
+      }));
+      if (!modules.length) modules = cloneForStudio(arr(data.architecture.modules));
+      var layerIndex = {};
+      layers.forEach(function (layer, index) { layerIndex[layer.id] = index; });
+      var laneCounts = {};
+      var nodes = modules.map(function (module) {
+        var layerId = module.targetLayerId || module.layerId || (layers[0] && layers[0].id);
+        var lane = layerIndex[layerId] == null ? 0 : layerIndex[layerId];
+        var slot = laneCounts[layerId] || 0;
+        laneCounts[layerId] = slot + 1;
+        var design = module.targetDesign || module.currentDesign || {};
+        return {
+          nodeId: "NODE-" + module.id,
+          entityRef: { type: "module", id: module.id },
+          name: module.name,
+          purpose: module.purpose || "",
+          responsibilities: cloneForStudio(arr(design.responsibilities)),
+          stateOwnership: design.stateOwnership || "",
+          layerId: layerId,
+          category: module.category || "supporting",
+          isDraft: false,
+          x: 145 + (slot % 3) * 205,
+          y: 20 + lane * 122 + Math.floor(slot / 3) * 86
+        };
+      });
+      var nodeByEntity = {};
+      nodes.forEach(function (node) { nodeByEntity[node.entityRef.id] = node.nodeId; });
+      var edges = cloneForStudio(arr(data.architecture.connections)).filter(function (connection) {
+        return nodeByEntity[connection.fromModuleId] && nodeByEntity[connection.toModuleId] && ["target", "both"].indexOf(connection.architectureScope) >= 0;
+      }).map(function (connection) {
+        return {
+          edgeId: "EDGE-" + connection.id,
+          entityRef: { type: "connection", id: connection.id },
+          fromNodeId: nodeByEntity[connection.fromModuleId],
+          toNodeId: nodeByEntity[connection.toModuleId],
+          label: connection.protocol || connection.communicationMode || "data",
+          dataSummary: connection.dataSummary || "",
+          isDraft: false
+        };
+      });
+      var now = new Date().toISOString();
+      return {
+        format: "panorama-architecture-session.v0.1",
+        sessionId: "SESSION-" + data.project.id + "-" + String(Date.now()),
+        sessionRevision: 0,
+        projectBinding: {
+          projectId: data.project.id,
+          schemaVersion: data.schemaVersion,
+          templateVersion: data.meta.templateVersion,
+          baseRevision: data.meta.revision,
+          // file:// cannot authoritatively compute the canonical Panorama Data Hash.
+          // Bridge sessions replace this null with a server-computed binding before
+          // any formal validation, Proposal or Apply operation is enabled.
+          baseDataHash: null,
+          gitHead: (data.sourceBinding && data.sourceBinding.gitHead) || null,
+          sourceSnapshotHash: (data.sourceBinding && data.sourceBinding.sourceSnapshotHash) || null
+        },
+        sourceObservation: { observedAt: null, actualGitHead: null, boundGitHead: (data.sourceBinding && data.sourceBinding.gitHead) || null, formalSourceBindingPresent: Boolean(data.sourceBinding), driftStatus: "not_observed" },
+        mode: "offline",
+        status: "draft",
+        scope: { level: "project", subjectRefs: [{ type: "project", id: data.project.id }] },
+        layers: layers,
+        candidates: [{ candidateId: "CANDIDATE-BASE", label: "目标架构副本", kind: "baseline_copy", status: "active", assumptions: [], unknowns: [], nodes: nodes, edges: edges, createdAt: now, updatedAt: now }],
+        activeCandidateId: "CANDIDATE-BASE",
+        semanticOperations: [],
+        layoutOperations: [],
+        clientValidation: [],
+        semanticHash: null,
+        layoutHash: null,
+        createdAt: now,
+        updatedAt: now
+      };
+    }
+
+    function ensureStudioSession() {
+      if (state.studioSession) return state.studioSession;
+      state.studioSession = loadStudioSession() || createStudioSession();
+      var candidate = activeStudioCandidate();
+      state.studioSelectedNodeId = candidate && candidate.nodes.length ? candidate.nodes[0].nodeId : null;
+      validateStudioSession();
+      return state.studioSession;
+    }
+
+    function activeStudioCandidate() {
+      if (!state.studioSession) return null;
+      return arr(state.studioSession.candidates).find(function (candidate) { return candidate.candidateId === state.studioSession.activeCandidateId && candidate.status !== "archived"; }) || arr(state.studioSession.candidates).find(function (candidate) { return candidate.status !== "archived"; }) || null;
+    }
+
+    function studioNode(nodeId) {
+      var candidate = activeStudioCandidate();
+      return candidate ? arr(candidate.nodes).find(function (node) { return node.nodeId === nodeId; }) : null;
+    }
+
+    function studioSnapshot() {
+      return cloneForStudio({ session: state.studioSession, selected: state.studioSelectedNodeId });
+    }
+
+    function studioSemanticProjection(session) {
+      return JSON.stringify({
+        scope: session && session.scope,
+        activeCandidateId: session && session.activeCandidateId,
+        candidates: arr(session && session.candidates).map(function (candidate) {
+          return {
+            candidateId: candidate.candidateId, label: candidate.label, kind: candidate.kind, status: candidate.status,
+            assumptions: candidate.assumptions, unknowns: candidate.unknowns,
+            nodes: arr(candidate.nodes).map(function (node) { var copy = cloneForStudio(node); delete copy.x; delete copy.y; return copy; }),
+            edges: candidate.edges
+          };
+        })
+      });
+    }
+
+    function restoreStudioSnapshot(snapshot) {
+      var semanticChanged = studioSemanticProjection(state.studioSession) !== studioSemanticProjection(snapshot.session);
+      state.studioSession = cloneForStudio(snapshot.session);
+      state.studioSelectedNodeId = snapshot.selected;
+      if (semanticChanged) invalidateStudioArtifacts();
+      validateStudioSession();
+      persistStudioSession();
+      renderStudio();
+    }
+
+    function pushStudioUndo() {
+      state.studioUndoStack.push(studioSnapshot());
+      if (state.studioUndoStack.length > 40) state.studioUndoStack.shift();
+      state.studioRedoStack = [];
+    }
+
+    function appendStudioOperation(kind, target, before, after, semantic) {
+      var list = semantic ? state.studioSession.semanticOperations : state.studioSession.layoutOperations;
+      list.push({
+        opId: "OP-" + String(Date.now()) + "-" + String(list.length + 1),
+        seq: state.studioSession.semanticOperations.length + state.studioSession.layoutOperations.length + 1,
+        at: new Date().toISOString(),
+        actor: "human",
+        kind: kind,
+        target: target,
+        before: before,
+        after: after,
+        affectsSemanticHash: Boolean(semantic)
+      });
+      if (state.studioSession.status !== "stale") state.studioSession.status = "dirty";
+      if (semantic) invalidateStudioArtifacts();
+    }
+
+    function validateStudioSession() {
+      if (!state.studioSession) return [];
+      var candidate = activeStudioCandidate();
+      var checks = [];
+      if (!candidate) return checks;
+      var ids = new Set();
+      candidate.nodes.forEach(function (node) {
+        if (!node.name.trim()) checks.push({ level: "error", message: node.nodeId + " 缺少名称" });
+        if (!node.layerId) checks.push({ level: "error", message: node.name + " 缺少架构层" });
+        if (!node.purpose.trim()) checks.push({ level: "warning", message: node.name + " 缺少用途描述" });
+        if (!node.stateOwnership.trim()) checks.push({ level: "warning", message: node.name + " 未说明状态所有权" });
+        if (ids.has(node.nodeId)) checks.push({ level: "error", message: "草稿节点标识重复：" + node.nodeId });
+        ids.add(node.nodeId);
+      });
+      var edgeKeys = new Set();
+      candidate.edges.forEach(function (edge) {
+        if (!ids.has(edge.fromNodeId) || !ids.has(edge.toNodeId)) checks.push({ level: "error", message: edge.edgeId + " 的端点不存在" });
+        if (edge.fromNodeId === edge.toNodeId) checks.push({ level: "warning", message: edge.edgeId + " 是自循环" });
+        var key = edge.fromNodeId + "->" + edge.toNodeId;
+        if (edgeKeys.has(key)) checks.push({ level: "warning", message: "存在重复数据流：" + key });
+        edgeKeys.add(key);
+        if (!String(edge.dataSummary || "").trim()) checks.push({ level: "warning", message: edge.edgeId + " 缺少数据说明" });
+      });
+      var linked = new Set();
+      candidate.edges.forEach(function (edge) { linked.add(edge.fromNodeId); linked.add(edge.toNodeId); });
+      candidate.nodes.forEach(function (node) {
+        if (candidate.nodes.length > 1 && !linked.has(node.nodeId)) checks.push({ level: "warning", message: node.name + " 当前没有连接" });
+      });
+      checks.forEach(function (check, index) {
+        if (!check.code) check.code = "CLIENT_BROWSER_CHECK";
+        if (!check.candidateId) check.candidateId = candidate.candidateId;
+        if (!check.path) check.path = "/clientValidation/" + index;
+      });
+      state.studioSession.clientValidation = checks;
+      return checks;
+    }
+
+    function studioCheckHtml() {
+      var checks = state.studioSession.clientValidation;
+      if (!checks.length) return "<li class='studio-check-item'>浏览器基础检查通过</li>";
+      return checks.slice(0, 8).map(function (check) {
+        return "<li class='studio-check-item is-" + e(check.level) + "'>" + e(check.message) + "</li>";
+      }).join("");
+    }
+
+    function studioArtifactIsCurrent(artifact) {
+      if (!artifact || !state.studioSession) return false;
+      var artifactHash = artifact.semanticHash || (artifact.binding && artifact.binding.semanticHash) || (artifact.result && artifact.result.semanticHash);
+      var activeId = state.studioSession.activeCandidateId;
+      var artifactCandidate = artifact.candidateId || (artifact.binding && artifact.binding.candidateId) || (artifact.result && artifact.result.candidateId);
+      return (!artifactHash || !state.studioSession.semanticHash || artifactHash === state.studioSession.semanticHash) && (!artifactCandidate || artifactCandidate === activeId);
+    }
+
+    function studioRequestBinding() {
+      return { generation: state.studioGeneration, candidateId: state.studioSession && state.studioSession.activeCandidateId };
+    }
+
+    function studioRequestIsCurrent(binding) {
+      return Boolean(binding && state.studioSession && binding.generation === state.studioGeneration && binding.candidateId === state.studioSession.activeCandidateId);
+    }
+
+    function studioBridgeStatusHtml() {
+      var bridge = state.studioBridge;
+      if (!bridge.capability) return "<span class='studio-status'>file:// 离线草稿</span>";
+      if (bridge.status === "online") return "<span class='studio-status is-online'>Bridge 已连接" + (bridge.busy ? " · " + e(bridge.busy) : "") + (bridge.detached ? " · detached" : "") + "</span>";
+      if (bridge.status === "connecting") return "<span class='studio-status is-busy'>正在连接 Bridge</span>";
+      return "<span class='studio-status is-error'>Bridge 不可用" + (bridge.lastError ? " · " + e(bridge.lastError) : "") + "</span>";
+    }
+
+    function studioFindingsHtml(findings, emptyText) {
+      findings = arr(findings);
+      if (!findings.length) return "<p>" + e(emptyText || "没有返回发现项") + "</p>";
+      return findings.slice(0, 50).map(function (finding) {
+        var label = [finding.level || finding.severity, finding.code || finding.category, finding.title].filter(Boolean).join(" · ");
+        var message = finding.message || finding.detail || "";
+        var path = finding.path ? "路径 " + finding.path : "";
+        var related = arr(finding.relatedEntities || finding.subjectNodeIds).map(function (item) { return typeof item === "string" ? item : (item.type + ":" + item.id); }).join(", ");
+        return "<details><summary>" + e(label || "发现项") + "</summary><p>" + e(message) + "</p>" + (path ? "<p>" + e(path) + "</p>" : "") + (related ? "<p>关联：" + e(related) + "</p>" : "") + "</details>";
+      }).join("");
+    }
+
+    function studioArtifactHtml() {
+      var bridge = state.studioBridge;
+      var formal = bridge.formalValidation;
+      var review = bridge.review;
+      var proposal = bridge.proposal;
+      var approval = bridge.approval;
+      var lines = [];
+      if (formal) {
+        var validation = formal.validation || (formal.result && formal.result.validation) || {};
+        var summary = validation.summary || validation.counts || {};
+        var errorCount = Number(summary.errors || 0);
+        var warningCount = Number(summary.warnings || 0);
+        var valid = validation.valid !== false && errorCount === 0;
+        lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(formal) ? (valid ? "" : "is-error") : "is-stale") + "'><strong>正式校验</strong><span>" + (studioArtifactIsCurrent(formal) ? (valid ? "通过" : "未通过") : "已过期") + " · " + e(errorCount) + " 错误 / " + e(warningCount) + " 警告<div class='studio-result'>" + studioFindingsHtml(validation.findings, valid ? "Validator 未返回发现项" : "Validator 未返回可定位的发现项") + "</div></span></div>");
+      }
+      if (review) {
+        var reviewResult = review.result || review;
+        var advisoryReview = reviewResult.review || reviewResult;
+        lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(reviewResult) ? "" : "is-stale") + "'><strong>Codex 评审</strong><span>" + e(review.status || advisoryReview.status || advisoryReview.verdict || "已完成") + " · " + e(advisoryReview.summary || advisoryReview.rationale || "只读分析结果已返回") + "<div class='studio-result'>" + studioFindingsHtml(advisoryReview.findings, "Codex 未返回具体发现项") + "</div></span></div>");
+      } else if (bridge.reviewJobId) lines.push("<div class='studio-artifact-line'><strong>Codex 评审</strong><span>任务 " + e(bridge.reviewJobId) + " 执行中</span></div>");
+      else if (bridge.reviewError) lines.push("<div class='studio-artifact-line is-error' role='alert'><strong>Codex 评审</strong><span>失败 · " + e(bridge.reviewError) + "（不阻断人工 Proposal）</span></div>");
+      if (proposal) lines.push("<div class='studio-artifact-line " + (studioArtifactIsCurrent(proposal) ? "" : "is-stale") + "'><strong>Proposal</strong><span class='mono'>" + e(proposal.proposalHash || "") + "</span></div>");
+      if (approval) lines.push("<div class='studio-artifact-line'><strong>Approval</strong><span>已记录 · " + e(approval.recordedAt || approval.approvalId || "") + "</span></div>");
+      if (bridge.applyResult) lines.push("<div class='studio-artifact-line'><strong>Apply</strong><span>修订 " + e(bridge.applyResult.revision) + " · 备份 " + e(bridge.applyResult.backupPath || "已创建") + "</span></div>");
+      if (bridge.lastError && bridge.status === "online") lines.push("<div class='studio-artifact-line is-error' role='alert'><strong>Bridge 错误</strong><span>" + e(bridge.lastError) + "</span></div>");
+      if (bridge.agent && bridge.agent.available === false) lines.push("<div class='studio-artifact-line is-error' role='status'><strong>Codex 评审</strong><span>not_configured · " + e(bridge.agent.reason || "Codex CLI 未配置或不可用") + "</span></div>");
+      if (bridge.notice) lines.push("<div class='studio-artifact-line " + (bridge.detached ? "is-stale" : "") + "'><strong>会话提示</strong><span>" + e(bridge.notice) + "</span></div>");
+      if (!lines.length) return "";
+      return "<div class='studio-artifact-strip' aria-live='polite'>" + lines.join("") + "</div>";
+    }
+
+    function studioCandidateBarHtml(session) {
+      var active = session.activeCandidateId;
+      var chips = session.candidates.map(function (candidate) {
+        var archived = candidate.status === "archived";
+        var checked = state.studioCompareIds.indexOf(candidate.candidateId) >= 0;
+        return "<label class='studio-candidate-chip " + (candidate.candidateId === active ? "is-active" : "") + "' title='" + e(archived ? "已归档" : candidate.label) + "'><input type='checkbox' data-studio-compare-id='" + e(candidate.candidateId) + "' " + (checked ? "checked" : "") + " " + (archived ? "disabled" : "") + "><span>" + e(candidate.label) + (archived ? " · 已归档" : "") + "</span></label>";
+      }).join("");
+      return "<div class='studio-candidatebar'><span class='cell-sub'>对比（最多 3 个）</span>" + chips + "<button class='studio-action' type='button' data-studio-action='compare' " + (state.studioCompareIds.length > 1 ? "" : "disabled") + ">" + (state.studioCompareOpen ? "收起对比" : "对比方案") + "</button></div>";
+    }
+
+    function studioCompareHtml(session) {
+      if (!state.studioCompareOpen) return "";
+      var selected = state.studioCompareIds.map(function (id) { return session.candidates.find(function (item) { return item.candidateId === id; }); }).filter(Boolean).slice(0, 3);
+      if (selected.length < 2) return "";
+      return "<section class='studio-compare' aria-label='候选方案比较'><div class='studio-compare-grid' style='--compare-count:" + selected.length + "'>" + selected.map(function (candidate) {
+        var isolated = candidate.nodes.filter(function (node) { return !candidate.edges.some(function (edge) { return edge.fromNodeId === node.nodeId || edge.toNodeId === node.nodeId; }); }).length;
+        return "<article class='studio-compare-card'><h3>" + e(candidate.label) + "</h3><p>模块 " + candidate.nodes.length + " · 数据流 " + candidate.edges.length + " · 孤立模块 " + isolated + "</p><p>假设 " + arr(candidate.assumptions).length + " · 未知项 " + arr(candidate.unknowns).length + "</p><button class='studio-action' type='button' data-studio-select-candidate='" + e(candidate.candidateId) + "'>切换到此方案</button></article>";
+      }).join("") + "</div></section>";
+    }
+
+    function studioApprovalDialogHtml() {
+      var proposal = state.studioBridge.proposal;
+      var hash = proposal && proposal.proposalHash;
+      if (!hash) return "";
+      var confirmation = "批准 Studio Proposal " + hash;
+      return "<dialog class='studio-dialog' id='studio-approval-dialog' aria-labelledby='studio-approval-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-approval-title'>精确批准 Studio Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>批准只绑定下方 64 位 Proposal Hash。请完整输入确认短语；页面不会代填，也不会把批准视为评审结论。</p><div class='studio-hash'>" + e(hash) + "</div><label class='studio-field'><span>批准人</span><input class='studio-input' name='approvedBy' id='studio-approved-by' autocomplete='name' required></label><label class='studio-field'><span>确认短语</span><input class='studio-input mono' name='confirmation' id='studio-approval-confirmation' aria-describedby='studio-confirmation-help' required></label><p class='cell-sub' id='studio-confirmation-help'>必须精确输入：<span class='mono'>" + e(confirmation) + "</span></p></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-approval'>记录批准</button></div></form></dialog>";
+    }
+
+    function studioProposalDialogHtml() {
+      var draft = state.studioBridge.proposalDraft;
+      if (!draft) return "";
+      return "<dialog class='studio-dialog' id='studio-proposal-dialog' aria-labelledby='studio-proposal-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-proposal-title'>生成正式 Architecture Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>Proposal 会重新运行正式校验，并绑定当前 session Revision、Candidate Semantic Hash、Panorama Data Hash 与源码快照。</p><label class='studio-field'><span>Proposal 摘要</span><input class='studio-input' id='studio-proposal-summary' maxlength='512' value='" + e(draft.summary) + "' required></label><label class='studio-field'><span>变更原因</span><textarea class='studio-textarea' id='studio-proposal-reason' maxlength='4000' required>" + e(draft.reason) + "</textarea></label></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel' data-studio-action='cancel-proposal'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-proposal'>生成并冻结 Hash</button></div></form></dialog>";
+    }
+
+    function createStudioCandidate(cloneActive) {
+      var session = ensureStudioSession();
+      if (session.candidates.length >= 12) { showToast("候选方案已达到 12 个上限"); return; }
+      var requested = window.prompt(cloneActive ? "克隆方案名称" : "新方案名称", cloneActive ? activeStudioCandidate().label + " 副本" : "新架构方案");
+      if (!requested || !requested.trim()) return;
+      pushStudioUndo();
+      var now = new Date().toISOString();
+      var base = cloneActive ? cloneForStudio(activeStudioCandidate()) : { assumptions: [], unknowns: [], nodes: [], edges: [] };
+      var occupied = new Set(session.candidates.map(function (item) { return item.candidateId; }));
+      var candidateId = "CANDIDATE-" + String(Date.now());
+      while (occupied.has(candidateId)) candidateId += "X";
+      base.candidateId = candidateId; base.label = requested.trim(); base.kind = "alternative"; base.status = "active"; base.createdAt = now; base.updatedAt = now;
+      session.candidates.push(base); session.activeCandidateId = candidateId;
+      state.studioSelectedNodeId = base.nodes[0] ? base.nodes[0].nodeId : null;
+      appendStudioOperation("candidate.create", { candidateId: candidateId }, null, { label: base.label, cloned: Boolean(cloneActive) }, true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function renameStudioCandidate() {
+      var candidate = activeStudioCandidate();
+      if (!candidate) return;
+      var requested = window.prompt("候选方案名称", candidate.label);
+      if (!requested || !requested.trim() || requested.trim() === candidate.label) return;
+      pushStudioUndo(); var before = candidate.label; candidate.label = requested.trim(); candidate.updatedAt = new Date().toISOString();
+      appendStudioOperation("candidate.rename", { candidateId: candidate.candidateId }, before, candidate.label, true);
+      persistStudioSession(); renderStudio();
+    }
+
+    function archiveStudioCandidate() {
+      var session = ensureStudioSession(); var candidate = activeStudioCandidate();
+      var remaining = session.candidates.filter(function (item) { return item.status !== "archived" && item.candidateId !== candidate.candidateId; });
+      if (!candidate || !remaining.length) return;
+      if (!window.confirm("归档候选方案“" + candidate.label + "”？草稿仍保留在 session 中。")) return;
+      pushStudioUndo(); candidate.status = "archived"; candidate.updatedAt = new Date().toISOString();
+      session.activeCandidateId = remaining[0].candidateId; state.studioSelectedNodeId = remaining[0].nodes[0] ? remaining[0].nodes[0].nodeId : null;
+      state.studioCompareIds = state.studioCompareIds.filter(function (id) { return id !== candidate.candidateId; });
+      appendStudioOperation("candidate.archive", { candidateId: candidate.candidateId }, "active", "archived", true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    async function studioEnsureSaved() {
+      if (!studioBridgeOnline()) return false;
+      if (state.studioBridge.conflict) { showToast("请先解决保存冲突"); return false; }
+      var saved = await saveStudioSessionToBridge(false);
+      while (saved && state.studioBridge.lastSavedGeneration < state.studioGeneration) saved = await saveStudioSessionToBridge(false);
+      return saved;
+    }
+
+    async function runStudioFormalValidation() {
+      if (!await studioEnsureSaved()) return;
+      var requestBinding = studioRequestBinding();
+      state.studioBridge.sessionMutationBusy = true;
+      state.studioBridge.busy = "执行正式校验"; state.studioBridge.lastError = null; renderStudio();
+      try {
+        var artifact = await studioBridgeRequest("/api/v1/formal-validations", { method: "POST", body: { sessionId: state.studioSession.sessionId, candidateId: state.studioSession.activeCandidateId } });
+        artifact = artifact.artifact || artifact;
+        if (Number.isInteger(artifact.sessionRevision)) state.studioSession.sessionRevision = artifact.sessionRevision;
+        if (!studioRequestIsCurrent(requestBinding)) {
+          state.studioBridge.notice = "正式校验期间候选发生变化；旧结果已丢弃，请重新校验";
+        } else {
+          state.studioBridge.formalValidation = artifact;
+          showToast("正式校验已完成");
+        }
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); showToast("正式校验失败"); }
+      finally {
+        state.studioBridge.sessionMutationBusy = false; state.studioBridge.busy = null;
+        if (state.studioBridge.lastSavedGeneration < state.studioGeneration) scheduleStudioBridgeSave();
+        renderStudio();
+      }
+    }
+
+    async function runStudioReview() {
+      if (!await studioEnsureSaved()) return;
+      var requestBinding = studioRequestBinding();
+      state.studioBridge.busy = "启动 Codex 只读评审"; state.studioBridge.lastError = null; renderStudio();
+      try {
+        var job = await studioBridgeRequest("/api/v1/review-jobs", { method: "POST", body: { sessionId: state.studioSession.sessionId, candidateId: state.studioSession.activeCandidateId } });
+        job = job.job || job;
+        if (!studioRequestIsCurrent(requestBinding)) { state.studioBridge.busy = null; state.studioBridge.notice = "启动评审期间候选发生变化；本次任务结果将被忽略"; renderStudio(); return; }
+        state.studioBridge.reviewJobId = job.jobId; state.studioBridge.reviewRequest = requestBinding; state.studioBridge.review = null; state.studioBridge.reviewError = null;
+        pollStudioReviewJob(job.jobId, requestBinding);
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); state.studioBridge.busy = null; renderStudio(); }
+    }
+
+    async function pollStudioReviewJob(jobId, requestBinding) {
+      if (!jobId || state.studioBridge.reviewJobId !== jobId) return;
+      if (!studioRequestIsCurrent(requestBinding)) { state.studioBridge.reviewJobId = null; state.studioBridge.busy = null; state.studioBridge.notice = "候选已变化；旧 Codex 评审结果将被忽略"; renderStudio(); return; }
+      try {
+        var job = await studioBridgeRequest("/api/v1/jobs/" + encodeURIComponent(jobId));
+        job = job.job || job;
+        if (["queued", "pending", "running"].indexOf(job.status) >= 0) {
+          state.studioBridge.busy = "Codex 只读评审中"; renderStudio();
+          window.setTimeout(function () { pollStudioReviewJob(jobId, requestBinding); }, 1000); return;
+        }
+        if (!studioRequestIsCurrent(requestBinding)) { state.studioBridge.reviewJobId = null; state.studioBridge.notice = "候选已变化；旧 Codex 评审结果已丢弃"; return; }
+        state.studioBridge.busy = null;
+        if (job.status === "completed" || job.status === "succeeded" || job.result) {
+          state.studioBridge.review = { status: job.status, result: job.result || job }; state.studioBridge.reviewError = null;
+          state.studioBridge.reviewJobId = null; showToast("Codex 只读评审已完成");
+        } else {
+          state.studioBridge.reviewJobId = null; state.studioBridge.reviewError = job.error && (job.error.message || job.error) || "Codex 评审失败";
+        }
+      } catch (error) { state.studioBridge.busy = null; state.studioBridge.reviewJobId = null; state.studioBridge.reviewError = studioBridgeErrorMessage(error); }
+      renderStudio();
+    }
+
+    async function openStudioProposalDialog() {
+      if (!await studioEnsureSaved()) return;
+      state.studioBridge.proposalDraft = { summary: activeStudioCandidate().label + " 架构更新", reason: "基于 Architecture Studio 候选方案正式化" };
+      renderStudio();
+      var dialog = document.getElementById("studio-proposal-dialog");
+      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      else { state.studioBridge.proposalDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法生成 Proposal"; renderStudio(); }
+    }
+
+    async function submitStudioProposal() {
+      var summary = String((document.getElementById("studio-proposal-summary") || {}).value || "").trim();
+      var reason = String((document.getElementById("studio-proposal-reason") || {}).value || "").trim();
+      if (!summary || !reason) { showToast("请填写 Proposal 摘要与变更原因"); return; }
+      var requestBinding = studioRequestBinding();
+      state.studioBridge.sessionMutationBusy = true;
+      state.studioBridge.busy = "生成 Proposal"; renderStudio();
+      try {
+        var result = await studioBridgeRequest("/api/v1/proposals", { method: "POST", body: { sessionId: state.studioSession.sessionId, candidateId: state.studioSession.activeCandidateId, changeId: "CHANGE-STUDIO-" + String(Date.now()), summary: summary.trim(), reason: reason.trim(), changeLevel: "architecture", proposedBy: "architecture-studio" } });
+        result = result.proposal || result;
+        if (Number.isInteger(result.sessionRevision)) state.studioSession.sessionRevision = result.sessionRevision;
+        if (!studioRequestIsCurrent(requestBinding)) { state.studioBridge.notice = "Proposal 生成期间候选发生变化；旧 Proposal 已丢弃，请重新正式校验"; return; }
+        if (!/^[a-f0-9]{64}$/.test(String(result.proposalHash || ""))) throw new Error("Bridge 返回的 Proposal Hash 无效");
+        state.studioBridge.proposal = result; state.studioBridge.approval = null; state.studioBridge.proposalDraft = null;
+        showToast("正式 Proposal 已生成；请核对 Hash 后精确批准");
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
+      finally {
+        state.studioBridge.sessionMutationBusy = false; state.studioBridge.busy = null;
+        if (state.studioBridge.lastSavedGeneration < state.studioGeneration) scheduleStudioBridgeSave();
+        renderStudio();
+      }
+    }
+
+    function openStudioApprovalDialog() {
+      var dialog = document.getElementById("studio-approval-dialog");
+      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      else showToast("当前浏览器不支持原生 dialog，无法批准");
+    }
+
+    async function submitStudioApproval() {
+      var proposal = state.studioBridge.proposal; if (!proposal) return;
+      var approvedBy = String((document.getElementById("studio-approved-by") || {}).value || "").trim();
+      var confirmation = String((document.getElementById("studio-approval-confirmation") || {}).value || "");
+      var exact = "批准 Studio Proposal " + proposal.proposalHash;
+      if (!approvedBy) { showToast("请填写批准人"); return; }
+      if (confirmation !== exact) { showToast("确认短语不匹配，批准未记录"); return; }
+      state.studioBridge.busy = "记录精确批准";
+      try {
+        var approval = await studioBridgeRequest("/api/v1/approvals", { method: "POST", body: { proposalId: proposal.proposalId, approvedHash: proposal.proposalHash, approvedBy: approvedBy, confirmation: confirmation } });
+        approval = approval.approval || approval;
+        if (approval.proposalHash !== proposal.proposalHash) throw new Error("Approval Hash 与 Proposal 不一致");
+        state.studioBridge.approval = approval;
+        var dialog = document.getElementById("studio-approval-dialog"); if (dialog && dialog.open) dialog.close();
+        showToast("批准已按 Proposal Hash 记录");
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
+      finally { state.studioBridge.busy = null; renderStudio(); }
+    }
+
+    async function applyStudioProposal() {
+      var proposal = state.studioBridge.proposal; var approval = state.studioBridge.approval;
+      if (!proposal || !approval || approval.proposalHash !== proposal.proposalHash) return;
+      if (!window.confirm("Apply 将通过 Bridge 备份并更新正式 project-panorama-data。继续？")) return;
+      state.studioBridge.sessionMutationBusy = true; state.studioBridge.busy = "Apply Proposal"; renderStudio();
+      try {
+        var result = await studioBridgeRequest("/api/v1/apply", { method: "POST", body: { proposalId: proposal.proposalId, proposalHash: proposal.proposalHash, approvalId: approval.approvalId } });
+        result = result.apply || result;
+        state.studioBridge.applyResult = result;
+        state.studioBridge.notice = "正式 Panorama 已更新；Studio 已冻结。请重新载入页面读取新基线。";
+        showToast("Apply 成功，Studio 已冻结；请重新载入当前 Panorama");
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
+      finally { state.studioBridge.sessionMutationBusy = false; state.studioBridge.busy = null; renderStudio(); }
+    }
+
+    async function refreshStudioFacts() {
+      if (!studioBridgeOnline()) return;
+      state.studioBridge.busy = "刷新项目事实"; renderStudio();
+      try {
+        var result = await studioBridgeRequest("/api/v1/facts/refresh", { method: "POST", body: {} });
+        state.studioBridge.factsResult = result.refresh || result;
+        showToast("事实刷新已完成；如基线变化请重新创建/检查 session");
+      } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
+      finally { state.studioBridge.busy = null; renderStudio(); }
+    }
+
+    function reloadCurrentPanoramaFromBridge() {
+      if (!state.studioBridge.capability) { window.location.reload(); return; }
+      var clean = window.location.pathname + window.location.search + "#cap=" + encodeURIComponent(state.studioBridge.capability);
+      window.history.replaceState(null, document.title, clean);
+      window.location.reload();
+    }
+
+    function renderStudio() {
+      var session = ensureStudioSession();
+      var candidate = activeStudioCandidate();
+      if (!candidate) {
+        document.getElementById("system-content").innerHTML = "<div class='error-banner'>当前 Studio session 没有可用候选方案。</div>";
+        return;
+      }
+      var layers = arr(session.layers).slice().sort(function (a, b) { return a.order - b.order; });
+      var surfaceHeight = Math.max(620, layers.length * 122);
+      var bands = layers.map(function (layer, index) {
+        return "<div class='studio-layer-band' style='top:" + (index * 122) + "px;height:122px'><div class='studio-layer-label'><strong>" + e(layer.name) + "</strong><span class='mono'>" + e(layer.id) + "</span></div></div>";
+      }).join("");
+      var nodes = candidate.nodes.map(function (node) {
+        return "<button type='button' class='studio-node " + (node.isDraft ? "is-draft " : "") + (node.nodeId === state.studioSelectedNodeId ? "is-selected" : "") + "' data-studio-node-id='" + e(node.nodeId) + "' style='left:" + Number(node.x) + "px;top:" + Number(node.y) + "px'><div class='studio-node-title'>" + e(node.name) + "</div><div class='studio-node-meta'>" + e(node.entityRef ? node.entityRef.id : node.nodeId) + "</div><div class='studio-node-purpose'>" + e(node.purpose || "尚未填写用途") + "</div></button>";
+      }).join("");
+      var requirements = arr(data.requirements).slice(0, 8).map(function (requirement) {
+        return "<li><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></li>";
+      }).join("");
+      var selected = studioNode(state.studioSelectedNodeId);
+      var inspector = selected ? studioInspectorHtml(selected, layers) : "<div class='studio-empty-inspector'>选择一个模块以编辑草稿属性。</div>";
+      var errors = session.clientValidation.filter(function (check) { return check.level === "error"; }).length;
+      var warnings = session.clientValidation.filter(function (check) { return check.level === "warning"; }).length;
+      var bridge = state.studioBridge;
+      var online = studioBridgeOnline();
+      var formalCurrent = studioArtifactIsCurrent(bridge.formalValidation);
+      var formalValidation = bridge.formalValidation && (bridge.formalValidation.validation || (bridge.formalValidation.result && bridge.formalValidation.result.validation));
+      var formalPassed = formalCurrent && formalValidation && formalValidation.valid !== false && Number(((formalValidation.summary || {}).errors) || 0) === 0;
+      var proposalCurrent = studioArtifactIsCurrent(bridge.proposal);
+      var approvalCurrent = bridge.approval && bridge.proposal && bridge.approval.proposalHash === bridge.proposal.proposalHash;
+      var frozen = Boolean(bridge.applyResult);
+      var interactionLocked = frozen || bridge.sessionMutationBusy;
+      var conflictHtml = bridge.conflict ? "<div class='studio-conflict' role='alert'><span>保存冲突：" + e(bridge.conflict) + "。为避免覆盖他人更改，自动保存已停止。</span><button class='studio-action is-danger' type='button' data-studio-action='reload-server'>加载服务端版本</button></div>" : "";
+      document.getElementById("system-content").innerHTML =
+        "<section class='studio-shell " + (interactionLocked ? "is-frozen" : "") + "' aria-label='架构设计 Studio'><div class='studio-contextbar'><div class='studio-context-group'>" +
+        "<label class='studio-field' style='margin:0'><span>决策范围</span><select class='studio-context-control' data-studio-scope><option value='project'>项目架构</option><option value='agent_system'>Agent System</option><option value='agent'>单 Agent</option><option value='workflow'>Workflow</option><option value='deployment'>Runtime / Deployment</option></select></label>" +
+        "<label class='studio-field' style='margin:0'><span>候选方案</span><select class='studio-context-control' data-studio-candidate>" + session.candidates.filter(function (item) { return item.status !== "archived"; }).map(function (item) { return "<option value='" + e(item.candidateId) + "'>" + e(item.label) + "</option>"; }).join("") + "</select></label>" +
+        studioBridgeStatusHtml() + "</div><div class='studio-actions'>" +
+        "<button class='studio-action' type='button' data-studio-action='new-candidate'>新建方案</button><button class='studio-action' type='button' data-studio-action='clone-candidate'>克隆</button><button class='studio-action' type='button' data-studio-action='rename-candidate'>重命名</button><button class='studio-action' type='button' data-studio-action='archive-candidate' " + (session.candidates.filter(function (item) { return item.status !== "archived"; }).length > 1 ? "" : "disabled") + ">归档</button>" +
+        "<button class='studio-action' type='button' data-studio-action='undo' " + (state.studioUndoStack.length ? "" : "disabled") + ">撤销</button>" +
+        "<button class='studio-action' type='button' data-studio-action='redo' " + (state.studioRedoStack.length ? "" : "disabled") + ">重做</button>" +
+        "<button class='studio-action' type='button' data-studio-action='reset'>重置草稿</button>" +
+        "<button class='studio-action' type='button' data-studio-action='import'>导入 JSON</button><input id='studio-import-input' type='file' accept='application/json,.json' data-studio-import hidden>" +
+        "<button class='studio-action' type='button' data-studio-action='export'>导出 JSON</button>" + (online ? "<button class='studio-action' type='button' data-studio-action='save' " + (bridge.busy || bridge.conflict ? "disabled" : "") + ">保存</button>" : "") + "</div></div>" + conflictHtml +
+        studioCandidateBarHtml(session) + studioCompareHtml(session) + studioArtifactHtml() +
+        "<div class='studio-workspace'><aside class='studio-library'><div class='studio-panel-head'><strong>组件库</strong><span class='count'>草稿</span></div>" +
+        "<div class='studio-library-section'><h3>添加组件</h3><div class='studio-library-list'><button class='studio-library-btn' type='button' data-studio-add-node='agent'>＋ Agent</button><button class='studio-library-btn' type='button' data-studio-add-node='service'>＋ 服务</button><button class='studio-library-btn' type='button' data-studio-add-node='data'>＋ 数据存储</button></div></div>" +
+        "<div class='studio-library-section'><h3>需求基线</h3><ul class='studio-requirements'>" + requirements + "</ul></div></aside>" +
+        "<div class='studio-canvas-wrap'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动模块调整布局</span><span>布局操作不影响语义</span></div>" +
+        "<div class='studio-canvas' id='studio-canvas'><div class='studio-canvas-surface' id='studio-canvas-surface' style='height:" + surfaceHeight + "px'>" + bands + "<svg class='studio-edge-svg' id='studio-edge-svg' aria-label='草稿数据流'></svg>" + nodes + "</div></div></div>" +
+        "<aside class='studio-inspector'><div class='studio-panel-head'><strong>属性检查器</strong><span class='count'>" + e(selected ? selected.name : "未选择") + "</span></div>" + inspector + "</aside></div>" +
+        "<footer class='studio-footer'><div class='studio-footer-status'><span class='studio-warning'>Studio 只编辑隔离 session；正式 project-panorama-data 仅由 Bridge Apply 更新</span><span>基础检查：" + errors + " 错误 / " + warnings + " 提示</span><span>语义操作 " + session.semanticOperations.length + " · 布局操作 " + session.layoutOperations.length + "</span><span class='studio-storage-note'>" + (state.studioStorage === "bridge" ? "服务端 session 修订 " + e(session.sessionRevision || 0) : (state.studioStorage === "local" ? "已保存在本浏览器；用 studio_bridge.py 打开即可启用完整闭环" : "仅保存在内存，请导出备份")) + "</span></div><div class='studio-actions'>" +
+        (frozen ? "<button class='studio-action is-primary' type='button' data-studio-action='reload-panorama'>重新载入当前 Panorama</button>" : "") +
+        (online && studioBridgeFeature("factsRefresh") ? "<button class='studio-action' type='button' data-studio-action='facts-refresh' " + (bridge.busy || frozen ? "disabled" : "") + ">刷新事实</button>" : "") +
+        "<button class='studio-action' type='button' data-studio-action='formal-validate' " + (!online || !studioBridgeFeature("formalValidation") || bridge.busy || errors || frozen ? "disabled" : "") + " title='运行 Schema、跨实体引用和风险规则校验'>正式校验</button>" +
+        "<button class='studio-action' type='button' data-studio-action='review' " + (!online || !studioBridgeFeature("review") || bridge.busy || !formalPassed ? "disabled" : "") + " title='在只读 sandbox 中请求 Codex 评审'>Codex 只读评审</button>" +
+        "<button class='studio-action is-primary' type='button' data-studio-action='proposal' " + (!online || !studioBridgeFeature("proposals") || bridge.busy || !formalPassed ? "disabled" : "") + ">生成正式提案</button>" +
+        "<button class='studio-action' type='button' data-studio-action='approve' " + (!online || !studioBridgeFeature("approvals") || bridge.busy || !proposalCurrent || bridge.approval ? "disabled" : "") + ">精确批准</button>" +
+        "<button class='studio-action is-primary' type='button' data-studio-action='apply' " + (!online || !studioBridgeFeature("apply") || bridge.busy || !proposalCurrent || !approvalCurrent || frozen ? "disabled" : "") + ">Apply</button></div></footer>" + studioProposalDialogHtml() + studioApprovalDialogHtml() + "</section>";
+      var scope = document.querySelector("[data-studio-scope]");
+      if (scope) scope.value = session.scope.level;
+      var candidateSelect = document.querySelector("[data-studio-candidate]");
+      if (candidateSelect) candidateSelect.value = session.activeCandidateId;
+      window.requestAnimationFrame(drawStudioEdges);
+    }
+
+    function studioInspectorHtml(node, layers) {
+      var candidate = activeStudioCandidate();
+      var otherNodes = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId; });
+      var outgoing = candidate.edges.filter(function (edge) { return edge.fromNodeId === node.nodeId; });
+      return "<div class='studio-inspector-section'><div class='studio-field'><label for='studio-node-name'>模块名称</label><input class='studio-input' id='studio-node-name' data-studio-field='name' value='" + e(node.name) + "'></div>" +
+        "<div class='studio-field'><label for='studio-node-purpose'>用途说明</label><textarea class='studio-textarea' id='studio-node-purpose' data-studio-field='purpose'>" + e(node.purpose) + "</textarea></div>" +
+        "<div class='studio-field'><label for='studio-node-layer'>架构层</label><select class='studio-select' id='studio-node-layer' data-studio-field='layerId'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === node.layerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-state'>状态所有权</label><textarea class='studio-textarea' id='studio-node-state' data-studio-field='stateOwnership'>" + e(node.stateOwnership) + "</textarea></div>" +
+        "<div class='studio-field'><label for='studio-node-responsibilities'>职责（每行一项）</label><textarea class='studio-textarea' id='studio-node-responsibilities' data-studio-field='responsibilities'>" + e(arr(node.responsibilities).join("\n")) + "</textarea></div>" +
+        (node.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-action='delete-node'>删除草稿模块</button>" : "") + "</div>" +
+        "<div class='studio-inspector-section'><h3>数据流</h3>" + (otherNodes.length ? "<div class='studio-field'><label for='studio-edge-target'>新增下游连接</label><select class='studio-select' id='studio-edge-target' data-studio-edge-target>" + otherNodes.map(function (item) { return "<option value='" + e(item.nodeId) + "'>" + e(item.name) + "</option>"; }).join("") + "</select></div><button class='studio-action' type='button' data-studio-action='add-edge'>＋ 添加数据流</button>" : "<p class='cell-sub'>没有可连接的其他模块。</p>") +
+        (outgoing.length ? "<div class='studio-library-list' style='margin-top:10px'>" + outgoing.map(function (edge) { var target = studioNode(edge.toNodeId); return "<div class='copy-row'><span class='cell-sub' style='flex:1'>→ " + e(target ? target.name : edge.toNodeId) + " · " + e(edge.label || "data") + "</span>" + (edge.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-delete-edge='" + e(edge.edgeId) + "'>移除</button>" : "") + "</div>"; }).join("") + "</div>" : "") + "</div>" +
+        "<div class='studio-inspector-section'><h3>浏览器基础检查</h3><ul class='studio-check-list'>" + studioCheckHtml() + "</ul></div>" +
+        "<div class='studio-inspector-section'><h3>正式化边界</h3><p class='cell-sub'>此处只编辑隔离草稿。完整 Schema、跨引用、风险规则、Codex 复审与 Proposal Hash 需要连接本地 Bridge 后执行。</p></div>";
+    }
+
+    function drawStudioEdges() {
+      var surface = document.getElementById("studio-canvas-surface");
+      var svg = document.getElementById("studio-edge-svg");
+      var candidate = activeStudioCandidate();
+      if (!surface || !svg || !candidate) return;
+      var width = surface.scrollWidth;
+      var height = surface.scrollHeight;
+      svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+      svg.setAttribute("height", height);
+      var defs = "<defs><marker id='studio-arrow' markerWidth='8' markerHeight='8' refX='7' refY='3.5' orient='auto'><path d='M0,0 L7,3.5 L0,7 z' fill='#67738f'/></marker><marker id='studio-arrow-draft' markerWidth='8' markerHeight='8' refX='7' refY='3.5' orient='auto'><path d='M0,0 L7,3.5 L0,7 z' fill='#2448d8'/></marker></defs>";
+      var paths = candidate.edges.map(function (edge) {
+        var from = studioNode(edge.fromNodeId);
+        var to = studioNode(edge.toNodeId);
+        if (!from || !to) return "";
+        var x1 = Number(from.x) + 88;
+        var y1 = Number(from.y) + 78;
+        var x2 = Number(to.x) + 88;
+        var y2 = Number(to.y);
+        var mid = y1 + (y2 - y1) * .5;
+        var path = "M " + x1 + " " + y1 + " C " + x1 + " " + mid + ", " + x2 + " " + mid + ", " + x2 + " " + y2;
+        return "<path class='studio-edge " + (edge.isDraft ? "is-draft" : "") + "' d='" + path + "' marker-end='url(#" + (edge.isDraft ? "studio-arrow-draft" : "studio-arrow") + ")'></path>";
+      }).join("");
+      svg.innerHTML = defs + paths;
+    }
+
+    function addStudioNode(kind) {
+      var candidate = activeStudioCandidate();
+      if (!candidate) return;
+      pushStudioUndo();
+      var layers = state.studioSession.layers;
+      var layerId = kind === "data" ? layers[layers.length - 1].id : (kind === "agent" && layers.length > 2 ? layers[2].id : layers[Math.min(1, layers.length - 1)].id);
+      var layerIndex = layers.findIndex(function (layer) { return layer.id === layerId; });
+      var layerSlot = candidate.nodes.filter(function (item) { return item.layerId === layerId; }).length;
+      var nodeId = "DRAFT-NODE-" + String(Date.now());
+      var node = { nodeId: nodeId, entityRef: null, name: kind === "agent" ? "新 Agent" : (kind === "data" ? "新数据存储" : "新服务"), purpose: "", responsibilities: [], stateOwnership: "", layerId: layerId, category: kind, isDraft: true, x: 145 + (layerSlot % 3) * 205, y: 20 + Math.max(0, layerIndex) * 122 + Math.floor(layerSlot / 3) * 86 };
+      candidate.nodes.push(node);
+      state.studioSelectedNodeId = nodeId;
+      appendStudioOperation("node.add", { nodeId: nodeId }, null, cloneForStudio(node), true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function updateStudioField(field, value, capturedBefore) {
+      var node = studioNode(state.studioSelectedNodeId);
+      if (!node) return;
+      var before = capturedBefore === undefined ? cloneForStudio(node[field]) : cloneForStudio(capturedBefore);
+      var normalized = field === "responsibilities" ? String(value).split(/\r?\n/).map(function (item) { return item.trim(); }).filter(Boolean) : String(value);
+      if (JSON.stringify(before) === JSON.stringify(normalized)) return;
+      node[field] = before;
+      pushStudioUndo();
+      node[field] = normalized;
+      if (field === "layerId") {
+        var index = state.studioSession.layers.findIndex(function (layer) { return layer.id === normalized; });
+        var candidate = activeStudioCandidate();
+        var slot = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId && item.layerId === normalized; }).length;
+        node.x = 145 + (slot % 3) * 205;
+        node.y = 20 + Math.max(0, index) * 122 + Math.floor(slot / 3) * 86;
+      }
+      appendStudioOperation(field === "layerId" ? "node.change_layer" : "node.update", { nodeId: node.nodeId, field: field }, before, cloneForStudio(normalized), true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function deleteStudioNode() {
+      var candidate = activeStudioCandidate();
+      var node = studioNode(state.studioSelectedNodeId);
+      if (!candidate || !node || !node.isDraft) return;
+      pushStudioUndo();
+      candidate.nodes = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId; });
+      candidate.edges = candidate.edges.filter(function (edge) { return edge.fromNodeId !== node.nodeId && edge.toNodeId !== node.nodeId; });
+      appendStudioOperation("node.remove", { nodeId: node.nodeId }, cloneForStudio(node), null, true);
+      state.studioSelectedNodeId = candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function addStudioEdge() {
+      var candidate = activeStudioCandidate();
+      var from = studioNode(state.studioSelectedNodeId);
+      var targetSelect = document.querySelector("[data-studio-edge-target]");
+      var to = targetSelect ? studioNode(targetSelect.value) : null;
+      if (!candidate || !from || !to) return;
+      if (candidate.edges.some(function (edge) { return edge.fromNodeId === from.nodeId && edge.toNodeId === to.nodeId; })) {
+        showToast("该数据流已存在"); return;
+      }
+      pushStudioUndo();
+      var edge = { edgeId: "DRAFT-EDGE-" + String(Date.now()), entityRef: null, fromNodeId: from.nodeId, toNodeId: to.nodeId, label: "data", dataSummary: "待补充数据契约", isDraft: true };
+      candidate.edges.push(edge);
+      appendStudioOperation("edge.add", { edgeId: edge.edgeId }, null, cloneForStudio(edge), true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function deleteStudioEdge(edgeId) {
+      var candidate = activeStudioCandidate();
+      if (!candidate) return;
+      var edge = candidate.edges.find(function (item) { return item.edgeId === edgeId && item.isDraft; });
+      if (!edge) return;
+      pushStudioUndo();
+      candidate.edges = candidate.edges.filter(function (item) { return item.edgeId !== edgeId; });
+      appendStudioOperation("edge.remove", { edgeId: edgeId }, cloneForStudio(edge), null, true);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function resetStudioSession() {
+      if (state.studioSession && state.studioSession.mode === "bridge" && studioBridgeOnline()) {
+        showToast("Bridge session 不支持前端重置；请新建候选方案或重启 Bridge 会话");
+        return;
+      }
+      state.studioSession = createStudioSession();
+      state.studioUndoStack = [];
+      state.studioRedoStack = [];
+      state.studioSelectedNodeId = state.studioSession.candidates[0].nodes[0] ? state.studioSession.candidates[0].nodes[0].nodeId : null;
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function exportStudioSession() {
+      var blob = new Blob([JSON.stringify(state.studioSession, null, 2)], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = data.project.id + "-architecture-session.json";
+      document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url);
+      showToast("已导出离线架构草稿");
+    }
+
+    function importStudioSession(file) {
+      if (!file || file.size > 1024 * 1024) { showToast("草稿文件不能超过 1 MB"); return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var imported = JSON.parse(String(reader.result || ""));
+          if (!imported || imported.format !== "panorama-architecture-session.v0.1") throw new Error("格式不受支持");
+          if (!imported.projectBinding || imported.projectBinding.projectId !== data.project.id) throw new Error("草稿不属于当前项目");
+          if (!studioSessionShapeValid(imported)) throw new Error("草稿结构无效或超过原型限制");
+          imported.status = imported.projectBinding.baseRevision === data.meta.revision && (imported.projectBinding.gitHead || null) === ((data.sourceBinding && data.sourceBinding.gitHead) || null) ? "dirty" : "stale";
+          state.studioUndoStack.push(studioSnapshot());
+          state.studioRedoStack = [];
+          state.studioSession = imported;
+          state.studioSession.mode = "offline";
+          state.studioSession.sessionRevision = 0;
+          var candidate = activeStudioCandidate();
+          state.studioSelectedNodeId = candidate && candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
+          validateStudioSession(); persistStudioSession(); renderStudio(); showToast("已导入离线架构草稿");
+        } catch (error) {
+          showToast("导入失败：" + String(error.message || error));
+        }
+      };
+      reader.onerror = function () { showToast("无法读取草稿文件"); };
+      reader.readAsText(file, "utf-8");
     }
 
     function renderLogical() {
@@ -5362,8 +6535,38 @@
     document.addEventListener("click", function (event) {
       var target = event.target.closest("button, tr[data-resource-id], tr[data-open-module], [data-open-entity], [data-connection-id]");
       if (!target) return;
+      if ((state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) && target.dataset.studioAction && ["reload-panorama", "export"].indexOf(target.dataset.studioAction) < 0) { showToast(state.studioBridge.applyResult ? "Apply 后 Studio 已冻结，请重新载入当前 Panorama" : "正式事务执行中，请等待完成"); return; }
       if (target.dataset.view) { state.view = target.dataset.view; updateVisibleView(); if (state.view === "system") renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
-      if (target.dataset.systemView) { state.systemView = target.dataset.systemView; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
+      if (target.dataset.systemView) { state.systemView = target.dataset.systemView; if (state.systemView !== "logical") state.studioMode = "view"; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
+      if (target.dataset.studioMode) { state.studioMode = target.dataset.studioMode; if (state.studioMode === "studio") { state.systemView = "logical"; if (state.studioBridge.capability && state.studioBridge.status === "offline") connectStudioBridge(); } renderSystem(); return; }
+      if (target.dataset.studioNodeId) { state.studioSelectedNodeId = target.dataset.studioNodeId; renderStudio(); return; }
+      if (target.dataset.studioSelectCandidate) { state.studioSession.activeCandidateId = target.dataset.studioSelectCandidate; var selectedCandidate = activeStudioCandidate(); state.studioSelectedNodeId = selectedCandidate && selectedCandidate.nodes[0] ? selectedCandidate.nodes[0].nodeId : null; validateStudioSession(); persistStudioSession(); renderStudio(); return; }
+      if (target.dataset.studioAddNode) { addStudioNode(target.dataset.studioAddNode); return; }
+      if (target.dataset.studioAction === "undo" && state.studioUndoStack.length) { state.studioRedoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioUndoStack.pop()); return; }
+      if (target.dataset.studioAction === "redo" && state.studioRedoStack.length) { state.studioUndoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioRedoStack.pop()); return; }
+      if (target.dataset.studioAction === "reset") { if (window.confirm(state.studioSession && state.studioSession.mode === "bridge" && studioBridgeOnline() ? "Bridge session 不能在前端重置。仍要继续检查？" : "重置当前离线草稿？正式全景不会受到影响。")) resetStudioSession(); return; }
+      if (target.dataset.studioAction === "import") { var importInput = document.getElementById("studio-import-input"); if (importInput) importInput.click(); return; }
+      if (target.dataset.studioAction === "export") { exportStudioSession(); return; }
+      if (target.dataset.studioAction === "add-edge") { addStudioEdge(); return; }
+      if (target.dataset.studioDeleteEdge) { deleteStudioEdge(target.dataset.studioDeleteEdge); return; }
+      if (target.dataset.studioAction === "delete-node") { deleteStudioNode(); return; }
+      if (target.dataset.studioAction === "new-candidate") { createStudioCandidate(false); return; }
+      if (target.dataset.studioAction === "clone-candidate") { createStudioCandidate(true); return; }
+      if (target.dataset.studioAction === "rename-candidate") { renameStudioCandidate(); return; }
+      if (target.dataset.studioAction === "archive-candidate") { archiveStudioCandidate(); return; }
+      if (target.dataset.studioAction === "compare") { state.studioCompareOpen = !state.studioCompareOpen; renderStudio(); return; }
+      if (target.dataset.studioAction === "save") { saveStudioSessionToBridge(true); return; }
+      if (target.dataset.studioAction === "reload-server") { reloadStudioSessionFromBridge(); return; }
+      if (target.dataset.studioAction === "formal-validate") { runStudioFormalValidation(); return; }
+      if (target.dataset.studioAction === "review") { runStudioReview(); return; }
+      if (target.dataset.studioAction === "proposal") { openStudioProposalDialog(); return; }
+      if (target.dataset.studioAction === "submit-proposal") { submitStudioProposal(); return; }
+      if (target.dataset.studioAction === "cancel-proposal") { state.studioBridge.proposalDraft = null; return; }
+      if (target.dataset.studioAction === "approve") { openStudioApprovalDialog(); return; }
+      if (target.dataset.studioAction === "submit-approval") { submitStudioApproval(); return; }
+      if (target.dataset.studioAction === "apply") { applyStudioProposal(); return; }
+      if (target.dataset.studioAction === "facts-refresh") { refreshStudioFacts(); return; }
+      if (target.dataset.studioAction === "reload-panorama") { reloadCurrentPanoramaFromBridge(); return; }
       if (target.dataset.architectureMode) { state.architectureMode = target.dataset.architectureMode; renderLogical(); return; }
       if (target.dataset.moduleId) { renderDrawer(target.dataset.moduleId); return; }
       if (target.dataset.openModule) { renderDrawer(target.dataset.openModule); return; }
@@ -5394,6 +6597,26 @@
     document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
     document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeDrawer(); });
     document.addEventListener("change", function (event) {
+      if ((state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) && event.target.closest(".studio-shell")) { showToast(state.studioBridge.applyResult ? "Apply 后 Studio 已冻结，请重新载入当前 Panorama" : "正式事务执行中，请等待完成"); return; }
+      if (event.target.dataset.studioImport !== undefined) { importStudioSession(event.target.files && event.target.files[0]); return; }
+      if (event.target.dataset.studioCompareId !== undefined) {
+        var compareId = event.target.dataset.studioCompareId;
+        if (event.target.checked) {
+          if (state.studioCompareIds.length >= 3) { event.target.checked = false; showToast("最多同时比较 3 个候选方案"); return; }
+          if (state.studioCompareIds.indexOf(compareId) < 0) state.studioCompareIds.push(compareId);
+        } else state.studioCompareIds = state.studioCompareIds.filter(function (id) { return id !== compareId; });
+        if (state.studioCompareIds.length < 2) state.studioCompareOpen = false;
+        renderStudio(); return;
+      }
+      if (event.target.dataset.studioField) {
+        var selectedStudioNode = studioNode(state.studioSelectedNodeId);
+        var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : (selectedStudioNode ? cloneForStudio(selectedStudioNode[event.target.dataset.studioField]) : null);
+        updateStudioField(event.target.dataset.studioField, event.target.value, beforeStudioField);
+        state.studioFieldBaseline = null;
+        return;
+      }
+      if (event.target.dataset.studioScope !== undefined) { pushStudioUndo(); var beforeScope = state.studioSession.scope.level; state.studioSession.scope.level = event.target.value; appendStudioOperation("session.change_scope", { sessionId: state.studioSession.sessionId }, beforeScope, event.target.value, true); persistStudioSession(); renderStudio(); return; }
+      if (event.target.dataset.studioCandidate !== undefined) { state.studioSession.activeCandidateId = event.target.value; var candidate = activeStudioCandidate(); state.studioSelectedNodeId = candidate && candidate.nodes[0] ? candidate.nodes[0].nodeId : null; validateStudioSession(); persistStudioSession(); renderStudio(); return; }
       var filter = event.target.dataset.filter;
       if (!filter) return;
       if (filter === "layer-filter") state.layerFilter = event.target.value;
@@ -5416,10 +6639,75 @@
         renderLogical.searchTimer = window.setTimeout(renderLogical, 100);
       }
     });
+    document.addEventListener("focusin", function (event) {
+      if (!event.target.dataset.studioField) return;
+      var node = studioNode(state.studioSelectedNodeId);
+      if (!node) return;
+      state.studioFieldBaseline = { nodeId: node.nodeId, field: event.target.dataset.studioField, value: cloneForStudio(node[event.target.dataset.studioField]) };
+    });
+    document.addEventListener("focusout", function (event) {
+      if (state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) return;
+      if (!event.target.dataset.studioField) return;
+      var selectedStudioNode = studioNode(state.studioSelectedNodeId);
+      var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : (selectedStudioNode ? cloneForStudio(selectedStudioNode[event.target.dataset.studioField]) : null);
+      updateStudioField(event.target.dataset.studioField, event.target.value, beforeStudioField);
+      state.studioFieldBaseline = null;
+    });
+    var studioDrag = null;
+    document.addEventListener("pointerdown", function (event) {
+      if (state.studioMode !== "studio" || state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy || event.button !== 0) return;
+      var target = event.target.closest("[data-studio-node-id]");
+      if (!target || event.target.closest("input, textarea, select")) return;
+      var node = studioNode(target.dataset.studioNodeId);
+      var surface = document.getElementById("studio-canvas-surface");
+      if (!node || !surface) return;
+      state.studioSelectedNodeId = node.nodeId;
+      studioDrag = { node: node, element: target, surface: surface, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originalX: Number(node.x), originalY: Number(node.y), moved: false };
+      target.setPointerCapture(event.pointerId);
+      target.classList.add("is-dragging", "is-selected");
+      event.preventDefault();
+    });
+    document.addEventListener("pointermove", function (event) {
+      if (!studioDrag || event.pointerId !== studioDrag.pointerId) return;
+      var deltaX = event.clientX - studioDrag.startX;
+      var deltaY = event.clientY - studioDrag.startY;
+      if (Math.abs(deltaX) + Math.abs(deltaY) > 3) studioDrag.moved = true;
+      var maxX = Math.max(130, studioDrag.surface.clientWidth - 190);
+      var maxY = Math.max(30, studioDrag.surface.clientHeight - 92);
+      studioDrag.node.x = Math.max(125, Math.min(maxX, studioDrag.originalX + deltaX));
+      studioDrag.node.y = Math.max(8, Math.min(maxY, studioDrag.originalY + deltaY));
+      studioDrag.element.style.left = studioDrag.node.x + "px";
+      studioDrag.element.style.top = studioDrag.node.y + "px";
+      drawStudioEdges();
+    });
+    document.addEventListener("pointerup", function (event) {
+      if (!studioDrag || event.pointerId !== studioDrag.pointerId) return;
+      studioDrag.element.classList.remove("is-dragging");
+      if (studioDrag.moved) {
+        var before = { x: studioDrag.originalX, y: studioDrag.originalY };
+        var after = { x: Math.round(studioDrag.node.x), y: Math.round(studioDrag.node.y) };
+        studioDrag.node.x = after.x; studioDrag.node.y = after.y;
+        state.studioUndoStack.push({ session: cloneForStudio(state.studioSession), selected: state.studioSelectedNodeId });
+        var lastSnapshot = state.studioUndoStack[state.studioUndoStack.length - 1];
+        var snapCandidate = lastSnapshot.session.candidates.find(function (item) { return item.candidateId === lastSnapshot.session.activeCandidateId; }) || lastSnapshot.session.candidates[0];
+        var snapNode = snapCandidate && snapCandidate.nodes.find(function (item) { return item.nodeId === studioDrag.node.nodeId; });
+        if (snapNode) { snapNode.x = before.x; snapNode.y = before.y; }
+        state.studioRedoStack = [];
+        appendStudioOperation("layout.move", { nodeId: studioDrag.node.nodeId }, before, after, false);
+        persistStudioSession();
+      }
+      studioDrag = null;
+      renderStudio();
+    });
     window.addEventListener("resize", function () {
       if (state.view === "system" && state.systemView === "logical") {
-        window.clearTimeout(drawConnections.resizeTimer);
-        drawConnections.resizeTimer = window.setTimeout(drawConnections, 100);
+        if (state.studioMode === "studio") {
+          window.clearTimeout(drawStudioEdges.resizeTimer);
+          drawStudioEdges.resizeTimer = window.setTimeout(drawStudioEdges, 100);
+        } else {
+          window.clearTimeout(drawConnections.resizeTimer);
+          drawConnections.resizeTimer = window.setTimeout(drawConnections, 100);
+        }
       }
     });
   }());
