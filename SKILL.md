@@ -283,6 +283,8 @@ python scripts/studio_bridge.py path/to/project-panorama.html `
 
 Studio Session 保存在 `.panorama-work/studio/`，正式 `project-panorama-data` 在画布编辑期间保持不变。支持多个候选与最多三个方案比较；浏览器 `CLIENT_*` 检查不是 Formal Finding。语义操作与布局操作必须分开，只有语义变化使正式校验、Agent Review、Proposal 与 Approval stale。只把 Bridge 返回的完整 `semanticHash / layoutHash` 称为权威 Hash；离线页面固定显示 `not_computed_by_bridge`。候选 Semantic Diff 中正式实体只按 `entityRef.type + entityRef.id` 对齐，草稿只按 session-local ID 对齐，不得用显示名称猜测同一实体，也不得把坐标、缩放或操作时间算入语义差异。Data/Git/Source/CAS/候选变化等 stale 原因必须逐项保留，不压缩为模糊标签。
 
+保持 Studio 主流程仅用键盘可完成：候选 Tab 实现方向键和 Home/End；节点用 `Alt + 方向键` 调整布局并只记录 Layout Operation；为每条 SVG 连线提供可聚焦文本等价项；Drawer/Dialog 打开后移动焦点，Tab 闭环，Esc 关闭并把焦点返回触发控件。840px 以下使用组件、画布、属性/检查分段面板。保持正文至少 13px、辅助文字至少 12px、主要触控目标至少 44×44 CSS px；未实现完整 Tree 键盘模型前不要使用 `tree/treeitem`。只报告 WCAG 相关实现证据，不宣称完整 WCAG 认证。
+
 正式化顺序固定为：Session CAS Save → Formal Validator → 可选只读 Agent Review → Proposal Freeze → 显示完整 64 位 Hash → 用户精确确认 `批准 Studio Proposal <HASH>` → 独立 write-once Approval → Apply。Agent 只能输出 advisory Risk Candidate，不能批准、Apply 或制造验证/部署事实。Bridge 必须以有界 Source Content Digest 补强元数据 Snapshot，并将完整覆盖状态绑定到 Session/Proposal；它在本机读取纳入范围文件字节只用于路径、大小与内容 SHA-256，源码正文不得写入制品、返回浏览器或进入 Agent bundle。超过 20,000 文件或 128 MiB、遇到不安全链接、覆盖不完整、Data/Git/Source/内容漂移或保存冲突时保留草稿并停止，不得自动 rebase、覆盖或重批。
 
 Codex Review 是可选 advisory：未配置、网络/认证失败或结构化输出不合同时必须在页面保留可见错误，不得伪装完成。它不替代 Formal Validator，也不自动阻断用户在正式校验通过后生成 Proposal。只有 Proposal Hash 的精确人工确认可以形成 Approval。

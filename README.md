@@ -4,7 +4,7 @@
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.4 P0A / P0B 能力
+## V0.4 P0A / P0B / P0C 能力
 
 - 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
   Bridge 模式只访问同源 `127.0.0.1` API；
@@ -34,6 +34,9 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - Studio 持续显示 Bridge 权威 `semanticHash / layoutHash`、Semantic/Layout 双轨 Session
   Operations、字段级候选 Semantic Diff，以及可同时保留的具体 stale 原因。离线模式固定显示
   `not_computed_by_bridge`，不把浏览器计算冒充权威 Hash。
+- Studio 候选使用完整 Tab 键盘模型；画布节点支持 `Alt + 方向键` 布局移动，每条 SVG 数据流同时
+  提供可聚焦文本列表；Drawer/Dialog 具备焦点进入、闭环、Esc 关闭与触发控件返回。840px 以下使用
+  组件 / 画布 / 属性检查分段面板。本阶段提供 WCAG 相关实现与键盘测试证据，不宣称完整 WCAG 认证。
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
@@ -410,6 +413,10 @@ Studio 支持：
 - 新建、克隆、重命名、归档和最多三个候选的字段级 Semantic Diff；正式实体按
   `entityRef.type + entityRef.id` 对齐，草稿按 session-local ID 对齐，坐标与操作时间排除；
 - 同时显示 semantic edit、候选切换、Data/Git/Source 漂移、CAS Conflict、覆盖不完整等 stale 原因；
+- 候选 Tab 支持左右方向键与 Home/End；节点支持 `Alt + 方向键`（10px）和
+  `Shift + Alt + 方向键`（40px）移动，且只追加 Layout Operation；
+- SVG 连线同时提供可聚焦的数据流文本列表；Drawer/Dialog 关闭后焦点返回触发控件；移动端可在
+  组件、画布、属性 / 检查三块之间切换；
 - Session Revision 冲突保护、正式 Schema/跨引用/风险规则校验；
 - 有界源码内容摘要与 Git/Source Binding 漂移门禁；覆盖不完整时保留草稿但阻止正式化；
 - 可选 Codex advisory review，以及独立 Proposal、write-once Approval 与原子 Apply。

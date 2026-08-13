@@ -252,15 +252,17 @@
     .is-deprecating .module-transition-note { color: var(--critical); }
 
     .studio-shell { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; min-height: 690px; background: #fff; }
+    .studio-shell .cell-sub { font-size: 12px; }
+    .studio-shell .count { font-size: 12px; }
     .studio-contextbar {
       min-height: 55px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
       padding: 9px 12px; border-bottom: 1px solid var(--rule); background: var(--band); flex-wrap: wrap;
     }
     .studio-context-group, .studio-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-    .studio-context-control { min-height: 34px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 9px; min-width: 140px; }
+    .studio-context-control { min-height: 44px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 9px; min-width: 140px; font-size: 13px; }
     .studio-action {
-      min-height: 34px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 11px;
-      color: var(--ink); font-size: 12px;
+      min-height: 44px; border: 1px solid var(--rule-strong); background: #fff; border-radius: 5px; padding: 0 12px;
+      color: var(--ink); font-size: 13px;
     }
     .studio-action:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
     .studio-action:disabled { cursor: not-allowed; color: var(--faint); background: var(--band-strong); opacity: .72; }
@@ -268,7 +270,7 @@
     .studio-action.is-danger { color: var(--critical); }
     .studio-status {
       display: inline-flex; align-items: center; gap: 7px; color: #6c4810; border: 1px solid #e8c790;
-      background: #fff8eb; padding: 6px 9px; border-radius: 5px; font-size: 11px; font-weight: 720;
+      background: #fff8eb; padding: 8px 10px; border-radius: 5px; font-size: 12px; font-weight: 720;
     }
     .studio-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); }
     .studio-status.is-online { color: #245934; border-color: #a9d0b5; background: #f2fbf5; }
@@ -277,63 +279,70 @@
     .studio-status.is-error::before, .studio-status.is-conflict::before { background: var(--critical); }
     .studio-status.is-busy::before { background: var(--primary); animation: studio-pulse 1s ease-in-out infinite; }
     @keyframes studio-pulse { 50% { opacity: .28; } }
-    .studio-candidatebar { padding: 9px 13px; border-bottom: 1px solid var(--rule); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: #fff; }
-    .studio-candidate-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 31px; padding: 0 8px; border: 1px solid var(--rule); border-radius: 4px; color: var(--muted); font-size: 11px; }
+    .studio-candidatebar { padding: 9px 13px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; background: #fff; }
+    .studio-candidate-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .studio-candidate-tab { min-height: 44px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 0 11px; color: var(--muted); font-size: 13px; }
+    .studio-candidate-tab[aria-selected="true"] { border-color: var(--primary); background: var(--primary-tint); color: var(--primary); box-shadow: inset 0 -2px 0 var(--primary); }
+    .studio-candidate-compare { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .studio-candidate-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 4px; color: var(--muted); font-size: 12px; }
     .studio-candidate-chip.is-active { border-color: var(--primary); background: var(--primary-tint); color: var(--primary); }
     .studio-candidate-chip input { accent-color: var(--primary); }
     .studio-compare { padding: 12px 13px; border-bottom: 1px solid var(--rule); background: var(--band); }
     .studio-compare-grid { display: grid; grid-template-columns: repeat(var(--compare-count, 2), minmax(0, 1fr)); gap: 8px; }
     .studio-compare-card { background: #fff; border: 1px solid var(--rule); border-radius: 5px; padding: 10px; min-width: 0; }
     .studio-compare-card h3 { font-size: 12px; margin-bottom: 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .studio-compare-card p { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .studio-compare-card p { color: var(--muted); font-size: 12px; margin-top: 4px; }
     .studio-diff { margin-top: 10px; border-top: 1px solid var(--rule); padding-top: 10px; }
     .studio-diff-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-    .studio-diff-head strong { font-size: 11px; }
-    .studio-diff-summary { display: flex; gap: 7px; flex-wrap: wrap; color: var(--muted); font-size: 10px; }
+    .studio-diff-head strong { font-size: 12px; }
+    .studio-diff-summary { display: flex; gap: 7px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
     .studio-diff-group { border: 1px solid var(--rule); border-radius: 4px; background: #fff; margin-top: 6px; }
-    .studio-diff-group summary { min-height: 36px; padding: 8px; cursor: pointer; color: var(--ink); font-size: 11px; font-weight: 720; }
+    .studio-diff-group summary { min-height: 44px; padding: 10px; cursor: pointer; color: var(--ink); font-size: 12px; font-weight: 720; }
     .studio-diff-list { display: grid; gap: 7px; padding: 0 8px 8px; }
-    .studio-diff-item { padding: 7px; background: var(--band); border-radius: 3px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+    .studio-diff-item { padding: 8px; background: var(--band); border-radius: 3px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
     .studio-diff-item strong { display: block; color: var(--ink); margin-bottom: 3px; }
     .studio-hash-strip { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: #fff; }
     .studio-hash-card { min-width: 0; border: 1px solid var(--rule); border-radius: 4px; padding: 8px; }
     .studio-hash-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
-    .studio-hash-card strong { font-size: 11px; }
-    .studio-hash-value { color: var(--muted); font: 10px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
-    .studio-hash-state { color: var(--faint); font-size: 10px; margin-top: 4px; }
+    .studio-hash-card strong { font-size: 12px; }
+    .studio-hash-value { color: var(--muted); font: 12px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
+    .studio-hash-state { color: var(--faint); font-size: 12px; margin-top: 4px; }
     .studio-stale-strip { display: flex; align-items: flex-start; gap: 9px; padding: 9px 13px; border-bottom: 1px solid #e1c98f; background: #fff8eb; color: #6c4810; }
-    .studio-stale-strip strong { flex: 0 0 auto; font-size: 11px; }
+    .studio-stale-strip strong { flex: 0 0 auto; font-size: 12px; }
     .studio-stale-list { display: flex; flex-wrap: wrap; gap: 5px; list-style: none; padding: 0; }
-    .studio-stale-list li { border: 1px solid #e1c98f; border-radius: 999px; background: #fff; padding: 2px 7px; font: 10px/1.45 var(--mono); }
+    .studio-stale-list li { border: 1px solid #e1c98f; border-radius: 999px; background: #fff; padding: 3px 8px; font: 12px/1.45 var(--mono); }
     .studio-artifact-strip { display: grid; gap: 7px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: #fff; }
-    .studio-artifact-line { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+    .studio-artifact-line { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
     .studio-artifact-line strong { color: var(--ink); min-width: 72px; }
     .studio-artifact-line.is-stale { color: #7a5712; }
     .studio-artifact-line.is-error { color: var(--critical); }
-    .studio-result { max-height: 150px; overflow: auto; margin-top: 7px; padding: 8px; border: 1px solid var(--rule); background: var(--band); border-radius: 4px; color: var(--muted); font: 10px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .studio-result { max-height: 150px; overflow: auto; margin-top: 7px; padding: 8px; border: 1px solid var(--rule); background: var(--band); border-radius: 4px; color: var(--muted); font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
     .studio-result details + details { border-top: 1px solid var(--rule); }
     .studio-result summary { cursor: pointer; padding: 5px 0; color: var(--ink); font-weight: 700; }
     .studio-result p { margin: 4px 0 7px; }
-    .studio-conflict { padding: 9px 13px; border-bottom: 1px solid #e0b0b0; background: #fff4f4; color: var(--critical); font-size: 11px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .studio-conflict { padding: 9px 13px; border-bottom: 1px solid #e0b0b0; background: #fff4f4; color: var(--critical); font-size: 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .studio-mobile-tabs { display: none; border-bottom: 1px solid var(--rule); background: var(--band); padding: 8px; gap: 6px; }
+    .studio-mobile-tab { min-height: 44px; flex: 1; border: 1px solid var(--rule); border-radius: 4px; background: #fff; color: var(--muted); font-size: 13px; }
+    .studio-mobile-tab[aria-selected="true"] { border-color: var(--primary); background: var(--primary-tint); color: var(--primary); }
     .studio-workspace { display: grid; grid-template-columns: 220px minmax(480px, 1fr) 310px; min-height: 580px; }
     .studio-library, .studio-inspector { min-width: 0; background: #fff; }
     .studio-library { border-right: 1px solid var(--rule); }
     .studio-inspector { border-left: 1px solid var(--rule); }
     .studio-panel-head { height: 43px; padding: 0 13px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); font-size: 12px; }
     .studio-library-section, .studio-inspector-section { padding: 13px; border-bottom: 1px solid var(--rule); }
-    .studio-library-section h3, .studio-inspector-section h3 { color: var(--muted); font-size: 11px; letter-spacing: .045em; text-transform: uppercase; margin-bottom: 9px; }
+    .studio-library-section h3, .studio-inspector-section h3 { color: var(--muted); font-size: 12px; letter-spacing: .045em; text-transform: uppercase; margin-bottom: 9px; }
     .studio-library-list { display: grid; gap: 7px; }
-    .studio-library-btn { width: 100%; min-height: 35px; text-align: left; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 8px 9px; font-size: 12px; }
+    .studio-library-btn { width: 100%; min-height: 44px; text-align: left; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 9px 10px; font-size: 13px; }
     .studio-library-btn:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-tint); }
     .studio-requirements { list-style: none; padding: 0; max-height: 150px; overflow: auto; }
     .studio-requirements li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
     .studio-requirements li:last-child { border-bottom: 0; }
     .studio-canvas-wrap { min-width: 0; display: flex; flex-direction: column; background: #fff; }
-    .studio-layer-toolbar { min-height: 43px; display: flex; align-items: center; gap: 14px; padding: 0 13px; border-bottom: 1px solid var(--rule); color: var(--muted); font-size: 11px; }
-    .studio-canvas { flex: 1; min-height: 536px; overflow: auto; position: relative; background: #fff; touch-action: none; }
+    .studio-layer-toolbar { min-height: 44px; display: flex; align-items: center; gap: 14px; padding: 0 13px; border-bottom: 1px solid var(--rule); color: var(--muted); font-size: 12px; }
+    .studio-canvas { flex: 1; min-height: 536px; overflow: auto; position: relative; background: #fff; touch-action: pan-x pan-y; }
     .studio-canvas-surface { position: relative; min-width: 720px; min-height: 620px; }
     .studio-layer-band { position: absolute; left: 0; right: 0; border-bottom: 1px dashed var(--rule); pointer-events: none; }
-    .studio-layer-label { position: absolute; left: 12px; top: 12px; width: 104px; color: var(--muted); font-size: 11px; }
+    .studio-layer-label { position: absolute; left: 12px; top: 12px; width: 104px; color: var(--muted); font-size: 12px; }
     .studio-layer-label strong { display: block; color: var(--ink); margin-bottom: 2px; }
     .studio-edge-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
     .studio-edge { fill: none; stroke: #67738f; stroke-width: 1.5; }
@@ -346,36 +355,41 @@
     .studio-node:hover, .studio-node.is-selected { background: var(--primary-tint); box-shadow: inset 0 0 0 1px var(--primary); }
     .studio-node.is-draft { border-style: dashed; }
     .studio-node.is-dragging { cursor: grabbing; box-shadow: 0 7px 18px rgba(17,28,58,.16); }
-    .studio-node-title { font-size: 12px; font-weight: 780; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .studio-node-meta { color: var(--muted); font: 600 10px/1.35 var(--mono); }
-    .studio-node-purpose { color: var(--muted); font-size: 10px; margin-top: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .studio-node-title { font-size: 13px; font-weight: 780; margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .studio-node-meta { color: var(--muted); font: 600 12px/1.35 var(--mono); }
+    .studio-node-purpose { color: var(--muted); font-size: 12px; margin-top: 7px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .studio-field { display: grid; gap: 5px; margin-bottom: 11px; }
     .studio-field:last-child { margin-bottom: 0; }
-    .studio-field label, .studio-field > span { color: var(--muted); font-size: 11px; font-weight: 720; }
-    .studio-input, .studio-textarea, .studio-select { width: 100%; border: 1px solid var(--rule-strong); border-radius: 4px; background: #fff; padding: 8px 9px; font: 500 12px/1.4 var(--sans); }
+    .studio-field label, .studio-field > span { color: var(--muted); font-size: 12px; font-weight: 720; }
+    .studio-input, .studio-textarea, .studio-select { width: 100%; min-height: 44px; border: 1px solid var(--rule-strong); border-radius: 4px; background: #fff; padding: 8px 9px; font: 500 13px/1.4 var(--sans); }
     .studio-textarea { min-height: 72px; resize: vertical; }
     .studio-check-list { list-style: none; padding: 0; display: grid; gap: 7px; }
-    .studio-check-item { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 7px; color: var(--muted); font-size: 11px; }
+    .studio-check-item { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 7px; color: var(--muted); font-size: 12px; }
     .studio-check-item::before { content: ""; width: 7px; height: 7px; margin-top: 4px; border-radius: 50%; background: var(--passed); }
     .studio-check-item.is-warning::before { background: var(--warning); }
     .studio-check-item.is-error::before { background: var(--critical); }
-    .studio-impact { color: var(--primary); font-size: 10px; font-weight: 700; }
+    .studio-impact { color: var(--primary); font-size: 12px; font-weight: 700; }
     .studio-impact.is-layout { color: #5c6578; }
     .studio-journal-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-    .studio-journal-tab { min-height: 32px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 0 8px; color: var(--muted); font-size: 11px; }
+    .studio-journal-tab { min-height: 44px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 0 10px; color: var(--muted); font-size: 12px; }
     .studio-journal-tab[aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: var(--primary-tint); }
     .studio-journal { display: grid; gap: 7px; max-height: 330px; overflow: auto; }
     .studio-journal-item { border: 1px solid var(--rule); border-radius: 4px; background: var(--band); }
-    .studio-journal-item summary { min-height: 36px; padding: 7px; cursor: pointer; font-size: 10px; color: var(--ink); }
-    .studio-journal-meta { display: flex; gap: 5px; flex-wrap: wrap; color: var(--muted); font: 9px/1.4 var(--mono); }
+    .studio-journal-item summary { min-height: 44px; padding: 9px; cursor: pointer; font-size: 12px; color: var(--ink); }
+    .studio-journal-meta { display: flex; gap: 5px; flex-wrap: wrap; color: var(--muted); font: 12px/1.4 var(--mono); }
     .studio-journal-body { padding: 0 7px 7px; }
-    .studio-journal-value { max-height: 120px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font: 9px/1.45 var(--mono); }
+    .studio-journal-value { max-height: 120px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--muted); font: 12px/1.45 var(--mono); }
+    .studio-flow-list { border-top: 1px solid var(--rule); background: var(--band); }
+    .studio-flow-list summary { min-height: 44px; padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 720; }
+    .studio-flow-items { display: grid; gap: 6px; padding: 0 13px 13px; }
+    .studio-flow-item { min-height: 44px; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 8px 10px; text-align: left; color: var(--ink); font-size: 12px; }
+    .studio-flow-item[aria-current="true"] { border-color: var(--primary); background: var(--primary-tint); }
     .studio-empty-inspector { padding: 28px 18px; color: var(--muted); text-align: center; }
     .studio-footer {
       min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 13px;
       border-top: 1px solid var(--rule); background: var(--band); flex-wrap: wrap;
     }
-    .studio-footer-status { display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: 11px; flex-wrap: wrap; }
+    .studio-footer-status { display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
     .studio-warning { color: #6c4810; font-weight: 720; }
     .studio-storage-note { color: var(--faint); }
     .studio-dialog { width: min(560px, calc(100vw - 28px)); border: 1px solid var(--rule-strong); border-radius: 7px; padding: 0; color: var(--ink); box-shadow: 0 24px 64px rgba(17,28,58,.22); }
@@ -383,7 +397,7 @@
     .studio-dialog-head { padding: 15px 17px; border-bottom: 1px solid var(--rule); }
     .studio-dialog-body { padding: 17px; display: grid; gap: 12px; }
     .studio-dialog-actions { padding: 12px 17px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end; gap: 8px; }
-    .studio-hash { padding: 8px; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; font: 10px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
+    .studio-hash { padding: 8px; background: var(--band); border: 1px solid var(--rule); border-radius: 4px; font: 12px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; }
     .studio-shell.is-frozen .studio-workspace, .studio-shell.is-frozen .studio-candidatebar, .studio-shell.is-frozen .studio-contextbar { pointer-events: none; opacity: .68; }
 
     .drawer-backdrop { position: fixed; inset: 0; background: rgba(17,28,58,.14); z-index: 70; opacity: 0; pointer-events: none; transition: opacity .18s ease; }
@@ -399,7 +413,7 @@
     .drawer-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 18px 20px; border-bottom: 1px solid var(--rule); }
     .drawer-head h2 { font-size: 19px; margin: 0 0 4px; }
     .drawer-head p { margin: 0; color: var(--muted); }
-    .icon-btn { border: 1px solid var(--rule); background: #fff; border-radius: 4px; width: 34px; height: 34px; display: grid; place-items: center; }
+    .icon-btn { border: 1px solid var(--rule); background: #fff; border-radius: 4px; width: 44px; height: 44px; display: grid; place-items: center; }
     .icon-btn:hover { border-color: var(--ink); background: var(--band); }
     .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
     .drawer-body { overflow: auto; flex: 1; }
@@ -598,6 +612,8 @@
       .system-mode-switch { padding-left: 0; }
       .studio-shell { min-height: 0; }
       .studio-workspace { display: flex; flex-direction: column; }
+      .studio-mobile-tabs { display: flex; }
+      .studio-workspace [data-studio-panel].is-mobile-hidden { display: none; }
       .studio-library, .studio-inspector { border: 0; }
       .studio-library { border-bottom: 1px solid var(--rule); }
       .studio-inspector { border-top: 1px solid var(--rule); }
@@ -610,7 +626,8 @@
       .studio-context-control { min-width: 0; flex: 1; }
       .studio-compare-grid { grid-template-columns: 1fr; }
       .studio-hash-strip { grid-template-columns: 1fr; }
-      .studio-candidatebar { align-items: stretch; }
+      .studio-candidatebar, .studio-candidate-tabs, .studio-candidate-compare { align-items: stretch; }
+      .studio-candidate-tab { flex: 1 1 150px; }
       .studio-candidate-chip { flex: 1 1 140px; }
       .system-content { padding-left: 12px; padding-right: 12px; }
       .studio-shell { width: 100%; overflow: hidden; }
@@ -722,6 +739,8 @@
       studioCompareOpen: false,
       studioCandidateDraft: null,
       studioJournalTrack: "semantic",
+      studioMobilePanel: "canvas",
+      studioDialogReturnAction: null,
       studioEventStaleReasons: [],
       studioSaveTimer: null,
       studioGeneration: 0,
@@ -774,6 +793,7 @@
       attentionExpanded: false,
       requirementFilters: { type: "all", definition: "all", fulfillment: "all" }
     };
+    var drawerReturnFocus = null;
 
     var entityCollections = {
       requirement: data.requirements || [],
@@ -1712,12 +1732,39 @@
 
     function studioCandidateBarHtml(session) {
       var active = session.activeCandidateId;
+      var available = session.candidates.filter(function (candidate) { return candidate.status !== "archived"; });
+      var tabs = available.map(function (candidate) {
+        var selected = candidate.candidateId === active;
+        return "<button class='studio-candidate-tab' id='studio-candidate-tab-" + e(studioDomId(candidate.candidateId)) + "' type='button' role='tab' aria-selected='" + selected + "' aria-controls='studio-candidate-panel' tabindex='" + (selected ? "0" : "-1") + "' data-studio-candidate-tab='" + e(candidate.candidateId) + "'>" + e(candidate.label) + "</button>";
+      }).join("");
       var chips = session.candidates.map(function (candidate) {
         var archived = candidate.status === "archived";
         var checked = state.studioCompareIds.indexOf(candidate.candidateId) >= 0;
         return "<label class='studio-candidate-chip " + (candidate.candidateId === active ? "is-active" : "") + "' title='" + e(archived ? "已归档" : candidate.label) + "'><input type='checkbox' data-studio-compare-id='" + e(candidate.candidateId) + "' " + (checked ? "checked" : "") + " " + (archived ? "disabled" : "") + "><span>" + e(candidate.label) + (archived ? " · 已归档" : "") + "</span></label>";
       }).join("");
-      return "<div class='studio-candidatebar'><span class='cell-sub'>对比（最多 3 个）</span>" + chips + "<button class='studio-action' type='button' data-studio-action='compare' " + (state.studioCompareIds.length > 1 ? "" : "disabled") + ">" + (state.studioCompareOpen ? "收起对比" : "对比方案") + "</button></div>";
+      return "<div class='studio-candidatebar'><div class='studio-candidate-tabs' role='tablist' aria-label='架构候选方案'>" + tabs + "</div><div class='studio-candidate-compare'><span class='cell-sub'>对比（最多 3 个）</span>" + chips + "<button class='studio-action' type='button' data-studio-action='compare' " + (state.studioCompareIds.length > 1 ? "" : "disabled") + ">" + (state.studioCompareOpen ? "收起对比" : "对比方案") + "</button></div></div>";
+    }
+
+    function studioDomId(value) {
+      return String(value == null ? "" : value).replace(/[^A-Za-z0-9_-]/g, "-");
+    }
+
+    function studioMobileTabsHtml() {
+      return "<div class='studio-mobile-tabs' role='tablist' aria-label='Studio 移动端面板'>" + [["library", "组件"], ["canvas", "画布"], ["inspector", "属性 / 检查"]].map(function (item) {
+        var selected = state.studioMobilePanel === item[0];
+        return "<button class='studio-mobile-tab' type='button' role='tab' aria-selected='" + selected + "' aria-controls='studio-panel-" + item[0] + "' tabindex='" + (selected ? "0" : "-1") + "' data-studio-mobile-panel='" + item[0] + "'>" + item[1] + "</button>";
+      }).join("") + "</div>";
+    }
+
+    function studioFlowListHtml(candidate) {
+      var nodes = {};
+      arr(candidate.nodes).forEach(function (node) { nodes[node.nodeId] = node; });
+      var items = arr(candidate.edges).map(function (edge) {
+        var from = nodes[edge.fromNodeId]; var to = nodes[edge.toNodeId];
+        var label = (from ? from.name : edge.fromNodeId) + " → " + (to ? to.name : edge.toNodeId) + " · " + (edge.label || edge.name || "data") + " · " + (edge.protocol || "协议未记录");
+        return "<button class='studio-flow-item' type='button' data-studio-select-edge='" + e(edge.edgeId) + "' aria-current='" + (edge.edgeId === state.studioSelectedEdgeId) + "'>" + e(label) + "</button>";
+      }).join("");
+      return "<details class='studio-flow-list'><summary>数据流文本列表 · " + arr(candidate.edges).length + " 条</summary><div class='studio-flow-items'>" + (items || "<p class='cell-sub'>当前候选没有数据流。</p>") + "</div></details>";
     }
 
     function studioSemanticIdentity(item, localKey, kind) {
@@ -1803,20 +1850,48 @@
       var hash = proposal && proposal.proposalHash;
       if (!hash) return "";
       var confirmation = "批准 Studio Proposal " + hash;
-      return "<dialog class='studio-dialog' id='studio-approval-dialog' aria-labelledby='studio-approval-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-approval-title'>精确批准 Studio Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>批准只绑定下方 64 位 Proposal Hash。请完整输入确认短语；页面不会代填，也不会把批准视为评审结论。</p><div class='studio-hash'>" + e(hash) + "</div><label class='studio-field'><span>批准人</span><input class='studio-input' name='approvedBy' id='studio-approved-by' autocomplete='name' required></label><label class='studio-field'><span>确认短语</span><input class='studio-input mono' name='confirmation' id='studio-approval-confirmation' aria-describedby='studio-confirmation-help' required></label><p class='cell-sub' id='studio-confirmation-help'>必须精确输入：<span class='mono'>" + e(confirmation) + "</span></p></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-approval'>记录批准</button></div></form></dialog>";
+      return "<dialog class='studio-dialog' id='studio-approval-dialog' aria-labelledby='studio-approval-title' aria-describedby='studio-approval-description'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-approval-title'>精确批准 Studio Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub' id='studio-approval-description'>批准只绑定下方 64 位 Proposal Hash。请完整输入确认短语；页面不会代填，也不会把批准视为评审结论。</p><div class='studio-hash'>" + e(hash) + "</div><label class='studio-field'><span>批准人</span><input class='studio-input' name='approvedBy' id='studio-approved-by' autocomplete='name' required></label><label class='studio-field'><span>确认短语</span><input class='studio-input mono' name='confirmation' id='studio-approval-confirmation' aria-describedby='studio-confirmation-help' required></label><p class='cell-sub' id='studio-confirmation-help'>必须精确输入：<span class='mono'>" + e(confirmation) + "</span></p></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-studio-action='cancel-approval'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-approval'>记录批准</button></div></form></dialog>";
     }
 
     function studioProposalDialogHtml() {
       var draft = state.studioBridge.proposalDraft;
       if (!draft) return "";
-      return "<dialog class='studio-dialog' id='studio-proposal-dialog' aria-labelledby='studio-proposal-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-proposal-title'>生成正式 Architecture Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>Proposal 会重新运行正式校验，并绑定当前 session Revision、Candidate Semantic Hash、Panorama Data Hash 与源码快照。</p><label class='studio-field'><span>Proposal 摘要</span><input class='studio-input' id='studio-proposal-summary' maxlength='512' value='" + e(draft.summary) + "' required></label><label class='studio-field'><span>变更原因</span><textarea class='studio-textarea' id='studio-proposal-reason' maxlength='4000' required>" + e(draft.reason) + "</textarea></label></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel' data-studio-action='cancel-proposal'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-proposal'>生成并冻结 Hash</button></div></form></dialog>";
+      return "<dialog class='studio-dialog' id='studio-proposal-dialog' aria-labelledby='studio-proposal-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-proposal-title'>生成正式 Architecture Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>Proposal 会重新运行正式校验，并绑定当前 session Revision、Candidate Semantic Hash、Panorama Data Hash 与源码快照。</p><label class='studio-field'><span>Proposal 摘要</span><input class='studio-input' id='studio-proposal-summary' maxlength='512' value='" + e(draft.summary) + "' required></label><label class='studio-field'><span>变更原因</span><textarea class='studio-textarea' id='studio-proposal-reason' maxlength='4000' required>" + e(draft.reason) + "</textarea></label></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-studio-action='cancel-proposal'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-proposal'>生成并冻结 Hash</button></div></form></dialog>";
     }
 
     function studioCandidateDialogHtml() {
       var draft = state.studioCandidateDraft;
       if (!draft) return "";
       var titles = { create: "新建架构候选", clone: "克隆当前候选", rename: "重命名当前候选" };
-      return "<dialog class='studio-dialog' id='studio-candidate-dialog' aria-labelledby='studio-candidate-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-candidate-title'>" + e(titles[draft.mode] || "编辑候选") + "</h2></div><div class='studio-dialog-body'><p class='cell-sub'>候选只保存在隔离 Studio Session；不会直接修改正式 Target。</p><label class='studio-field'><span>候选名称</span><input class='studio-input' id='studio-candidate-label' maxlength='256' value='" + e(draft.label || "") + "' required></label></div><div class='studio-dialog-actions'><button class='studio-action' value='cancel' data-studio-action='cancel-candidate'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-candidate'>确认</button></div></form></dialog>";
+      return "<dialog class='studio-dialog' id='studio-candidate-dialog' aria-labelledby='studio-candidate-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-candidate-title'>" + e(titles[draft.mode] || "编辑候选") + "</h2></div><div class='studio-dialog-body'><p class='cell-sub'>候选只保存在隔离 Studio Session；不会直接修改正式 Target。</p><label class='studio-field'><span>候选名称</span><input class='studio-input' id='studio-candidate-label' maxlength='256' value='" + e(draft.label || "") + "' required></label></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-studio-action='cancel-candidate'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-candidate'>确认</button></div></form></dialog>";
+    }
+
+    function showStudioDialog(dialogId, returnAction, focusSelector) {
+      state.studioDialogReturnAction = returnAction || null;
+      var dialog = document.getElementById(dialogId);
+      if (!dialog || typeof dialog.showModal !== "function") return false;
+      dialog.showModal();
+      var focusTarget = focusSelector ? dialog.querySelector(focusSelector) : dialog.querySelector("input, textarea, select, button");
+      if (focusTarget) { focusTarget.focus(); if (typeof focusTarget.select === "function" && /^(INPUT|TEXTAREA)$/.test(focusTarget.tagName)) focusTarget.select(); }
+      return true;
+    }
+
+    function focusStudioReturn(action) {
+      var selector = action ? "[data-studio-action='" + cssEscape(action) + "']" : "[data-studio-candidate-tab][aria-selected='true']";
+      window.setTimeout(function () {
+        var target = document.querySelector(selector);
+        if (!target || target.disabled) target = document.querySelector("[data-studio-candidate-tab][aria-selected='true']") || document.querySelector(".studio-shell");
+        if (target) target.focus();
+      }, 0);
+    }
+
+    function cancelStudioDialog(dialogId) {
+      var returnAction = state.studioDialogReturnAction;
+      var dialog = document.getElementById(dialogId); if (dialog && dialog.open) dialog.close();
+      if (dialogId === "studio-candidate-dialog") state.studioCandidateDraft = null;
+      if (dialogId === "studio-proposal-dialog") state.studioBridge.proposalDraft = null;
+      state.studioDialogReturnAction = null;
+      renderStudio(); focusStudioReturn(returnAction);
     }
 
     function createStudioCandidate(cloneActive) {
@@ -1825,20 +1900,21 @@
       state.studioCandidateDraft = { mode: cloneActive ? "clone" : "create", label: cloneActive ? activeStudioCandidate().label + " 副本" : "新架构方案" };
       renderStudio();
       var dialog = document.getElementById("studio-candidate-dialog");
-      if (dialog && typeof dialog.showModal === "function") { dialog.showModal(); var input = document.getElementById("studio-candidate-label"); if (input) { input.focus(); input.select(); } }
+      if (showStudioDialog("studio-candidate-dialog", cloneActive ? "clone-candidate" : "new-candidate", "#studio-candidate-label")) { /* Focus managed by helper. */ }
       else { state.studioCandidateDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法编辑候选"; renderStudio(); }
     }
 
     function submitStudioCandidateDialog() {
       var draft = state.studioCandidateDraft;
+      var returnAction = state.studioDialogReturnAction;
       var requested = String((document.getElementById("studio-candidate-label") || {}).value || "").trim();
       if (!draft || !requested) { showToast("请填写候选名称"); return; }
       if (draft.mode === "rename") {
         var existing = activeStudioCandidate();
-        if (!existing || requested === existing.label) { state.studioCandidateDraft = null; renderStudio(); return; }
+        if (!existing || requested === existing.label) { state.studioCandidateDraft = null; state.studioDialogReturnAction = null; renderStudio(); focusStudioReturn(returnAction); return; }
         pushStudioUndo(); var oldLabel = existing.label; existing.label = requested; existing.updatedAt = new Date().toISOString();
         appendStudioOperation("candidate.rename", { candidateId: existing.candidateId }, oldLabel, existing.label, true);
-        state.studioCandidateDraft = null; persistStudioSession(); renderStudio(); return;
+        state.studioCandidateDraft = null; state.studioDialogReturnAction = null; persistStudioSession(); renderStudio(); focusStudioReturn(returnAction); return;
       }
       var cloneActive = draft.mode === "clone";
       var session = ensureStudioSession();
@@ -1852,8 +1928,8 @@
       session.candidates.push(base); session.activeCandidateId = candidateId;
       state.studioSelectedNodeId = base.nodes[0] ? base.nodes[0].nodeId : null;
       appendStudioOperation("candidate.create", { candidateId: candidateId }, null, { label: base.label, cloned: Boolean(cloneActive) }, true);
-      state.studioCandidateDraft = null;
-      validateStudioSession(); persistStudioSession(); renderStudio();
+      state.studioCandidateDraft = null; state.studioDialogReturnAction = null;
+      validateStudioSession(); persistStudioSession(); renderStudio(); focusStudioReturn(returnAction);
     }
 
     function selectStudioCandidate(candidateId) {
@@ -1864,6 +1940,25 @@
       state.studioSelectedNodeId = candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
       invalidateStudioArtifacts("candidate_switched");
       validateStudioSession(); persistStudioSession(); renderStudio();
+      window.setTimeout(function () { var selectedTab = document.querySelector("[data-studio-candidate-tab][aria-selected='true']"); if (selectedTab) selectedTab.focus(); }, 0);
+    }
+
+    function moveStudioNodeWithKeyboard(nodeId, deltaX, deltaY) {
+      var node = studioNode(nodeId); var surface = document.getElementById("studio-canvas-surface");
+      if (!node || !surface || state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) return;
+      var before = { x: Math.round(Number(node.x)), y: Math.round(Number(node.y)) };
+      var maxX = Math.max(130, surface.clientWidth - 190); var maxY = Math.max(30, surface.clientHeight - 92);
+      var after = { x: Math.round(Math.max(125, Math.min(maxX, before.x + deltaX))), y: Math.round(Math.max(8, Math.min(maxY, before.y + deltaY))) };
+      if (after.x === before.x && after.y === before.y) return;
+      pushStudioUndo(); node.x = after.x; node.y = after.y; state.studioSelectedNodeId = node.nodeId;
+      appendStudioOperation("layout.move", { nodeId: node.nodeId }, before, after, false);
+      persistStudioSession(); renderStudio();
+      window.setTimeout(function () { var focusNode = document.querySelector("[data-studio-node-id='" + cssEscape(node.nodeId) + "']"); if (focusNode) focusNode.focus(); }, 0);
+    }
+
+    function cssEscape(value) {
+      if (window.CSS && typeof window.CSS.escape === "function") return window.CSS.escape(String(value));
+      return String(value).replace(/(['\\])/g, "\\$1");
     }
 
     function renameStudioCandidate() {
@@ -1871,8 +1966,7 @@
       if (!candidate) return;
       state.studioCandidateDraft = { mode: "rename", label: candidate.label };
       renderStudio();
-      var dialog = document.getElementById("studio-candidate-dialog");
-      if (dialog && typeof dialog.showModal === "function") { dialog.showModal(); var input = document.getElementById("studio-candidate-label"); if (input) { input.focus(); input.select(); } }
+      showStudioDialog("studio-candidate-dialog", "rename-candidate", "#studio-candidate-label");
     }
 
     function archiveStudioCandidate() {
@@ -1959,11 +2053,12 @@
       state.studioBridge.proposalDraft = { summary: activeStudioCandidate().label + " 架构更新", reason: "基于 Architecture Studio 候选方案正式化" };
       renderStudio();
       var dialog = document.getElementById("studio-proposal-dialog");
-      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      if (showStudioDialog("studio-proposal-dialog", "proposal", "#studio-proposal-summary")) { /* Focus managed by helper. */ }
       else { state.studioBridge.proposalDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法生成 Proposal"; renderStudio(); }
     }
 
     async function submitStudioProposal() {
+      var returnAction = state.studioDialogReturnAction;
       var summary = String((document.getElementById("studio-proposal-summary") || {}).value || "").trim();
       var reason = String((document.getElementById("studio-proposal-reason") || {}).value || "").trim();
       if (!summary || !reason) { showToast("请填写 Proposal 摘要与变更原因"); return; }
@@ -1981,18 +2076,20 @@
       } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
       finally {
         state.studioBridge.sessionMutationBusy = false; state.studioBridge.busy = null;
+        state.studioDialogReturnAction = null;
         if (state.studioBridge.lastSavedGeneration < state.studioGeneration) scheduleStudioBridgeSave();
-        renderStudio();
+        renderStudio(); focusStudioReturn(returnAction);
       }
     }
 
     function openStudioApprovalDialog() {
       var dialog = document.getElementById("studio-approval-dialog");
-      if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+      if (showStudioDialog("studio-approval-dialog", "approve", "#studio-approved-by")) { /* Focus managed by helper. */ }
       else showToast("当前浏览器不支持原生 dialog，无法批准");
     }
 
     async function submitStudioApproval() {
+      var returnAction = state.studioDialogReturnAction;
       var proposal = state.studioBridge.proposal; if (!proposal) return;
       var approvedBy = String((document.getElementById("studio-approved-by") || {}).value || "").trim();
       var confirmation = String((document.getElementById("studio-approval-confirmation") || {}).value || "");
@@ -2006,9 +2103,10 @@
         if (approval.proposalHash !== proposal.proposalHash) throw new Error("Approval Hash 与 Proposal 不一致");
         state.studioBridge.approval = approval;
         var dialog = document.getElementById("studio-approval-dialog"); if (dialog && dialog.open) dialog.close();
+        state.studioDialogReturnAction = null;
         showToast("批准已按 Proposal Hash 记录");
       } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
-      finally { state.studioBridge.busy = null; renderStudio(); }
+      finally { state.studioBridge.busy = null; state.studioDialogReturnAction = null; renderStudio(); focusStudioReturn(returnAction); }
     }
 
     async function applyStudioProposal() {
@@ -2057,7 +2155,9 @@
         return "<div class='studio-layer-band' style='top:" + (index * 122) + "px;height:122px'><div class='studio-layer-label'><strong>" + e(layer.name) + "</strong><span class='mono'>" + e(layer.id) + "</span></div></div>";
       }).join("");
       var nodes = candidate.nodes.map(function (node) {
-        return "<button type='button' class='studio-node " + (node.isDraft ? "is-draft " : "") + (node.nodeId === state.studioSelectedNodeId ? "is-selected" : "") + "' data-studio-node-id='" + e(node.nodeId) + "' style='left:" + Number(node.x) + "px;top:" + Number(node.y) + "px'><div class='studio-node-title'>" + e(node.name) + "</div><div class='studio-node-meta'>" + e(node.entityRef ? node.entityRef.id : node.nodeId) + "</div><div class='studio-node-purpose'>" + e(node.purpose || "尚未填写用途") + "</div></button>";
+        var selectedNode = node.nodeId === state.studioSelectedNodeId;
+        var nodeLabel = "模块 " + node.name + "。Alt 加方向键调整画布位置，Shift 加 Alt 加方向键大步调整。当前坐标 " + Math.round(Number(node.x)) + ", " + Math.round(Number(node.y));
+        return "<button type='button' class='studio-node " + (node.isDraft ? "is-draft " : "") + (selectedNode ? "is-selected" : "") + "' data-studio-node-id='" + e(node.nodeId) + "' aria-pressed='" + selectedNode + "' aria-label='" + e(nodeLabel) + "' style='left:" + Number(node.x) + "px;top:" + Number(node.y) + "px'><div class='studio-node-title'>" + e(node.name) + "</div><div class='studio-node-meta'>" + e(node.entityRef ? node.entityRef.id : node.nodeId) + "</div><div class='studio-node-purpose'>" + e(node.purpose || "尚未填写用途") + "</div></button>";
       }).join("");
       var requirements = arr(data.requirements).slice(0, 8).map(function (requirement) {
         return "<li><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></li>";
@@ -2077,7 +2177,7 @@
       var interactionLocked = frozen || bridge.sessionMutationBusy;
       var conflictHtml = bridge.conflict ? "<div class='studio-conflict' role='alert'><span>保存冲突：" + e(bridge.conflict) + "。为避免覆盖他人更改，自动保存已停止。</span><button class='studio-action is-danger' type='button' data-studio-action='reload-server'>加载服务端版本</button></div>" : "";
       document.getElementById("system-content").innerHTML =
-        "<section class='studio-shell " + (interactionLocked ? "is-frozen" : "") + "' aria-label='架构设计 Studio'><div class='studio-contextbar'><div class='studio-context-group'>" +
+        "<section class='studio-shell " + (interactionLocked ? "is-frozen" : "") + "' aria-label='架构设计 Studio' tabindex='-1'><div class='studio-contextbar'><div class='studio-context-group'>" +
         "<label class='studio-field' style='margin:0'><span>决策范围</span><select class='studio-context-control' data-studio-scope><option value='project'>项目架构</option><option value='agent_system'>Agent System</option><option value='agent'>单 Agent</option><option value='workflow'>Workflow</option><option value='deployment'>Runtime / Deployment</option></select></label>" +
         "<label class='studio-field' style='margin:0'><span>候选方案</span><select class='studio-context-control' data-studio-candidate>" + session.candidates.filter(function (item) { return item.status !== "archived"; }).map(function (item) { return "<option value='" + e(item.candidateId) + "'>" + e(item.label) + "</option>"; }).join("") + "</select></label>" +
         studioBridgeStatusHtml() + "</div><div class='studio-actions'>" +
@@ -2087,13 +2187,13 @@
         "<button class='studio-action' type='button' data-studio-action='reset'>重置草稿</button>" +
         "<button class='studio-action' type='button' data-studio-action='import'>导入 JSON</button><input id='studio-import-input' type='file' accept='application/json,.json' data-studio-import hidden>" +
         "<button class='studio-action' type='button' data-studio-action='export'>导出 JSON</button>" + (online ? "<button class='studio-action' type='button' data-studio-action='save' " + (bridge.busy || bridge.conflict ? "disabled" : "") + ">保存</button>" : "") + "</div></div>" + conflictHtml +
-        studioCandidateBarHtml(session) + studioCompareHtml(session) + studioHashStripHtml(session) + studioStaleStripHtml() + studioArtifactHtml() +
-        "<div class='studio-workspace'><aside class='studio-library'><div class='studio-panel-head'><strong>组件库</strong><span class='count'>草稿</span></div>" +
+        studioCandidateBarHtml(session) + studioCompareHtml(session) + studioHashStripHtml(session) + studioStaleStripHtml() + studioArtifactHtml() + studioMobileTabsHtml() +
+        "<div class='studio-workspace' id='studio-candidate-panel' role='tabpanel' aria-labelledby='studio-candidate-tab-" + e(studioDomId(session.activeCandidateId)) + "'><aside class='studio-library " + (state.studioMobilePanel === "library" ? "" : "is-mobile-hidden") + "' id='studio-panel-library' data-studio-panel='library'><div class='studio-panel-head'><strong>组件库</strong><span class='count'>草稿</span></div>" +
         "<div class='studio-library-section'><h3>添加组件</h3><div class='studio-library-list'><button class='studio-library-btn' type='button' data-studio-add-node='agent'>＋ Agent</button><button class='studio-library-btn' type='button' data-studio-add-node='service'>＋ 服务</button><button class='studio-library-btn' type='button' data-studio-add-node='data'>＋ 数据存储</button></div></div>" +
         "<div class='studio-library-section'><h3>需求基线</h3><ul class='studio-requirements'>" + requirements + "</ul></div></aside>" +
-        "<div class='studio-canvas-wrap'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动模块调整布局</span><span>布局操作不影响语义</span></div>" +
-        "<div class='studio-canvas' id='studio-canvas'><div class='studio-canvas-surface' id='studio-canvas-surface' style='height:" + surfaceHeight + "px'>" + bands + "<svg class='studio-edge-svg' id='studio-edge-svg' aria-label='草稿数据流'></svg>" + nodes + "</div></div></div>" +
-        "<aside class='studio-inspector'><div class='studio-panel-head'><strong>属性检查器</strong><span class='count'>" + e(selected ? selected.name : "未选择") + "</span></div>" + inspector + "</aside></div>" +
+        "<div class='studio-canvas-wrap " + (state.studioMobilePanel === "canvas" ? "" : "is-mobile-hidden") + "' id='studio-panel-canvas' data-studio-panel='canvas'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动或使用 Alt + 方向键调整布局</span><span>布局操作不影响语义</span></div>" +
+        "<div class='studio-canvas' id='studio-canvas'><div class='studio-canvas-surface' id='studio-canvas-surface' style='height:" + surfaceHeight + "px'>" + bands + "<svg class='studio-edge-svg' id='studio-edge-svg' aria-hidden='true' focusable='false'></svg>" + nodes + "</div></div>" + studioFlowListHtml(candidate) + "</div>" +
+        "<aside class='studio-inspector " + (state.studioMobilePanel === "inspector" ? "" : "is-mobile-hidden") + "' id='studio-panel-inspector' data-studio-panel='inspector'><div class='studio-panel-head'><strong>属性检查器</strong><span class='count'>" + e(selected ? selected.name : "未选择") + "</span></div>" + inspector + "</aside></div>" +
         "<footer class='studio-footer'><div class='studio-footer-status'><span class='studio-warning'>Studio 只编辑隔离 session；正式 project-panorama-data 仅由 Bridge Apply 更新</span><span>基础检查：" + errors + " 错误 / " + warnings + " 提示</span><span>语义操作 " + session.semanticOperations.length + " · 布局操作 " + session.layoutOperations.length + "</span><span class='studio-storage-note'>" + (state.studioStorage === "bridge" ? "服务端 session 修订 " + e(session.sessionRevision || 0) : (state.studioStorage === "local" ? "已保存在本浏览器；用 studio_bridge.py 打开即可启用完整闭环" : "仅保存在内存，请导出备份")) + "</span></div><div class='studio-actions'>" +
         (frozen ? "<button class='studio-action is-primary' type='button' data-studio-action='reload-panorama'>重新载入当前 Panorama</button>" : "") +
         (online && studioBridgeFeature("factsRefresh") ? "<button class='studio-action' type='button' data-studio-action='facts-refresh' " + (bridge.busy || frozen ? "disabled" : "") + ">刷新事实</button>" : "") +
@@ -2554,10 +2654,35 @@
       window.setTimeout(function () { drawer.querySelector("[data-action='close-drawer']").focus(); }, 20);
       if (state.systemView === "logical") renderLogical();
     }
+    function rememberDrawerReturnFocus(element) {
+      if (!element || element.closest("#module-drawer")) return;
+      var selector = null;
+      if (element.dataset.moduleId) selector = "[data-module-id='" + cssEscape(element.dataset.moduleId) + "']";
+      else if (element.dataset.openModule) selector = "[data-open-module='" + cssEscape(element.dataset.openModule) + "']";
+      else if (element.dataset.openEntity) selector = "[data-open-entity='" + cssEscape(element.dataset.openEntity) + "'][data-entity-type='" + cssEscape(element.dataset.entityType || "") + "']";
+      else if (element.dataset.connectionId) selector = "[data-connection-id='" + cssEscape(element.dataset.connectionId) + "']";
+      drawerReturnFocus = { element: element, selector: selector };
+    }
     function closeDrawer() {
-      document.getElementById("module-drawer").classList.remove("is-open");
-      document.getElementById("module-drawer").setAttribute("aria-hidden", "true");
+      var drawer = document.getElementById("module-drawer");
+      if (!drawer.classList.contains("is-open")) return;
+      drawer.classList.remove("is-open");
+      drawer.setAttribute("aria-hidden", "true");
       document.getElementById("drawer-backdrop").classList.remove("is-open");
+      var returnTarget = drawerReturnFocus && drawerReturnFocus.element && drawerReturnFocus.element.isConnected ? drawerReturnFocus.element : (drawerReturnFocus && drawerReturnFocus.selector ? document.querySelector(drawerReturnFocus.selector) : null);
+      drawerReturnFocus = null;
+      if (returnTarget) window.setTimeout(function () { returnTarget.focus(); }, 0);
+    }
+    function trapDrawerFocus(event) {
+      var drawer = document.getElementById("module-drawer");
+      if (!drawer.classList.contains("is-open") || event.key !== "Tab") return false;
+      var focusable = Array.prototype.slice.call(drawer.querySelectorAll("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex='-1'])")).filter(function (item) { return item.offsetParent !== null; });
+      if (!focusable.length) { event.preventDefault(); drawer.focus(); return true; }
+      var first = focusable[0]; var last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); return true; }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); return true; }
+      if (!drawer.contains(document.activeElement)) { event.preventDefault(); first.focus(); return true; }
+      return false;
     }
 
     function renderRuntime() {
@@ -2891,8 +3016,10 @@
       if (target.dataset.view) { state.view = target.dataset.view; updateVisibleView(); if (state.view === "system") renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.systemView) { state.systemView = target.dataset.systemView; if (state.systemView !== "logical") state.studioMode = "view"; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.studioMode) { state.studioMode = target.dataset.studioMode; if (state.studioMode === "studio") { state.systemView = "logical"; if (state.studioBridge.capability && state.studioBridge.status === "offline") connectStudioBridge(); } renderSystem(); return; }
-      if (target.dataset.studioNodeId) { state.studioSelectedNodeId = target.dataset.studioNodeId; state.studioSelectedEdgeId = null; renderStudio(); return; }
-      if (target.dataset.studioSelectEdge) { state.studioSelectedEdgeId = target.dataset.studioSelectEdge; renderStudio(); return; }
+      if (target.dataset.studioNodeId) { var selectedNodeId = target.dataset.studioNodeId; state.studioSelectedNodeId = selectedNodeId; state.studioSelectedEdgeId = null; renderStudio(); window.setTimeout(function () { var selectedNode = document.querySelector("[data-studio-node-id='" + cssEscape(selectedNodeId) + "']"); if (selectedNode) selectedNode.focus(); }, 0); return; }
+      if (target.dataset.studioSelectEdge) { state.studioSelectedEdgeId = target.dataset.studioSelectEdge; state.studioMobilePanel = "inspector"; renderStudio(); window.setTimeout(function () { var edgeInspector = document.querySelector("[data-studio-edge-field]"); if (edgeInspector) edgeInspector.focus(); }, 0); return; }
+      if (target.dataset.studioCandidateTab) { selectStudioCandidate(target.dataset.studioCandidateTab); return; }
+      if (target.dataset.studioMobilePanel) { state.studioMobilePanel = target.dataset.studioMobilePanel; renderStudio(); window.setTimeout(function () { var selectedMobileTab = document.querySelector("[data-studio-mobile-panel][aria-selected='true']"); if (selectedMobileTab) selectedMobileTab.focus(); }, 0); return; }
       if (target.dataset.studioSelectCandidate) { selectStudioCandidate(target.dataset.studioSelectCandidate); return; }
       if (target.dataset.studioAddNode) { addStudioNode(target.dataset.studioAddNode); return; }
       if (target.dataset.studioAction === "undo" && state.studioUndoStack.length) { state.studioRedoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioUndoStack.pop()); return; }
@@ -2907,7 +3034,7 @@
       if (target.dataset.studioAction === "clone-candidate") { createStudioCandidate(true); return; }
       if (target.dataset.studioAction === "rename-candidate") { renameStudioCandidate(); return; }
       if (target.dataset.studioAction === "submit-candidate") { submitStudioCandidateDialog(); return; }
-      if (target.dataset.studioAction === "cancel-candidate") { state.studioCandidateDraft = null; return; }
+      if (target.dataset.studioAction === "cancel-candidate") { cancelStudioDialog("studio-candidate-dialog"); return; }
       if (target.dataset.studioAction === "archive-candidate") { archiveStudioCandidate(); return; }
       if (target.dataset.studioAction === "compare") { state.studioCompareOpen = !state.studioCompareOpen; renderStudio(); return; }
       if (target.dataset.studioJournal) { state.studioJournalTrack = target.dataset.studioJournal; renderStudio(); return; }
@@ -2917,17 +3044,18 @@
       if (target.dataset.studioAction === "review") { runStudioReview(); return; }
       if (target.dataset.studioAction === "proposal") { openStudioProposalDialog(); return; }
       if (target.dataset.studioAction === "submit-proposal") { submitStudioProposal(); return; }
-      if (target.dataset.studioAction === "cancel-proposal") { state.studioBridge.proposalDraft = null; return; }
+      if (target.dataset.studioAction === "cancel-proposal") { cancelStudioDialog("studio-proposal-dialog"); return; }
       if (target.dataset.studioAction === "approve") { openStudioApprovalDialog(); return; }
+      if (target.dataset.studioAction === "cancel-approval") { cancelStudioDialog("studio-approval-dialog"); return; }
       if (target.dataset.studioAction === "submit-approval") { submitStudioApproval(); return; }
       if (target.dataset.studioAction === "apply") { applyStudioProposal(); return; }
       if (target.dataset.studioAction === "facts-refresh") { refreshStudioFacts(); return; }
       if (target.dataset.studioAction === "reload-panorama") { reloadCurrentPanoramaFromBridge(); return; }
       if (target.dataset.architectureMode) { state.architectureMode = target.dataset.architectureMode; renderLogical(); return; }
-      if (target.dataset.moduleId) { renderDrawer(target.dataset.moduleId); return; }
-      if (target.dataset.openModule) { renderDrawer(target.dataset.openModule); return; }
-      if (target.dataset.openEntity) { renderEntityInspector(target.dataset.entityType, target.dataset.openEntity); return; }
-      if (target.dataset.connectionId) { renderEntityInspector("connection", target.dataset.connectionId); return; }
+      if (target.dataset.moduleId) { rememberDrawerReturnFocus(target); renderDrawer(target.dataset.moduleId); return; }
+      if (target.dataset.openModule) { rememberDrawerReturnFocus(target); renderDrawer(target.dataset.openModule); return; }
+      if (target.dataset.openEntity) { rememberDrawerReturnFocus(target); renderEntityInspector(target.dataset.entityType, target.dataset.openEntity); return; }
+      if (target.dataset.connectionId) { rememberDrawerReturnFocus(target); renderEntityInspector("connection", target.dataset.connectionId); return; }
       if (target.dataset.resourceId) { state.selectedResourceId = target.dataset.resourceId; renderRuntime(); return; }
       if (target.dataset.environment) { state.selectedEnvironment = target.dataset.environment; state.selectedDeploymentId = null; state.selectedResourceId = null; if (state.runtimeMode === "resources") state.resourcePoolFilters.environment = target.dataset.environment; renderRuntime(); return; }
       if (target.dataset.deploymentId) { state.selectedDeploymentId = target.dataset.deploymentId; state.selectedResourceId = null; renderRuntime(); return; }
@@ -2953,7 +3081,40 @@
       }
     });
     document.getElementById("drawer-backdrop").addEventListener("click", closeDrawer);
-    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeDrawer(); });
+    document.addEventListener("keydown", function (event) {
+      var dialog = event.target.closest && event.target.closest("dialog[open]");
+      if (dialog && event.key === "Escape") { event.preventDefault(); cancelStudioDialog(dialog.id); return; }
+      if (trapDrawerFocus(event)) return;
+      if (event.key === "Escape") { closeDrawer(); return; }
+      var candidateTab = event.target.closest && event.target.closest("[data-studio-candidate-tab]");
+      if (candidateTab && ["ArrowLeft", "ArrowRight", "Home", "End"].indexOf(event.key) >= 0) {
+        var candidateTabs = Array.prototype.slice.call(document.querySelectorAll("[data-studio-candidate-tab]"));
+        var currentIndex = candidateTabs.indexOf(candidateTab); var nextIndex = currentIndex;
+        if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + candidateTabs.length) % candidateTabs.length;
+        if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % candidateTabs.length;
+        if (event.key === "Home") nextIndex = 0;
+        if (event.key === "End") nextIndex = candidateTabs.length - 1;
+        event.preventDefault(); selectStudioCandidate(candidateTabs[nextIndex].dataset.studioCandidateTab);
+        window.setTimeout(function () { var selectedTab = document.querySelector("[data-studio-candidate-tab][aria-selected='true']"); if (selectedTab) selectedTab.focus(); }, 0); return;
+      }
+      var mobileTab = event.target.closest && event.target.closest("[data-studio-mobile-panel]");
+      if (mobileTab && ["ArrowLeft", "ArrowRight", "Home", "End"].indexOf(event.key) >= 0) {
+        var mobileTabs = Array.prototype.slice.call(document.querySelectorAll("[data-studio-mobile-panel]")); var mobileIndex = mobileTabs.indexOf(mobileTab); var targetIndex = mobileIndex;
+        if (event.key === "ArrowLeft") targetIndex = (mobileIndex - 1 + mobileTabs.length) % mobileTabs.length;
+        if (event.key === "ArrowRight") targetIndex = (mobileIndex + 1) % mobileTabs.length;
+        if (event.key === "Home") targetIndex = 0; if (event.key === "End") targetIndex = mobileTabs.length - 1;
+        event.preventDefault(); state.studioMobilePanel = mobileTabs[targetIndex].dataset.studioMobilePanel; renderStudio();
+        window.setTimeout(function () { var selectedMobileTab = document.querySelector("[data-studio-mobile-panel][aria-selected='true']"); if (selectedMobileTab) selectedMobileTab.focus(); }, 0); return;
+      }
+      var nodeTarget = event.target.closest && event.target.closest("[data-studio-node-id]");
+      if (nodeTarget && event.altKey && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].indexOf(event.key) >= 0) {
+        var step = event.shiftKey ? 40 : 10; var dx = event.key === "ArrowLeft" ? -step : (event.key === "ArrowRight" ? step : 0); var dy = event.key === "ArrowUp" ? -step : (event.key === "ArrowDown" ? step : 0);
+        event.preventDefault(); moveStudioNodeWithKeyboard(nodeTarget.dataset.studioNodeId, dx, dy); return;
+      }
+    });
+    document.addEventListener("cancel", function (event) {
+      if (event.target.matches && event.target.matches("dialog.studio-dialog")) { event.preventDefault(); cancelStudioDialog(event.target.id); }
+    });
     document.addEventListener("change", function (event) {
       if ((state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) && event.target.closest(".studio-shell")) { showToast(state.studioBridge.applyResult ? "Apply 后 Studio 已冻结，请重新载入当前 Panorama" : "正式事务执行中，请等待完成"); return; }
       if (event.target.dataset.studioImport !== undefined) { importStudioSession(event.target.files && event.target.files[0]); return; }
