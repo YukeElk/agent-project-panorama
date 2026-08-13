@@ -8,7 +8,7 @@ def test_studio_consumes_fragment_capability_and_uses_bridge_security_headers(
 ):
     source = template_path.read_text(encoding="utf-8")
 
-    assert 'var RENDERER_VERSION = "0.3.0"' in source
+    assert 'var RENDERER_VERSION = "0.4.0"' in source
     assert 'match(/(?:^#|&)cap=([^&]+)/)' in source
     assert "window.history.replaceState" in source
     assert '"X-Panorama-Capability"' in source

@@ -11,7 +11,7 @@ def test_renderer_exposes_studio_as_system_mode_not_primary_view(
 ):
     source = template_path.read_text(encoding="utf-8")
 
-    assert 'var RENDERER_VERSION = "0.3.0"' in source
+    assert 'var RENDERER_VERSION = "0.4.0"' in source
     assert source.count('data-view="control"') == 1
     assert source.count('data-view="system"') == 1
     assert source.count('data-view="evolution"') == 1

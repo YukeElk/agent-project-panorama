@@ -1,16 +1,16 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.3 Single HTML，持续自动追踪 Git/实现/验证/运行事实，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, compare and review architecture candidates, preserve fact provenance, or apply an architecture-centric Panorama update without making governance decisions."
+description: "操作 Agent Project Panorama V0.1–V0.4 Single HTML，持续自动追踪 Git/实现/验证/运行事实，检查证据来源与 Freshness，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, inspect fact provenance and source drift, compare architecture candidates, or apply an architecture-centric Panorama update without making governance decisions."
 ---
 
 # Agent 项目全景
 
-将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.3 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.3.0`。
+将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.4 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
 
 ## 不变量
 
-- 保持正式 `project-panorama-data` 对页面直接写入只读；Renderer `0.3.0` 的 Architecture Studio 只编辑隔离 Session，不得把草稿冒充 Target、Review、Proposal 或 Finding。已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
+- 保持正式 `project-panorama-data` 对页面直接写入只读；Renderer `0.4.0` 的 Architecture Studio 只编辑隔离 Session，Evidence Inspector 只读取正式 provenance 与 Bridge freshness，不得把草稿、派生类别或冲突摘要冒充 Target、Review、Proposal、Finding 或裁决。已有 HTML 的普通数据更新必须经过 `scripts/apply_patch.py`。正式 INIT 先经 `scripts/materialize_init.py` 生成首版 JSON，再由 `scripts/init_panorama.py` 生成 HTML。
 - 普通更新只能修改 `project-panorama-data` 内的 JSON payload。
 - 保留两个数据 Marker、DOM、CSS、Renderer JavaScript、未知字段与所有 `extensions`。
 - 治理变更 Apply 前要求用户评审并批准准确的 Proposal Hash；V0.2 事实观察只可按已启用 Policy 自动 Apply，不得制造或推断批准。
@@ -168,6 +168,19 @@ python scripts/init_panorama.py `
 
    输出默认脱敏。不要读取 External File 内容，也不要解析 External Store 值。
 4. 汇报当前阶段、主线、当前→目标架构、活跃/部署中运行状态、最近更新、High/Critical 关注事项、验证缺口和当前下一步焦点。
+
+### Evidence Inspector 解释规则
+
+- `SYSTEM → 架构来源` 只显示 `factProvenance`、`observationBatches`、
+  `currentArchitectureSnapshots`、`sourceBinding` 与正式 `references` 已记录的信息。
+- 离线 HTML 只能说明 `recorded_as_of/currentness_unknown`；不得因为存在 `gitHead` 或 Snapshot 就声称
+  当前 Source 仍一致。只有受控 Bridge 的实时比较可以显示 `match/drift/uninitialized/incomplete`。
+- Confidence 保持 `high/medium/low/unknown` 枚举，不换算为百分比；从 JSON Path 推导的 Fact Class 必须
+  标记 `Derived`，不能冒充来源事实。
+- `observationBatches[].conflicts` 只是 Conflict Summary。缺少正式两侧绑定时显示
+  `Needs Human Review — structured sides unavailable`，不得从自由文本猜测双方、自动裁决或降低冲突等级。
+- Evidence 字符串默认纯文本；只有与正式 Reference ID 或 location 精确匹配时才激活 Reference，且继续
+  遵守敏感标记与 URL 协议白名单。
 
 ## CONTINUOUS OBSERVATION
 

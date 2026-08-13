@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.3（Architecture Studio）
+# Agent Project Panorama V0.4（Evidence Inspector P0A）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.3 能力
+## V0.4 P0A 能力
 
 - 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
   Bridge 模式只访问同源 `127.0.0.1` API；
@@ -26,6 +26,11 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 - 自动更新只记录 observed/declared/inferred/unknown/conflict 事实，保护 Intent、Target、Decision、Review、Acceptance、Waiver、Guidance 和 Credential。
 - SYSTEM 内嵌 Architecture Studio：隔离会话、多候选画布与对比、正式 Validator、可选 Codex
   只读评审、精确 Proposal Hash 批准和受控 Apply。
+- `SYSTEM → 架构来源` 内嵌 Evidence Inspector：按事实 Path、Authority、枚举 Confidence、Observation
+  Batch、Source Binding 与正式 Reference 连续检查证据；离线模式明确显示 Currentness Unknown，
+  Bridge 模式显示实时 `match / drift / uninitialized / incomplete` 与具体原因。
+- Observation Conflict 只显示 Batch 级 Summary；缺少结构化两侧证据时固定标记
+  `Needs Human Review — structured sides unavailable`，Renderer 不自动裁决。
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
@@ -358,7 +363,8 @@ Revision/Data Hash、可选 Source Binding、Schema、跨引用、Presentation H
 ## 兼容性
 
 - Data Schema：`0.1`、`0.2`
-- Renderer：`0.3.0`（zh-CN，含 SYSTEM 内嵌 Architecture Studio）
+- Renderer：`0.4.0`（zh-CN，含 Architecture Studio 与 Evidence Inspector）
+- Studio Bridge：`0.4.0`（新增脱敏 `sourceFreshness` 实时比较）
 - 支持 Template：`0.1.0`、`0.1.1`
 - Skill 支持 Schema：`0.1`、`0.2`
 
@@ -419,6 +425,16 @@ Source Content Digest 会在本机读取纳入范围文件的字节，只计算�
 禁用。完整安全、状态和故障恢复合同见
 [`docs/architecture-studio-contract.md`](docs/architecture-studio-contract.md)。
 
+## Evidence Inspector
+
+进入 `系统 → 架构来源`。Schema 0.2 在运行 Continuous Observation 后会显示事实记录、观察批次、
+证据文本、来源提交、架构 Snapshot 和正式 Reference；Schema 0.1 或尚未首次观察的 V0.2 会显示明确
+空状态，不影响下方既有架构基线差异。
+
+直接双击 HTML 时，页面只能证明 `recorded as of`，不会因为内嵌 `gitHead` 存在就声称来源仍是当前。
+若用上方 Architecture Studio 命令从受控 Bridge 打开同一 Panorama，Inspector 会读取只含 Hash、
+文件计数与覆盖状态的 `sourceFreshness` 比较结果，显示检测时间和漂移原因；源码正文不会返回浏览器。
+
 ## 自动测试与 CI
 
 ```powershell
@@ -444,6 +460,7 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 - V0.1 冻结 Schema 为 `schema/panorama.schema.v0.1.json`；V0.2 Continuous Observation Schema 为 `schema/panorama.schema.v0.2.json`；
 - 建模缺口记录在 `docs/schema-findings.md`；
 - V0.2 不覆盖 v0.1；迁移默认输出新文件。当前 Presentation 升级 Renderer 为
-  `0.3.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，未重构 Panorama Schema。
+  `0.4.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，Evidence Inspector 只派生
+  现有事实，不重构 Panorama Schema。
 
 V0.2 已实现 Observation Snapshot；原 SF-03、SF-08、SF-09、SF-13 所述完整 Architecture Version Snapshot、Artifact Manifest、结构化 Replacement 和 Next Focus Snapshot 仍未实现。

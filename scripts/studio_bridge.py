@@ -66,7 +66,7 @@ from studio_session import (
 )
 
 
-BRIDGE_VERSION = "0.3.0"
+BRIDGE_VERSION = "0.4.0"
 MAX_BODY_BYTES = 1024 * 1024
 MAX_JOBS = 32
 API_PREFIX = "/api/v1"
@@ -444,6 +444,10 @@ class StudioBridge:
             self.reviews,
         ):
             _ensure_safe_directory_tree(self.project_root, directory)
+        # Evidence Inspector compares the current source with an immutable
+        # Bridge-start baseline.  Only hashes and coverage metadata leave the
+        # process; source bytes are never returned to the browser.
+        self.evidence_live_baseline = self._live_baseline()
 
     def _safe_artifact_parent(self, path: Path) -> None:
         """Recheck containment and redirect-free ancestry immediately before I/O."""
@@ -531,6 +535,81 @@ class StudioBridge:
             "studioSourceDigest": _studio_source_digest(
                 self.project_root, self.panorama
             ),
+        }
+
+    def _evidence_source_freshness(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Return disclosure-only live source comparison for the Renderer."""
+
+        formal = data.get("sourceBinding")
+        formal = formal if isinstance(formal, dict) else {}
+        formal_status = _formal_source_status(formal)
+        actual_observation = self._source_observation()
+        actual_live = self._live_baseline()
+        baseline_live = self.evidence_live_baseline
+        baseline_digest = baseline_live.get("studioSourceDigest", {})
+        actual_digest = actual_live.get("studioSourceDigest", {})
+        reasons: list[str] = []
+
+        if formal_status == "unbound":
+            reasons.append("formal_source_unbound")
+        elif formal_status == "uninitialized":
+            reasons.append("formal_source_uninitialized")
+        else:
+            if formal.get("mode") == "git" and formal.get("gitHead") != actual_observation.get("gitHead"):
+                reasons.append("git_head_changed")
+            if formal.get("sourceSnapshotHash") != actual_observation.get("sourceSnapshotHash"):
+                reasons.append("source_snapshot_changed")
+
+        if baseline_live.get("gitHead") != actual_live.get("gitHead"):
+            reasons.append("bridge_baseline_git_changed")
+        if (
+            baseline_digest.get("contentHash") != actual_digest.get("contentHash")
+            or baseline_digest.get("fileCount") != actual_digest.get("fileCount")
+            or baseline_digest.get("totalBytes") != actual_digest.get("totalBytes")
+        ):
+            reasons.append("source_content_changed")
+
+        coverage_complete = bool(
+            baseline_digest.get("coverageComplete")
+            and actual_digest.get("coverageComplete")
+        )
+        if not coverage_complete:
+            reasons.append("coverage_incomplete")
+
+        reasons = list(dict.fromkeys(reasons))
+        if not coverage_complete:
+            status = "incomplete"
+        elif formal_status in {"unbound", "uninitialized"}:
+            status = "uninitialized"
+        elif reasons:
+            status = "drift"
+        else:
+            status = "match"
+
+        return {
+            "status": status,
+            "checkedAt": _now(),
+            "reasons": reasons,
+            "formalSourceBindingStatus": formal_status,
+            "formalBinding": {
+                "mode": formal.get("mode"),
+                "gitHead": formal.get("gitHead"),
+                "gitBranch": formal.get("gitBranch"),
+                "sourceSnapshotHash": formal.get("sourceSnapshotHash"),
+                "observedAt": formal.get("observedAt"),
+                "lastObservationBatchId": formal.get("lastObservationBatchId"),
+            },
+            "actualObservation": actual_observation,
+            "contentDigest": {
+                "algorithm": actual_digest.get("algorithm"),
+                "baselineHash": baseline_digest.get("contentHash"),
+                "actualHash": actual_digest.get("contentHash"),
+                "fileCount": actual_digest.get("fileCount"),
+                "totalBytes": actual_digest.get("totalBytes"),
+                "coverageComplete": coverage_complete,
+                "incompleteReason": actual_digest.get("incompleteReason")
+                or baseline_digest.get("incompleteReason"),
+            },
         }
 
     def _assert_live_source(
@@ -677,6 +756,7 @@ class StudioBridge:
                 "presentationHash": compute_presentation_hash(text),
             },
             "sourceObservation": self._source_observation(),
+            "sourceFreshness": self._evidence_source_freshness(data),
             "sessions": sessions,
         }
 

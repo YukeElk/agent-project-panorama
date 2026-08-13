@@ -78,7 +78,7 @@
     .topbar-meta { display: flex; align-items: center; justify-content: flex-end; padding: 0 22px; color: var(--muted); }
     .revision-label { font: 600 12px/1 var(--mono); }
     .observation-badge { margin-left: 10px; padding: 4px 7px; border: 1px solid var(--rule-strong); border-radius: 999px; font-size: 11px; font-weight: 720; }
-    .observation-badge.is-current { color: var(--passed); border-color: #a9d8c1; background: #f1fbf6; }
+    .observation-badge.is-recorded { color: var(--info); border-color: #b9c8e7; background: #f3f6fc; }
     .observation-badge.is-stale { color: var(--warning); border-color: #e8c790; background: #fff8eb; }
 
     main { min-height: calc(100vh - var(--topbar-height)); }
@@ -434,6 +434,46 @@
     .source-module { padding: 9px 0; border-top: 1px solid var(--rule); }
     .source-module:first-of-type { border-top: 0; }
     .source-module p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .evidence-summary {
+      display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid var(--rule);
+      border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; background: #fff;
+    }
+    .evidence-summary > div { padding: 12px 14px; border-right: 1px solid var(--rule); min-width: 0; }
+    .evidence-summary > div:last-child { border-right: 0; }
+    .evidence-summary strong { display: block; margin-top: 4px; overflow-wrap: anywhere; }
+    .evidence-toolbar { margin-bottom: 0; border: 1px solid var(--rule); border-bottom: 0; padding: 10px; background: var(--band); }
+    .evidence-search { min-width: min(320px,100%); min-height: 44px; border: 1px solid var(--rule-strong); border-radius: 4px; padding: 0 11px; background: #fff; }
+    .evidence-workbench { display: grid; grid-template-columns: minmax(250px,.82fr) minmax(320px,1.2fr) minmax(265px,.9fr); border: 1px solid var(--rule); min-height: 480px; background: #fff; }
+    .evidence-column { min-width: 0; border-right: 1px solid var(--rule); }
+    .evidence-column:last-child { border-right: 0; }
+    .evidence-column-head { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 13px; border-bottom: 1px solid var(--rule); background: var(--band); }
+    .evidence-list { max-height: 680px; overflow: auto; }
+    .evidence-fact {
+      width: 100%; min-height: 64px; border: 0; border-bottom: 1px solid var(--rule); background: #fff;
+      padding: 11px 13px; text-align: left; color: var(--ink); cursor: pointer;
+    }
+    .evidence-fact:hover { background: #f8faff; }
+    .evidence-fact.is-selected { background: var(--primary-tint); box-shadow: inset 3px 0 0 var(--primary); }
+    .evidence-fact-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .evidence-fact-path { display: block; margin-top: 5px; color: var(--muted); font: 600 11px/1.35 var(--mono); overflow-wrap: anywhere; }
+    .evidence-panel { padding: 15px; }
+    .evidence-panel + .evidence-panel { border-top: 1px solid var(--rule); }
+    .evidence-panel h3 { margin-bottom: 9px; }
+    .evidence-value { overflow-wrap: anywhere; font-size: 13px; }
+    .evidence-code { display: block; padding: 8px 9px; border: 1px solid var(--rule); background: var(--band); font: 600 11px/1.5 var(--mono); overflow-wrap: anywhere; }
+    .evidence-items { list-style: none; margin: 0; padding: 0; }
+    .evidence-items li { padding: 9px 0; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+    .evidence-items li:first-child { border-top: 0; padding-top: 0; }
+    .evidence-conflict { border-left: 4px solid var(--critical); background: #fff7f8; padding: 11px 12px; margin-top: 10px; }
+    .evidence-human-review { margin-top: 8px; color: #8f1f2b; font-weight: 760; }
+    .evidence-freshness { display: flex; align-items: flex-start; gap: 9px; padding: 11px 12px; border: 1px solid var(--rule); background: var(--band); }
+    .evidence-freshness-icon { width: 22px; height: 22px; flex: 0 0 22px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-weight: 800; }
+    .evidence-freshness.is-match { color: #17603a; background: #f1fbf6; }
+    .evidence-freshness.is-drift, .evidence-freshness.is-incomplete { color: #8f1f2b; background: #fff7f8; }
+    .evidence-freshness.is-uninitialized, .evidence-freshness.is-currentness_unknown { color: #6c4810; background: #fffaf1; }
+    .evidence-reference { margin-top: 9px; padding: 9px 10px; border: 1px solid var(--rule); }
+    .evidence-reference .mono { overflow-wrap: anywhere; }
+    .evidence-baselines { margin-top: 22px; }
 
     .timeline { position: relative; display: grid; grid-template-columns: repeat(var(--timeline-columns,4), minmax(190px,1fr)); gap: 20px; padding-top: 24px; }
     .timeline::before { content: ""; position: absolute; left: 4%; right: 4%; top: 9px; height: 1px; background: var(--ink); }
@@ -481,6 +521,11 @@
       .attention-rail { order: -1; }
       .runtime-grid { grid-template-columns: 1fr; }
       .studio-workspace { grid-template-columns: 190px minmax(430px, 1fr) 270px; }
+      .evidence-workbench { grid-template-columns: minmax(235px,.8fr) minmax(320px,1.2fr); }
+      .evidence-column:last-child { grid-column: 1 / -1; border-top: 1px solid var(--rule); }
+      .evidence-summary { grid-template-columns: 1fr 1fr; }
+      .evidence-summary > div:nth-child(2) { border-right: 0; }
+      .evidence-summary > div:nth-child(n+3) { border-top: 1px solid var(--rule); }
       .inspector-grid { grid-template-columns: 1fr 1fr; }
       .inspector-pane:last-child { grid-column: 1 / -1; border-top: 1px solid var(--rule); }
       .source-groups { grid-template-columns: 1fr 1fr; }
@@ -509,6 +554,14 @@
       .inspector-pane:last-child { grid-column: auto; }
       .baseline-head, .source-groups, .stage-detail { grid-template-columns: 1fr; }
       .source-group { border-right: 0; border-top: 1px solid var(--rule); }
+      .evidence-summary, .evidence-workbench { grid-template-columns: 1fr; }
+      .evidence-summary > div { border-right: 0; border-top: 1px solid var(--rule); }
+      .evidence-summary > div:first-child { border-top: 0; }
+      .evidence-column { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .evidence-column:last-child { grid-column: auto; border-bottom: 0; }
+      .evidence-list { max-height: 360px; }
+      .evidence-toolbar { align-items: stretch; }
+      .evidence-search { width: 100%; }
       .stage-detail > div { border-right: 0; border-top: 1px solid var(--rule); }
       .timeline { grid-template-columns: repeat(var(--timeline-columns,4), minmax(230px,1fr)); }
       .subnav { gap: 16px; overflow-x: auto; }
@@ -597,7 +650,7 @@
   (function () {
     "use strict";
 
-    var RENDERER_VERSION = "0.3.0";
+    var RENDERER_VERSION = "0.4.0";
     var UI_LOCALE = "zh-CN";
     var SUPPORTED_SCHEMA_VERSIONS = ["0.1", "0.2"];
     var SUPPORTED_TEMPLATE_VERSIONS = ["0.1.0", "0.1.1"];
@@ -674,6 +727,12 @@
       selectedEnvironment: preferredEnvironment(),
       selectedDeploymentId: null,
       selectedResourceId: null,
+      evidenceAuthorityFilter: "all",
+      evidenceConfidenceFilter: "all",
+      evidenceSearch: "",
+      selectedProvenanceId: null,
+      evidenceRefreshing: false,
+      evidenceError: null,
       runtimeMode: "deployment",
       resourcePoolFilters: { environment: "all", type: "all", status: "all" },
       revealedSecrets: {},
@@ -710,8 +769,8 @@
       var observationBadge = document.getElementById("observation-badge");
       var observedHead = String(data.sourceBinding.gitHead || "");
       observationBadge.hidden = false;
-      observationBadge.classList.add(observedHead ? "is-current" : "is-stale");
-      observationBadge.textContent = observedHead ? "自动追踪 · " + observedHead.slice(0, 8) : "等待首次同步";
+      observationBadge.classList.add(observedHead ? "is-recorded" : "is-stale");
+      observationBadge.textContent = observedHead ? "已记录 · " + observedHead.slice(0, 8) : "等待首次同步";
     }
 
     function escapeHtml(value) {
@@ -1071,6 +1130,7 @@
       } finally {
         state.studioBridge.busy = null;
         if (state.studioMode === "studio") renderStudio();
+        else if (state.view === "system" && state.systemView === "source") renderSource();
       }
     }
 
@@ -2317,7 +2377,9 @@
     function renderSource() {
       var baselines = arr(data.architecture.baselines);
       document.getElementById("system-content").innerHTML =
-        "<div class='view-head'><div><h1>架构来源</h1><p class='eyeless-summary'>追踪项目相对于各架构基线保留、修改、新增或移除的内容。</p></div></div>" +
+        "<div class='view-head'><div><h1>架构来源</h1><p class='eyeless-summary'>追踪事实证据、来源绑定与项目相对于架构基线的变化。</p></div></div>" +
+        evidenceInspectorHtml() +
+        "<div class='evidence-baselines'>" + sectionHeading("架构基线差异", baselines.length) +
         (baselines.length ? baselines.map(function (baseline) {
           var modules = arr(data.architecture.modules).filter(function (module) {
             return module.source.baselineId === baseline.id || (!module.source.baselineId && ["added","removed"].indexOf(module.source.changeType) >= 0);
@@ -2330,7 +2392,153 @@
               }).join("") : "<p class='cell-sub'>无</p>") + "</section>";
           }).join("");
           return "<section class='source-baseline'><div class='baseline-head'><div><h2>" + e(baseline.name) + "</h2><span class='mono'>" + e(baseline.id) + " · " + e(baseline.version) + "</span></div><div><span class='meta-label'>偏离程度</span>" + status(baseline.divergence) + "</div><div><span class='meta-label'>升级策略</span><p>" + e(baseline.upgradeStrategy || "缺失") + "</p></div></div><div class='source-groups'>" + groups + "</div></section>";
-        }).join("") : "<div class='empty-state'>未记录架构基线。</div>");
+        }).join("") : "<div class='empty-state'>未记录架构基线。</div>") + "</div>";
+    }
+    function evidenceInspectorHtml() {
+      var provenance = arr(data.factProvenance);
+      var batches = arr(data.observationBatches);
+      var query = String(state.evidenceSearch || "").trim().toLowerCase();
+      var visible = provenance.filter(function (item) {
+        var haystack = [item.id, item.path, item.authority, item.confidence].concat(arr(item.evidence)).join(" ").toLowerCase();
+        return (state.evidenceAuthorityFilter === "all" || item.authority === state.evidenceAuthorityFilter) &&
+          (state.evidenceConfidenceFilter === "all" || item.confidence === state.evidenceConfidenceFilter) &&
+          (!query || haystack.indexOf(query) >= 0);
+      });
+      if (!state.selectedProvenanceId || !visible.some(function (item) { return item.id === state.selectedProvenanceId; })) {
+        state.selectedProvenanceId = visible[0] ? visible[0].id : null;
+      }
+      var selected = provenance.find(function (item) { return item.id === state.selectedProvenanceId; }) || null;
+      var selectedBatch = selected ? batches.find(function (item) { return item.id === selected.observationBatchId; }) : null;
+      var binding = data.sourceBinding || null;
+      var snapshot = selected ? evidenceSnapshotFor(selected) : null;
+      var freshness = evidenceFreshness();
+      var authorityValues = provenance.map(function (item) { return item.authority; });
+      var confidenceValues = provenance.map(function (item) { return item.confidence; });
+      var latestBatch = batches.slice().sort(function (a,b) { return String(b.observedAt).localeCompare(String(a.observedAt)); })[0] || null;
+      var summary = "<div class='evidence-summary' aria-label='证据摘要'>" +
+        "<div><span class='meta-label'>事实记录</span><strong>" + e(provenance.length) + " 条</strong></div>" +
+        "<div><span class='meta-label'>观察批次</span><strong>" + e(batches.length) + " 个</strong></div>" +
+        "<div><span class='meta-label'>来源绑定</span><strong>" + e(binding ? evidenceBindingLabel(binding) : "未绑定") + "</strong></div>" +
+        "<div><span class='meta-label'>最近记录</span><strong>" + e(latestBatch ? dateTime(latestBatch.observedAt) : "无观察记录") + "</strong></div></div>";
+      var toolbar = "<div class='toolbar evidence-toolbar'>" +
+        "<input class='evidence-search' type='search' data-filter='evidence-search' aria-label='搜索证据 Path、ID 或文本' placeholder='搜索 Path、ID 或证据文本' value='" + e(state.evidenceSearch) + "'>" +
+        selectControl("evidence-authority", optionsFor(authorityValues), state.evidenceAuthorityFilter, "Authority") +
+        selectControl("evidence-confidence", optionsFor(confidenceValues), state.evidenceConfidenceFilter, "Confidence") + "</div>";
+      if (!provenance.length) {
+        return "<section aria-labelledby='evidence-inspector-title'>" + sectionHeading("Evidence Inspector", 0) + summary + evidenceFreshnessHtml(freshness) +
+          "<div class='empty-state'><strong>尚无事实级证据记录。</strong><br>Schema 0.1 不包含持续观察字段；Schema 0.2 需先运行 Continuous Observation 才会生成 Fact Provenance。架构基线信息仍显示在下方。</div></section>";
+      }
+      var factList = visible.map(function (item) {
+        var derived = evidenceDerivedClass(item);
+        return "<button class='evidence-fact " + (item.id === state.selectedProvenanceId ? "is-selected" : "") + "' type='button' data-provenance-id='" + e(item.id) + "' aria-pressed='" + (item.id === state.selectedProvenanceId ? "true" : "false") + "'><span class='evidence-fact-title'><strong>" + e(derived.label) + "</strong>" + status(item.authority) + "</span><span class='evidence-fact-path'>" + e(item.path) + "</span><span class='cell-sub'>Confidence: " + e(humanize(item.confidence)) + " · " + e(dateTime(item.observedAt)) + "</span></button>";
+      }).join("");
+      var listEmpty = "<div class='empty-state'>没有符合筛选条件的事实记录。</div>";
+      return "<section aria-labelledby='evidence-inspector-title'><div class='section-heading'><h2 id='evidence-inspector-title'>Evidence Inspector</h2><div class='filter-row'><span class='count'>" + e(visible.length + " / " + provenance.length) + "</span>" + (studioBridgeOnline() ? "<button class='small-btn' type='button' data-evidence-action='refresh' " + (state.evidenceRefreshing ? "disabled" : "") + ">" + (state.evidenceRefreshing ? "检测中…" : "重新检测来源") + "</button>" : "") + "</div></div>" + summary + evidenceFreshnessHtml(freshness) + (state.evidenceError ? "<div class='error-banner' role='alert'><strong>来源检测失败</strong><br>" + e(state.evidenceError) + "</div>" : "") + toolbar +
+        "<div class='evidence-workbench'><section class='evidence-column' aria-label='事实列表'><div class='evidence-column-head'><strong>事实</strong><span class='count'>" + e(visible.length) + "</span></div><div class='evidence-list'>" + (factList || listEmpty) + "</div></section>" +
+        "<section class='evidence-column' aria-label='证据与冲突'><div class='evidence-column-head'><strong>证据链与冲突</strong><span class='mono'>" + e(selected ? selected.id : "未选择") + "</span></div>" + evidenceChainHtml(selected, selectedBatch) + "</section>" +
+        "<aside class='evidence-column' aria-label='来源详情'><div class='evidence-column-head'><strong>来源详情</strong><span class='count'>只读</span></div>" + evidenceSourceDetailsHtml(selected, selectedBatch, snapshot, binding, freshness) + "</aside></div></section>";
+    }
+    function evidenceDerivedClass(provenance) {
+      var extensionClass = provenance && provenance.extensions && provenance.extensions.factClass;
+      if (extensionClass) return { label: String(extensionClass), derived: false };
+      var path = String(provenance && provenance.path || "");
+      var mappings = [
+        ["/architecture/modules/", "CURRENT_IMPLEMENTATION"], ["/architecture/connections/", "CURRENT_IMPLEMENTATION"],
+        ["/deployments/", "CURRENT_RUNTIME"], ["/resources/", "RESOURCE"], ["/requirements/", "REQUIREMENT"],
+        ["/decisions/", "DECISION"], ["/gates/", "VERIFICATION"], ["/acceptanceCriteria/", "VERIFICATION"],
+        ["/risks/", "RISK_CANDIDATE"], ["/references/", "REFERENCE"]
+      ];
+      var found = mappings.find(function (item) { return path.indexOf(item[0]) === 0; });
+      return { label: (found ? found[1] : "UNCLASSIFIED") + " · Derived", derived: true };
+    }
+    function evidenceSnapshotFor(provenance) {
+      return arr(data.currentArchitectureSnapshots).slice().reverse().find(function (item) {
+        return arr(item.provenanceIds).indexOf(provenance.id) >= 0;
+      }) || null;
+    }
+    function evidenceBindingLabel(binding) {
+      var migration = binding && binding.extensions && binding.extensions.migrationRequiresInitialSync;
+      if (migration || !binding.observedAt || binding.sourceSnapshotHash === Array(65).join("0")) return "等待首次同步";
+      return humanize(binding.mode) + " · recorded as of " + dateTime(binding.observedAt);
+    }
+    function evidenceFreshness() {
+      var bridge = state.studioBridge.context && state.studioBridge.context.sourceFreshness;
+      if (studioBridgeOnline() && bridge) return bridge;
+      var binding = data.sourceBinding || {};
+      return {
+        status: "currentness_unknown",
+        checkedAt: null,
+        reasons: [binding.observedAt ? "offline_recorded_as_of" : "not_observed"],
+        formalSourceBindingStatus: binding.observedAt ? "recorded" : "uninitialized",
+        formalBinding: binding,
+        actualObservation: null,
+        contentDigest: null
+      };
+    }
+    function evidenceFreshnessReasonLabel(reason) {
+      var labels = {
+        offline_recorded_as_of: "离线页面只能证明记录时状态，无法检测当前 Source 是否一致",
+        not_observed: "尚未观察当前 Source",
+        formal_source_unbound: "Panorama 未绑定正式 Source",
+        formal_source_uninitialized: "正式 Source Binding 等待首次同步",
+        git_head_changed: "实际 Git HEAD 与正式绑定不同",
+        source_snapshot_changed: "实际 Source Snapshot 与正式绑定不同",
+        bridge_baseline_git_changed: "Bridge 启动后 Git HEAD 发生变化",
+        source_content_changed: "Bridge 启动后来源文件内容发生变化",
+        coverage_incomplete: "Source Content Digest 覆盖不完整"
+      };
+      return labels[reason] || humanize(reason);
+    }
+    function evidenceFreshnessHtml(freshness) {
+      var label = freshness.status === "match" ? "MATCH · 实时来源一致" : freshness.status === "drift" ? "STALE · 检测到来源漂移" : freshness.status === "incomplete" ? "INCOMPLETE · 来源覆盖不完整" : freshness.status === "uninitialized" ? "UNINITIALIZED · 等待来源同步" : "CURRENTNESS UNKNOWN · 仅显示记录时状态";
+      var reasonHtml = arr(freshness.reasons).map(function (reason) { return "<li>" + e(evidenceFreshnessReasonLabel(reason)) + "</li>"; }).join("");
+      return "<div class='evidence-freshness is-" + e(freshness.status) + "' role='status'><span class='evidence-freshness-icon' aria-hidden='true'>" + (freshness.status === "match" ? "✓" : "!") + "</span><div><strong>" + e(label) + "</strong><div class='cell-sub'>" + (freshness.checkedAt ? "Bridge 检测时间 " + e(dateTime(freshness.checkedAt)) : "未连接 Bridge；不得据此声明当前 Git 或 Source 仍匹配") + "</div>" + (reasonHtml ? "<ul class='evidence-items'>" + reasonHtml + "</ul>" : "") + "</div></div>";
+    }
+    async function refreshEvidenceContext() {
+      if (!studioBridgeOnline()) { showToast("当前未连接 Bridge"); return; }
+      state.evidenceRefreshing = true; state.evidenceError = null; renderSource();
+      try {
+        state.studioBridge.context = await studioBridgeRequest("/api/v1/context");
+      } catch (error) {
+        state.evidenceError = studioBridgeErrorMessage(error);
+      } finally {
+        state.evidenceRefreshing = false; renderSource();
+      }
+    }
+    function evidenceChainHtml(provenance, batch) {
+      if (!provenance) return "<div class='empty-state'>选择左侧事实以查看证据链。</div>";
+      var evidence = arr(provenance.evidence);
+      var conflicts = batch ? arr(batch.conflicts) : [];
+      var evidenceHtml = evidence.length ? "<ul class='evidence-items'>" + evidence.map(function (item) { return "<li>" + e(item) + "</li>"; }).join("") + "</ul>" : "<p class='cell-sub'>未记录 Evidence 文本。</p>";
+      var conflictHtml = conflicts.length ? conflicts.map(function (item) {
+        return "<div class='evidence-conflict'><strong>Conflict Summary</strong><p>" + e(item) + "</p><p class='evidence-human-review'>Needs Human Review — structured sides unavailable</p></div>";
+      }).join("") : "<p class='cell-sub'>此批次未记录 Conflict Summary。</p>";
+      return "<div class='evidence-panel'><h3>Evidence</h3>" + evidenceHtml + "<p class='cell-sub'>Evidence 字符串默认按纯文本显示，不自动推断文件、URL 或正式 Reference。</p></div>" +
+        "<div class='evidence-panel'><h3>Observation Batch</h3>" + (batch ? "<dl class='key-value'><dt>批次</dt><dd class='mono'>" + e(batch.id) + "</dd><dt>修订</dt><dd>" + e(batch.revisionFrom + " → " + batch.revisionTo) + "</dd><dt>状态</dt><dd>" + status(batch.status) + "</dd><dt>记录时间</dt><dd>" + e(dateTime(batch.observedAt)) + "</dd><dt>校验</dt><dd>" + e(batch.validationResult && batch.validationResult.valid ? "valid" : "invalid") + " · " + e(batch.validationResult ? batch.validationResult.errors + " errors / " + batch.validationResult.warnings + " warnings" : "unknown") + "</dd></dl>" : "<p class='cell-sub'>关联 Observation Batch 缺失。</p>") + "</div>" +
+        "<div class='evidence-panel'><h3>Conflicts</h3>" + conflictHtml + "</div>";
+    }
+    function evidenceReferences(provenance) {
+      if (!provenance) return [];
+      var evidence = arr(provenance.evidence);
+      return arr(data.references).filter(function (reference) {
+        return evidence.indexOf(reference.id) >= 0 || evidence.indexOf(reference.location) >= 0;
+      });
+    }
+    function evidenceReferenceHtml(reference) {
+      var location = reference.sensitive ? "敏感位置已隐藏" : reference.location;
+      var linked = !reference.sensitive && reference.status === "available" ? safeAnchor(location, reference.location) : e(location);
+      return "<div class='evidence-reference'><strong>" + e(reference.title) + "</strong><div class='cell-sub mono'>" + e(reference.id) + " · " + e(humanize(reference.type)) + "</div><div class='evidence-value'>" + linked + "</div><div class='cell-sub'>" + e(humanize(reference.locationType)) + " · " + e(humanize(reference.status)) + (reference.sensitive ? " · 敏感" : "") + "</div></div>";
+    }
+    function evidenceSourceDetailsHtml(provenance, batch, snapshot, binding, freshness) {
+      if (!provenance) return "<div class='empty-state'>选择事实后显示来源详情。</div>";
+      var derived = evidenceDerivedClass(provenance);
+      var refs = evidenceReferences(provenance);
+      var actual = freshness.actualObservation || {};
+      var digest = freshness.contentDigest || {};
+      return "<div class='evidence-panel'><h3>Fact Provenance</h3><dl class='key-value'><dt>Fact Class</dt><dd>" + e(derived.label) + "</dd><dt>Authority</dt><dd>" + status(provenance.authority) + "</dd><dt>Confidence</dt><dd>" + e(humanize(provenance.confidence)) + "</dd><dt>Observed At</dt><dd>" + e(dateTime(provenance.observedAt)) + "</dd><dt>Source Commit</dt><dd class='mono'>" + e(provenance.sourceCommit || "unknown") + "</dd><dt>JSON Path</dt><dd><span class='evidence-code'>" + e(provenance.path) + "</span></dd></dl></div>" +
+        "<div class='evidence-panel'><h3>Source Binding</h3><dl class='key-value'><dt>记录状态</dt><dd>" + e(binding ? evidenceBindingLabel(binding) : "未绑定") + "</dd><dt>Formal HEAD</dt><dd class='mono'>" + e(binding && binding.gitHead || "unknown") + "</dd><dt>Actual HEAD</dt><dd class='mono'>" + e(actual.gitHead || "not observed") + "</dd><dt>Snapshot</dt><dd><span class='evidence-code'>" + e(snapshot && snapshot.sourceSnapshotHash || binding && binding.sourceSnapshotHash || "unknown") + "</span></dd><dt>Content Digest</dt><dd><span class='evidence-code'>" + e(digest.actualHash || "Bridge only") + "</span></dd><dt>覆盖</dt><dd>" + e(digest.coverageComplete === true ? digest.fileCount + " files · complete" : digest.coverageComplete === false ? "incomplete · " + (digest.incompleteReason || "unknown") : "not observed") + "</dd></dl></div>" +
+        "<div class='evidence-panel'><h3>正式 References</h3>" + (refs.length ? refs.map(evidenceReferenceHtml).join("") : "<p class='cell-sub'>Evidence 未与正式 Reference ID 或 location 精确匹配。</p>") + "</div>" +
+        (batch && arr(batch.conflicts).length ? "<div class='evidence-panel'><p class='evidence-human-review'>此批次包含 Conflict Summary；Renderer 不裁决冲突。</p></div>" : "");
     }
 
     function renderEvolution() {
@@ -2452,6 +2660,8 @@
       if (target.dataset.runtimeMode) { state.runtimeMode = target.dataset.runtimeMode; state.selectedResourceId = null; renderRuntime(); return; }
       if (target.dataset.stageId) { state.selectedStageId = target.dataset.stageId; renderEvolution(); return; }
       if (target.dataset.versionId) { state.selectedVersionId = target.dataset.versionId; renderEvolution(); return; }
+      if (target.dataset.provenanceId) { state.selectedProvenanceId = target.dataset.provenanceId; renderSource(); return; }
+      if (target.dataset.evidenceAction === "refresh") { refreshEvidenceContext(); return; }
       if (target.dataset.action === "close-drawer") { closeDrawer(); return; }
       if (target.dataset.action === "clear-module-filters") {
         state.moduleSearch = ""; state.layerFilter = "all"; state.sourceFilter = "all"; state.statusFilter = "all"; renderLogical(); return;
@@ -2502,8 +2712,11 @@
       if (filter === "resource-environment") state.resourcePoolFilters.environment = event.target.value;
       if (filter === "resource-type") state.resourcePoolFilters.type = event.target.value;
       if (filter === "resource-status") state.resourcePoolFilters.status = event.target.value;
+      if (filter === "evidence-authority") state.evidenceAuthorityFilter = event.target.value;
+      if (filter === "evidence-confidence") state.evidenceConfidenceFilter = event.target.value;
       if (filter.indexOf("requirement-") === 0) renderControl();
       else if (filter.indexOf("resource-") === 0) { state.selectedResourceId = null; renderRuntime(); }
+      else if (filter.indexOf("evidence-") === 0) renderSource();
       else renderLogical();
     });
     document.addEventListener("input", function (event) {
@@ -2511,6 +2724,11 @@
         state.moduleSearch = event.target.value;
         window.clearTimeout(renderLogical.searchTimer);
         renderLogical.searchTimer = window.setTimeout(renderLogical, 100);
+      }
+      if (event.target.dataset.filter === "evidence-search") {
+        state.evidenceSearch = event.target.value;
+        window.clearTimeout(renderSource.searchTimer);
+        renderSource.searchTimer = window.setTimeout(renderSource, 100);
       }
     });
     document.addEventListener("focusin", function (event) {
