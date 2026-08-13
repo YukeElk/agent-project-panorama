@@ -210,3 +210,54 @@
 - V0.2 只取得“观察、记录和披露”授权；不得修改业务项目、自动作出治理决策、伪造批准、
   验收或豁免。
 - V0.1 继续只读兼容；迁移必须输出新文件，默认不覆盖原 Panorama。
+
+## SF-24 Fact Provenance 缺少显式 Fact Class 与结构化 Evidence Source
+
+- 证据：V0.2 `factProvenance` 保存 JSON Path、Authority、枚举 Confidence、Evidence 字符串、Commit、
+  时间和 Observation Batch，但没有显式 Fact Class，也没有可验证的 Evidence Source 实体引用和来源限制。
+- 影响：Evidence Inspector 可以按 Path/注册表派生实体类别，但不能把派生类别伪装成来源事实；Evidence
+  字符串也不能默认当作可点击或可验证实体。现有 Confidence 不能换算为百分比分数。
+- V0.4 首版处理：只读显示正式 Path/Authority/枚举 Confidence；派生类别明确标记 Derived，Evidence
+  默认纯文本。需要稳定 Fact Class、Source Type、Access Class 或结构化 Evidence Binding 时，再设计
+  版本化字段并单独批准 Schema 变更。
+
+## SF-25 Observation Conflict 缺少可审计的两侧结构
+
+- 证据：`observationBatches[].conflicts` 当前只是字符串列表，没有 left/right provenance、各自 Authority、
+  Confidence、时间、范围、状态或人工处置记录。
+- 影响：Renderer 无法可靠展示“冲突两侧证据”，也无法证明某个 Conflict 已被人工确认、保留或解决。
+- V0.4 首版处理：展示 Batch 级 Conflict Summary，并关联同 Batch 的 provenance；缺少正式绑定时显示
+  `Needs Human Review — structured sides unavailable`。不得从自由文本猜测双方或静默裁决。
+- 后续门禁：若需要富结构 Conflict，必须定义独立 ID、side bindings、resolution status、review binding
+  与时间语义，并在 Schema Proposal 中保持旧字符串兼容。
+
+## SF-26 Session 缺少持久 stale reasons 与不可变 Journal/Checkpoint
+
+- 证据：Architecture Session 只有 `status=stale`、双操作数组和双 Hash；没有标准化 stale reason 列表、
+  原因发生时间、失效制品引用或不可变事件链。当前 Undo/Redo 会恢复 Session 快照。
+- 影响：页面可以解释当前运行中检测到的漂移，但刷新后未必保留完整原因；现有操作数组也不能称为
+  append-only Audit Journal，更不能宣称恢复 Agent、测试环境或工具副作用。
+- V0.4 首版处理：从 Session/Bridge/Proposal/CAS 状态派生并同时显示多个 stale 原因；操作区域称为
+  `Session Operations`。不把原因写入正式 Panorama，不声称不可变审计或外部状态恢复。
+- 后续门禁：持久 reason、artifact invalidation、event chain 或 Candidate Checkpoint 需要独立版本化 Session
+  Schema、Hash 边界、保留策略和迁移方案。
+
+## SF-27 缺少 Verification Receipt 与多次验证历史模型
+
+- 证据：现有 Gate 主要保存当前状态、`lastRunAt/resultSummary/evidenceReferenceIds`；Reference 可保存测试
+  报告，但没有版本化 Receipt、运行绑定、隔离事实、redaction manifest、Finding mapping 或多次结果历史。
+- 影响：无法仅靠当前 Gate 状态重建 append-only Verification Timeline，也不能安全接收外部 Trial/Eval
+  结果；若直接信任 Receipt 更新 Gate，会制造 verification/acceptance 治理事实。
+- V0.4 处理：先使用独立 `panorama-verification-receipt.v0.1` Schema 和脱敏导入 Preview；默认只映射为
+  候选 `Reference(test_report)`、Evidence 与 provenance，再经过 Formal Validation 和 Proposal。
+- 停止边界：Receipt 不执行测试、不调度 Agent、不自动选优、不直接把 Gate 设为 passed，也不形成
+  Acceptance、Review、Approval 或 Waiver。
+
+## V0.4 Design Approval 结论
+
+- 2026-08-13 用户批准 Evidence Inspector、Studio Operations/Semantic Diff、Trace Projection 与
+  Verification Receipt Adapter 的分阶段设计方向。
+- 批准范围是 Design Brief 与按 P0→P1→P2 顺序进入实现；不是对 SF-24～SF-27 Schema 重构的批准。
+- P0 首版只使用现有数据派生 Presentation；实时 Freshness 只能由 Bridge 观察，离线 HTML 不得声称
+  当前 Git/Source 仍匹配。
+- 不新增主视图，不引入通用 Run/Mission/Agent/Trial 平台，不自动执行测试或推进治理状态。
