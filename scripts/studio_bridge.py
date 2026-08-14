@@ -45,6 +45,12 @@ from panorama_io import (
     compute_presentation_hash,
     extract_data,
 )
+from import_verification_receipt import (
+    PREVIEW_FORMAT as VERIFICATION_PREVIEW_FORMAT,
+    VerificationReceiptError,
+    build_receipt_preview,
+    build_receipt_proposal,
+)
 from propose_update import build_proposal
 from schema_support import schema_for_data
 from studio_agent import (
@@ -71,6 +77,7 @@ MAX_BODY_BYTES = 1024 * 1024
 MAX_JOBS = 32
 API_PREFIX = "/api/v1"
 APPROVAL_PHRASE = "\u6279\u51c6 Studio Proposal {proposal_hash}"
+RECEIPT_APPROVAL_PHRASE = "\u6279\u51c6 Receipt Proposal {proposal_hash}"
 SAFE_ARTIFACT_ID = re.compile(r"^[A-Z][A-Z0-9._-]{1,127}$")
 META_CSP_RE = re.compile(
     r"\s*<meta\s+http-equiv=[\"']Content-Security-Policy[\"'][^>]*>",
@@ -435,6 +442,7 @@ class StudioBridge:
         self.approvals = self.work / "approvals"
         self.validations = self.work / "validations"
         self.reviews = self.work / "reviews"
+        self.receipts = self.work / "verification-receipts"
         for directory in (
             self.work,
             self.sessions,
@@ -442,6 +450,7 @@ class StudioBridge:
             self.approvals,
             self.validations,
             self.reviews,
+            self.receipts,
         ):
             _ensure_safe_directory_tree(self.project_root, directory)
         # Evidence Inspector compares the current source with an immutable
@@ -716,6 +725,8 @@ class StudioBridge:
                 "apply": True,
                 "factRefresh": True,
                 "factsRefresh": True,
+                "verificationReceiptPreview": True,
+                "verificationReceiptProposal": True,
             },
             "agent": agent,
         }
@@ -1017,6 +1028,121 @@ class StudioBridge:
                 raise StudioBridgeError("JOB_NOT_FOUND", "review job does not exist", 404)
             return copy.deepcopy(self.jobs[safe_job_id])
 
+    @staticmethod
+    def _receipt_hash(value: Any) -> str:
+        if not isinstance(value, str) or not re.fullmatch(r"[a-f0-9]{64}", value):
+            raise StudioBridgeError("INVALID_RECEIPT_HASH", "receiptHash is invalid")
+        return value
+
+    def _receipt_preview_path(self, receipt_hash: str) -> Path:
+        digest = self._receipt_hash(receipt_hash)
+        return self.receipts / f"RECEIPT-{digest.upper()}.json"
+
+    def preview_verification_receipt(self, body: dict[str, Any]) -> dict[str, Any]:
+        receipt = body.get("receipt")
+        if not isinstance(receipt, dict) or set(body) != {"receipt"}:
+            raise StudioBridgeError(
+                "INVALID_RECEIPT", "body must contain only a receipt object"
+            )
+        with self.project_lock:
+            current = self._data()
+            preview = build_receipt_preview(
+                current,
+                receipt,
+                project_root=self.project_root,
+                panorama_path=self.panorama,
+                panorama_schema=self._schema(current),
+            )
+            path = self._receipt_preview_path(preview["receiptHash"])
+            if path.exists():
+                existing = self._read_artifact(path, "Verification Receipt Preview")
+                if existing != preview:
+                    raise StudioBridgeError(
+                        "RECEIPT_PREVIEW_CONFLICT",
+                        "stored Receipt Preview differs from the current preview",
+                        409,
+                    )
+            else:
+                self._write_artifact(path, preview, write_once=True)
+            return {
+                "preview": preview,
+                "artifact": str(path.relative_to(self.project_root)),
+            }
+
+    def create_verification_receipt_proposal(
+        self, body: dict[str, Any]
+    ) -> dict[str, Any]:
+        if set(body) != {"receiptHash"}:
+            raise StudioBridgeError(
+                "INVALID_RECEIPT_PROPOSAL", "body must contain only receiptHash"
+            )
+        receipt_hash = self._receipt_hash(body.get("receiptHash"))
+        with self.project_lock:
+            preview = self._read_artifact(
+                self._receipt_preview_path(receipt_hash),
+                "Verification Receipt Preview",
+            )
+            if preview.get("format") != VERIFICATION_PREVIEW_FORMAT:
+                raise StudioBridgeError(
+                    "INVALID_RECEIPT_PREVIEW", "stored Receipt Preview format is invalid"
+                )
+            current = self._data()
+            wrapper = build_receipt_proposal(
+                current,
+                preview,
+                project_root=self.project_root,
+                panorama_path=self.panorama,
+                panorama_schema=self._schema(current),
+            )
+            package = wrapper["proposal"]
+            observation = self._source_observation()
+            actual = self._live_baseline()
+            receipt_binding = package["reviewDraft"]["extensions"][
+                "verificationReceiptBinding"
+            ]
+            receipt_binding.update(
+                {
+                    "gitHead": observation.get("gitHead"),
+                    "sourceSnapshotHash": observation.get("sourceSnapshotHash"),
+                    "studioSourceDigest": copy.deepcopy(
+                        actual.get("studioSourceDigest")
+                    ),
+                }
+            )
+            package["updateBatchDraft"]["extensions"][
+                "verificationReceiptBinding"
+            ] = copy.deepcopy(receipt_binding)
+            package["proposalHash"] = compute_proposal_hash(package)
+            package["approval"]["proposalHash"] = package["proposalHash"]
+            proposal_id = "PROPOSAL-VR-" + package["proposalHash"][:20].upper()
+            proposal_path = self.proposals / f"{proposal_id}.json"
+            if proposal_path.exists():
+                existing = self._read_artifact(proposal_path, "Receipt Proposal")
+                if existing != wrapper:
+                    raise StudioBridgeError(
+                        "PROPOSAL_ID_COLLISION", "Receipt Proposal ID collision", 409
+                    )
+            else:
+                self._write_artifact(proposal_path, wrapper, write_once=True)
+            return {
+                "kind": "verification_receipt",
+                "proposalId": proposal_id,
+                "proposalHash": package["proposalHash"],
+                "status": "pending",
+                "receiptId": preview["receiptId"],
+                "receiptHash": receipt_hash,
+                "confirmationPhrase": RECEIPT_APPROVAL_PHRASE.format(
+                    proposal_hash=package["proposalHash"]
+                ),
+                "binding": copy.deepcopy(receipt_binding),
+                "artifact": str(proposal_path.relative_to(self.project_root)),
+                "operations": copy.deepcopy(package["operations"]),
+                "affectedEntities": copy.deepcopy(
+                    wrapper["facts"]["affectedEntities"]
+                ),
+                "validation": copy.deepcopy(wrapper["validation"]),
+            }
+
     def create_proposal(self, body: dict[str, Any]) -> dict[str, Any]:
         session_id = _safe_id(body.get("sessionId"), "sessionId")
         candidate_id = body.get("candidateId")
@@ -1166,16 +1292,6 @@ class StudioBridge:
             r"[a-f0-9]{64}", approved_hash
         ):
             raise StudioBridgeError("INVALID_APPROVAL", "approvedHash is invalid")
-        expected_confirmation = APPROVAL_PHRASE.format(
-            proposal_hash=approved_hash
-        )
-        if not isinstance(confirmation, str) or not hmac.compare_digest(
-            confirmation.encode("utf-8"), expected_confirmation.encode("utf-8")
-        ):
-            raise StudioBridgeError(
-                "CONFIRMATION_MISMATCH",
-                "exact confirmation phrase does not match the Proposal Hash",
-            )
         if not isinstance(approved_by, str) or not approved_by.strip():
             raise StudioBridgeError("INVALID_APPROVAL", "approvedBy is required")
         with self.project_lock:
@@ -1189,7 +1305,20 @@ class StudioBridge:
                     "approvedHash is not the selected Proposal Hash",
                     409,
                 )
-            self._assert_proposal_session_binding(package, self._data())
+            binding = self._assert_governance_proposal_binding(
+                package, self._data()
+            )
+            receipt_proposal = "receiptHash" in binding
+            expected_confirmation = (
+                RECEIPT_APPROVAL_PHRASE if receipt_proposal else APPROVAL_PHRASE
+            ).format(proposal_hash=approved_hash)
+            if not isinstance(confirmation, str) or not hmac.compare_digest(
+                confirmation.encode("utf-8"), expected_confirmation.encode("utf-8")
+            ):
+                raise StudioBridgeError(
+                    "CONFIRMATION_MISMATCH",
+                    "exact confirmation phrase does not match the Proposal Hash",
+                )
             approval = record_studio_approval(
                 wrapper,
                 approved_hash=approved_hash,
@@ -1268,6 +1397,89 @@ class StudioBridge:
             )
         return binding
 
+    @staticmethod
+    def _receipt_binding(package: dict[str, Any]) -> dict[str, Any] | None:
+        review = package.get("reviewDraft", {})
+        batch = package.get("updateBatchDraft", {})
+        review_binding = review.get("extensions", {}).get(
+            "verificationReceiptBinding"
+        )
+        batch_binding = batch.get("extensions", {}).get(
+            "verificationReceiptBinding"
+        )
+        if review_binding is None and batch_binding is None:
+            return None
+        if not isinstance(review_binding, dict) or review_binding != batch_binding:
+            raise StudioBridgeError(
+                "RECEIPT_BINDING_INVALID",
+                "Proposal Verification Receipt binding is missing or inconsistent",
+                409,
+            )
+        return review_binding
+
+    def _assert_receipt_proposal_binding(
+        self, package: dict[str, Any], current: dict[str, Any]
+    ) -> dict[str, Any]:
+        binding = self._receipt_binding(package)
+        if binding is None:
+            raise StudioBridgeError(
+                "RECEIPT_BINDING_INVALID", "Receipt Proposal binding is missing", 409
+            )
+        if binding.get("baseRevision") != current.get("meta", {}).get("revision"):
+            raise StudioBridgeError(
+                "PANORAMA_CONFLICT", "Panorama Revision changed after Receipt Proposal", 409
+            )
+        if binding.get("baseDataHash") != compute_data_hash(current):
+            raise StudioBridgeError(
+                "PANORAMA_CONFLICT", "Panorama Data Hash changed after Receipt Proposal", 409
+            )
+        if binding.get("operationsHash") != compute_canonical_hash(
+            package.get("operations", [])
+        ):
+            raise StudioBridgeError(
+                "RECEIPT_BINDING_INVALID", "Receipt Proposal operations changed", 409
+            )
+        receipt_hash = self._receipt_hash(binding.get("receiptHash"))
+        preview = self._read_artifact(
+            self._receipt_preview_path(receipt_hash), "Verification Receipt Preview"
+        )
+        if (
+            preview.get("receiptHash") != receipt_hash
+            or preview.get("receiptId") != binding.get("receiptId")
+            or preview.get("referenceId") != binding.get("referenceId")
+            or preview.get("status") != "ready"
+        ):
+            raise StudioBridgeError(
+                "RECEIPT_BINDING_INVALID", "Receipt Preview no longer matches Proposal", 409
+            )
+        observation = self._source_observation()
+        for field in ("gitHead", "sourceSnapshotHash"):
+            if binding.get(field) != observation.get(field):
+                raise StudioBridgeError(
+                    "SOURCE_DRIFT", f"project source changed after Receipt Proposal ({field})", 409
+                )
+        actual_digest = self._live_baseline().get("studioSourceDigest")
+        if binding.get("studioSourceDigest") != actual_digest:
+            raise StudioBridgeError(
+                "SOURCE_DRIFT", "project source content changed after Receipt Proposal", 409
+            )
+        if not isinstance(actual_digest, dict) or not actual_digest.get(
+            "coverageComplete"
+        ):
+            raise StudioBridgeError(
+                "SOURCE_COVERAGE_INCOMPLETE",
+                "Receipt Proposal source coverage is incomplete",
+                409,
+            )
+        return binding
+
+    def _assert_governance_proposal_binding(
+        self, package: dict[str, Any], current: dict[str, Any]
+    ) -> dict[str, Any]:
+        if self._receipt_binding(package) is not None:
+            return self._assert_receipt_proposal_binding(package, current)
+        return self._assert_proposal_session_binding(package, current)
+
     def apply(self, body: dict[str, Any]) -> dict[str, Any]:
         proposal_id = _safe_id(body.get("proposalId"), "proposalId")
         requested_hash = body.get("proposalHash")
@@ -1296,7 +1508,7 @@ class StudioBridge:
             approval = self._read_artifact(
                 self.approvals / f"{approval_id}.json", "Approval"
             )
-            binding = self._assert_proposal_session_binding(
+            binding = self._assert_governance_proposal_binding(
                 package, self._data()
             )
             actual = self._source_observation()
@@ -1560,6 +1772,17 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             self._json(200, {"job": self.app.get_job(path.rsplit("/", 1)[1])})
         elif method == "POST" and path == f"{API_PREFIX}/proposals":
             self._json(201, {"proposal": self.app.create_proposal(body)})
+        elif method == "POST" and path == f"{API_PREFIX}/verification-receipts/preview":
+            self._json(200, self.app.preview_verification_receipt(body))
+        elif method == "POST" and path == f"{API_PREFIX}/verification-receipts/proposals":
+            self._json(
+                201,
+                {
+                    "proposal": self.app.create_verification_receipt_proposal(
+                        body
+                    )
+                },
+            )
         elif method == "POST" and path == f"{API_PREFIX}/approvals":
             self._json(201, {"approval": self.app.record_approval(body)})
         elif method == "POST" and path == f"{API_PREFIX}/apply":
@@ -1586,6 +1809,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             StudioApprovalError,
             StudioAgentError,
             StudioSessionError,
+            VerificationReceiptError,
             ValueError,
         ) as exc:
             self._error(StudioBridgeError("OPERATION_FAILED", str(exc), 409))
@@ -1611,6 +1835,7 @@ class StudioRequestHandler(BaseHTTPRequestHandler):
             StudioApprovalError,
             StudioAgentError,
             StudioSessionError,
+            VerificationReceiptError,
             ValueError,
         ) as exc:
             self._error(StudioBridgeError("OPERATION_FAILED", str(exc), 409))

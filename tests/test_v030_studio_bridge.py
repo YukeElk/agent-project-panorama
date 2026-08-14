@@ -109,6 +109,8 @@ def test_security_gates_and_json_envelopes(bridge):
     assert body["data"]["agent"]["reason"] == "codex_cli_not_enabled_at_startup"
     assert body["data"]["features"]["approvals"] is True
     assert body["data"]["features"]["factsRefresh"] is True
+    assert body["data"]["features"]["verificationReceiptPreview"] is True
+    assert body["data"]["features"]["verificationReceiptProposal"] is True
 
     status, _, body = _request(
         app,

@@ -541,6 +541,18 @@
     .evidence-freshness.is-match { color: #17603a; background: #f1fbf6; }
     .evidence-freshness.is-drift, .evidence-freshness.is-incomplete { color: #8f1f2b; background: #fff7f8; }
     .evidence-freshness.is-uninitialized, .evidence-freshness.is-currentness_unknown { color: #6c4810; background: #fffaf1; }
+    .receipt-workbench { margin: 12px 0; border: 1px solid var(--rule); border-radius: 6px; background: #fff; overflow: hidden; }
+    .receipt-head { min-height: 52px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--rule); background: var(--band); }
+    .receipt-head-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .receipt-body { padding: 12px; display: grid; gap: 10px; }
+    .receipt-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+    .receipt-card, .receipt-timeline-item { border: 1px solid var(--rule); border-radius: 5px; padding: 9px 10px; min-width: 0; }
+    .receipt-card strong, .receipt-timeline-item strong { display: block; margin-bottom: 4px; }
+    .receipt-hash { font: 11px/1.45 var(--mono); overflow-wrap: anywhere; user-select: all; color: var(--muted); }
+    .receipt-boundary { border-left: 4px solid var(--warning); background: #fffaf1; padding: 9px 10px; color: #6c4810; }
+    .receipt-timeline { display: grid; gap: 8px; }
+    .receipt-finding { margin-top: 7px; padding: 7px; border-left: 3px solid var(--warning); background: var(--band); font-size: 12px; }
+    .receipt-error { color: var(--critical); }
     .evidence-reference { margin-top: 9px; padding: 9px 10px; border: 1px solid var(--rule); }
     .evidence-reference .mono { overflow-wrap: anywhere; }
     .evidence-baselines { margin-top: 22px; }
@@ -626,6 +638,7 @@
       .baseline-head, .source-groups, .stage-detail { grid-template-columns: 1fr; }
       .source-group { border-right: 0; border-top: 1px solid var(--rule); }
       .evidence-summary, .evidence-workbench { grid-template-columns: 1fr; }
+      .receipt-grid { grid-template-columns: 1fr; }
       .evidence-summary > div { border-right: 0; border-top: 1px solid var(--rule); }
       .evidence-summary > div:first-child { border-top: 0; }
       .evidence-column { border-right: 0; border-bottom: 1px solid var(--rule); }
@@ -637,6 +650,7 @@
       .timeline { grid-template-columns: repeat(var(--timeline-columns,4), minmax(230px,1fr)); }
       .subnav { gap: 16px; overflow-x: auto; }
       .system-mode-switch { padding-left: 0; }
+      .mode-switch-btn, .small-btn { min-height: 44px; }
       .studio-shell { min-height: 0; }
       .studio-workspace { display: flex; flex-direction: column; }
       .studio-mobile-tabs { display: flex; }
@@ -4941,6 +4955,14 @@
       selectedProvenanceId: null,
       evidenceRefreshing: false,
       evidenceError: null,
+      receiptImport: {
+        busy: null,
+        error: null,
+        preview: null,
+        proposal: null,
+        approval: null,
+        applyResult: null
+      },
       runtimeMode: "deployment",
       resourcePoolFilters: { environment: "all", type: "all", status: "all" },
       revealedSecrets: {},
@@ -7084,6 +7106,9 @@
         body += drawerSection("Trace Route", traceRouteHtml(type, item.id));
         body += drawerSection("Gate / Acceptance Projection", governanceProjectionHtml(type, item.id));
       }
+      if (["acceptance", "gate"].indexOf(type) >= 0) {
+        body += drawerSection("Verification Receipt Timeline", verificationReceiptTimelineHtml(type, item.id));
+      }
       document.getElementById("drawer-body").innerHTML = body;
       openDrawer();
     }
@@ -7254,6 +7279,116 @@
           return "<section class='source-baseline'><div class='baseline-head'><div><h2>" + e(baseline.name) + "</h2><span class='mono'>" + e(baseline.id) + " · " + e(baseline.version) + "</span></div><div><span class='meta-label'>偏离程度</span>" + status(baseline.divergence) + "</div><div><span class='meta-label'>升级策略</span><p>" + e(baseline.upgradeStrategy || "缺失") + "</p></div></div><div class='source-groups'>" + groups + "</div></section>";
         }).join("") : "<div class='empty-state'>未记录架构基线。</div>") + "</div>";
     }
+    function receiptExtension(reference) {
+      var extensions = reference && reference.extensions || {};
+      var receipt = extensions.verificationReceipt;
+      return receipt && receipt.format === "panorama-verification-receipt.v0.1" ? receipt : null;
+    }
+    function verificationReceiptReferences(type, id) {
+      var directIds = [];
+      var item = byId(type, id);
+      if (item && type === "gate") directIds = arr(item.evidenceReferenceIds).concat(arr(item.referenceIds));
+      if (item && type === "acceptance") directIds = arr(item.evidenceReferenceIds);
+      return arr(data.references).filter(function (reference) {
+        if (!receiptExtension(reference)) return false;
+        if (directIds.indexOf(reference.id) >= 0) return true;
+        return arr(reference.relatedEntities).some(function (ref) { return ref.type === type && ref.id === id; });
+      }).filter(function (reference, index, list) {
+        var hash = reference.extensions && reference.extensions.verificationReceiptHash;
+        return list.findIndex(function (candidate) { return candidate.extensions && candidate.extensions.verificationReceiptHash === hash; }) === index;
+      }).sort(function (a,b) {
+        return String(receiptExtension(b).producer.generatedAt).localeCompare(String(receiptExtension(a).producer.generatedAt));
+      });
+    }
+    function receiptIsolationHtml(isolation) {
+      return "<dl class='key-value'><dt>Network</dt><dd>" + status(isolation.networkIsolation) + "</dd><dt>Filesystem</dt><dd>" + status(isolation.filesystemIsolation) + "</dd><dt>Process tree</dt><dd>" + status(isolation.processTreeIsolation) + "</dd></dl>";
+    }
+    function receiptVerificationHtml(verification) {
+      var findings = arr(verification.findings).map(function (finding) {
+        return "<div class='receipt-finding'><strong>External Finding · " + e(finding.findingId) + "</strong><span>" + status(finding.severity) + " · " + e(finding.category) + "</span><p>" + e(finding.summary) + "</p><span class='cell-sub'>不是 Panorama Formal Finding</span></div>";
+      }).join("");
+      return "<div class='receipt-timeline-item'><strong>" + e(verification.verificationId) + " · " + e(humanize(verification.status)) + "</strong><p>" + e(verification.summary) + "</p><div class='cell-sub'>" + e(dateTime(verification.completedAt)) + " · Gate " + e(arr(verification.gateIds).join(", ") || "未映射") + " · Acceptance " + e(arr(verification.acceptanceCriteriaIds).join(", ") || "未映射") + "</div>" + findings + "</div>";
+    }
+    function verificationReceiptTimelineHtml(type, id) {
+      var references = verificationReceiptReferences(type, id);
+      if (!references.length) return "<div class='empty-state'>尚未导入与此实体精确映射的 Verification Receipt。</div>";
+      return "<div class='receipt-timeline'>" + references.map(function (reference) {
+        var receipt = receiptExtension(reference); var hash = reference.extensions.verificationReceiptHash || receipt.producer.receiptHash;
+        return "<article class='receipt-timeline-item'><div class='trace-summary'><strong>" + e(receipt.receiptId) + "</strong>" + status(reference.status) + "<span class='cell-sub'>" + e(receipt.producer.name + " " + receipt.producer.version) + "</span></div><p class='receipt-hash'>" + e(hash) + "</p>" + arr(receipt.verifications).map(receiptVerificationHtml).join("") + "<div class='receipt-grid'><div class='receipt-card'><strong>Isolation 原样披露</strong>" + receiptIsolationHtml(receipt.isolation) + "</div><div class='receipt-card'><strong>Redaction</strong><p>" + e(receipt.redaction.sensitivity) + " · " + (receipt.redaction.truncated ? "truncated" : "not truncated") + "</p><p class='cell-sub'>removed " + e(arr(receipt.redaction.removedFields).length) + " fields</p></div><div class='receipt-card'><strong>治理边界</strong><p>测试结果已投影为 Evidence；未自动推进 Gate、Acceptance 或 Approval。</p></div></div></article>";
+      }).join("") + "</div>";
+    }
+    function receiptApprovalDialogHtml() {
+      var proposal = state.receiptImport.proposal;
+      if (!proposal || state.receiptImport.approval) return "";
+      return "<dialog class='studio-dialog' id='receipt-approval-dialog' aria-labelledby='receipt-approval-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='receipt-approval-title'>精确批准 Receipt Proposal</h2></div><div class='studio-dialog-body'><p class='cell-sub'>批准只绑定该 64 位 Proposal Hash；Receipt 本身不会形成批准。</p><div class='studio-hash'>" + e(proposal.proposalHash) + "</div><label class='studio-field'><span>批准人</span><input class='studio-input' id='receipt-approved-by' autocomplete='name' required></label><label class='studio-field'><span>确认短语</span><input class='studio-input mono' id='receipt-approval-confirmation' required></label><p class='cell-sub'>必须精确输入：<span class='mono'>" + e(proposal.confirmationPhrase) + "</span></p></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-evidence-action='receipt-cancel-approval'>取消</button><button class='studio-action is-primary' type='button' data-evidence-action='receipt-submit-approval'>记录批准</button></div></form></dialog>";
+    }
+    function verificationReceiptImportHtml() {
+      var receipt = state.receiptImport; var preview = receipt.preview; var proposal = receipt.proposal; var online = studioBridgeOnline() && studioBridgeFeature("verificationReceiptPreview");
+      var actions = "<div class='receipt-head-actions'><input type='file' accept='application/json,.json' data-receipt-import hidden>" +
+        "<button class='small-btn' type='button' data-evidence-action='receipt-import' " + (!online || receipt.busy || receipt.applyResult ? "disabled" : "") + ">导入脱敏 Receipt</button>" +
+        (preview && preview.status === "ready" ? "<button class='small-btn' type='button' data-evidence-action='receipt-proposal' " + (!studioBridgeFeature("verificationReceiptProposal") || receipt.busy || proposal ? "disabled" : "") + ">生成 Receipt Proposal</button>" : "") +
+        (proposal && !receipt.approval ? "<button class='small-btn' type='button' data-evidence-action='receipt-approve' " + (receipt.busy ? "disabled" : "") + ">精确批准</button>" : "") +
+        (proposal && receipt.approval && !receipt.applyResult ? "<button class='small-btn' type='button' data-evidence-action='receipt-apply' " + (receipt.busy ? "disabled" : "") + ">Apply</button>" : "") +
+        (receipt.applyResult ? "<button class='small-btn' type='button' data-evidence-action='receipt-reload'>重新载入 Panorama</button>" : "") + "</div>";
+      var body = "<div class='receipt-boundary'><strong>Experimental Adapter</strong><br>只接收脱敏元数据并生成 Reference / Evidence / Provenance Preview。不会执行测试、自动选优或直接改变 Gate、Acceptance、Review、Waiver、Approval。</div>";
+      if (!online) body += "<p class='cell-sub'>连接受保护的本机 Bridge 后可导入；离线 HTML 只显示已正式导入的 Receipt 时间线。</p>";
+      if (receipt.error) body += "<div class='error-banner' role='alert'><strong>Receipt 导入失败</strong><br>" + e(receipt.error) + "</div>";
+      if (receipt.busy) body += "<p role='status'>" + e(receipt.busy) + "…</p>";
+      if (preview) {
+        var validationCounts = preview.validation && preview.validation.counts || {};
+        body += "<div class='receipt-grid'><div class='receipt-card'><strong>Mapping Preview · " + e(preview.status) + "</strong><span class='receipt-hash'>" + e(preview.receiptHash) + "</span><p>Gate " + e(arr(preview.mapping.gateIds).join(", ") || "无") + "<br>Acceptance " + e(arr(preview.mapping.acceptanceCriteriaIds).join(", ") || "无") + "</p></div><div class='receipt-card'><strong>Formal Validation</strong><p>" + e(preview.validation.valid ? "valid" : "invalid") + " · " + e(Number(validationCounts.errors || 0)) + " errors / " + e(Number(validationCounts.warnings || 0)) + " warnings</p><span class='cell-sub'>完整 Finding 仍由 Panorama Validator 与 Proposal 检查保留。</span></div><div class='receipt-card'><strong>Isolation</strong>" + receiptIsolationHtml(preview.isolation) + "</div></div>" + arr(preview.verifications).map(receiptVerificationHtml).join("");
+      }
+      if (proposal) body += "<div class='receipt-card'><strong>Receipt Proposal · pending</strong><p class='receipt-hash'>" + e(proposal.proposalHash) + "</p><p>" + e(arr(proposal.operations).length) + " operations · " + e(arr(proposal.affectedEntities).length) + " affected entities</p><p class='cell-sub'>批准必须精确输入 Hash 确认短语；Apply 仍执行 Revision/Data/Source/Presentation 保护。</p></div>";
+      if (receipt.approval) body += "<div class='receipt-card'><strong>Approval · write-once</strong><p>" + e(receipt.approval.approvedBy) + " · " + e(dateTime(receipt.approval.recordedAt)) + "</p></div>";
+      if (receipt.applyResult) body += "<div class='receipt-card'><strong>Apply 完成</strong><p>Revision " + e(receipt.applyResult.revision) + " · backup " + e(receipt.applyResult.backupPath || receipt.applyResult.backup) + "</p></div>";
+      return "<section class='receipt-workbench' aria-labelledby='receipt-import-title'><div class='receipt-head'><div><strong id='receipt-import-title'>Verification Receipt Adapter</strong><div class='cell-sub'>Schema Validate → Redaction → Binding → Preview → Formal Validate → Proposal</div></div>" + actions + "</div><div class='receipt-body'>" + body + "</div>" + receiptApprovalDialogHtml() + "</section>";
+    }
+    async function importVerificationReceipt(file) {
+      if (!file) return;
+      if (file.size > 1024 * 1024) { state.receiptImport.error = "Receipt 超过 1 MiB 上限"; renderSource(); return; }
+      state.receiptImport.busy = "校验 Receipt"; state.receiptImport.error = null; state.receiptImport.preview = null; state.receiptImport.proposal = null; state.receiptImport.approval = null; state.receiptImport.applyResult = null; renderSource();
+      try {
+        var receipt = JSON.parse(await file.text());
+        var result = await studioBridgeRequest("/api/v1/verification-receipts/preview", { method: "POST", body: { receipt: receipt } });
+        state.receiptImport.preview = result.preview || result;
+      } catch (error) { state.receiptImport.error = studioBridgeErrorMessage(error); }
+      finally { state.receiptImport.busy = null; renderSource(); }
+    }
+    async function createVerificationReceiptProposal() {
+      var preview = state.receiptImport.preview; if (!preview || preview.status !== "ready") return;
+      state.receiptImport.busy = "生成 Receipt Proposal"; state.receiptImport.error = null; renderSource();
+      try {
+        var result = await studioBridgeRequest("/api/v1/verification-receipts/proposals", { method: "POST", body: { receiptHash: preview.receiptHash } });
+        state.receiptImport.proposal = result.proposal || result;
+      } catch (error) { state.receiptImport.error = studioBridgeErrorMessage(error); }
+      finally { state.receiptImport.busy = null; renderSource(); }
+    }
+    function openReceiptApprovalDialog() {
+      renderSource(); var dialog = document.getElementById("receipt-approval-dialog");
+      if (dialog && typeof dialog.showModal === "function") { dialog.showModal(); window.setTimeout(function () { var field = document.getElementById("receipt-approved-by"); if (field) field.focus(); }, 0); }
+      else { state.receiptImport.error = "当前浏览器不支持原生 dialog，无法记录批准"; renderSource(); }
+    }
+    function closeReceiptApprovalDialog() { var dialog = document.getElementById("receipt-approval-dialog"); if (dialog && dialog.open) dialog.close(); }
+    async function submitReceiptApproval() {
+      var proposal = state.receiptImport.proposal; if (!proposal) return;
+      var approvedBy = document.getElementById("receipt-approved-by").value.trim(); var confirmation = document.getElementById("receipt-approval-confirmation").value;
+      if (!approvedBy || confirmation !== proposal.confirmationPhrase) { state.receiptImport.error = "批准人或精确确认短语不匹配"; closeReceiptApprovalDialog(); renderSource(); return; }
+      closeReceiptApprovalDialog(); state.receiptImport.busy = "记录 write-once Approval"; renderSource();
+      try {
+        var result = await studioBridgeRequest("/api/v1/approvals", { method: "POST", body: { proposalId: proposal.proposalId, approvedHash: proposal.proposalHash, approvedBy: approvedBy, confirmation: confirmation } });
+        state.receiptImport.approval = result.approval || result;
+      } catch (error) { state.receiptImport.error = studioBridgeErrorMessage(error); }
+      finally { state.receiptImport.busy = null; renderSource(); }
+    }
+    async function applyVerificationReceiptProposal() {
+      var proposal = state.receiptImport.proposal; var approval = state.receiptImport.approval; if (!proposal || !approval) return;
+      state.receiptImport.busy = "Apply Receipt Proposal"; state.receiptImport.error = null; renderSource();
+      try {
+        var result = await studioBridgeRequest("/api/v1/apply", { method: "POST", body: { proposalId: proposal.proposalId, proposalHash: proposal.proposalHash, approvalId: approval.approvalId } });
+        state.receiptImport.applyResult = result.apply || result;
+      } catch (error) { state.receiptImport.error = studioBridgeErrorMessage(error); }
+      finally { state.receiptImport.busy = null; renderSource(); }
+    }
     function evidenceInspectorHtml() {
       var provenance = arr(data.factProvenance);
       var batches = arr(data.observationBatches);
@@ -7275,6 +7410,7 @@
       var authorityValues = provenance.map(function (item) { return item.authority; });
       var confidenceValues = provenance.map(function (item) { return item.confidence; });
       var latestBatch = batches.slice().sort(function (a,b) { return String(b.observedAt).localeCompare(String(a.observedAt)); })[0] || null;
+      var receiptWorkbench = verificationReceiptImportHtml();
       var summary = "<div class='evidence-summary' aria-label='证据摘要'>" +
         "<div><span class='meta-label'>事实记录</span><strong>" + e(provenance.length) + " 条</strong></div>" +
         "<div><span class='meta-label'>观察批次</span><strong>" + e(batches.length) + " 个</strong></div>" +
@@ -7285,7 +7421,7 @@
         selectControl("evidence-authority", optionsFor(authorityValues), state.evidenceAuthorityFilter, "Authority") +
         selectControl("evidence-confidence", optionsFor(confidenceValues), state.evidenceConfidenceFilter, "Confidence") + "</div>";
       if (!provenance.length) {
-        return "<section aria-labelledby='evidence-inspector-title'>" + sectionHeading("Evidence Inspector", 0) + summary + evidenceFreshnessHtml(freshness) +
+        return "<section aria-labelledby='evidence-inspector-title'>" + sectionHeading("Evidence Inspector", 0) + summary + evidenceFreshnessHtml(freshness) + receiptWorkbench +
           "<div class='empty-state'><strong>尚无事实级证据记录。</strong><br>Schema 0.1 不包含持续观察字段；Schema 0.2 需先运行 Continuous Observation 才会生成 Fact Provenance。架构基线信息仍显示在下方。</div></section>";
       }
       var factList = visible.map(function (item) {
@@ -7293,7 +7429,7 @@
         return "<button class='evidence-fact " + (item.id === state.selectedProvenanceId ? "is-selected" : "") + "' type='button' data-provenance-id='" + e(item.id) + "' aria-pressed='" + (item.id === state.selectedProvenanceId ? "true" : "false") + "'><span class='evidence-fact-title'><strong>" + e(derived.label) + "</strong>" + status(item.authority) + "</span><span class='evidence-fact-path'>" + e(item.path) + "</span><span class='cell-sub'>Confidence: " + e(humanize(item.confidence)) + " · " + e(dateTime(item.observedAt)) + "</span></button>";
       }).join("");
       var listEmpty = "<div class='empty-state'>没有符合筛选条件的事实记录。</div>";
-      return "<section aria-labelledby='evidence-inspector-title'><div class='section-heading'><h2 id='evidence-inspector-title'>Evidence Inspector</h2><div class='filter-row'><span class='count'>" + e(visible.length + " / " + provenance.length) + "</span>" + (studioBridgeOnline() ? "<button class='small-btn' type='button' data-evidence-action='refresh' " + (state.evidenceRefreshing ? "disabled" : "") + ">" + (state.evidenceRefreshing ? "检测中…" : "重新检测来源") + "</button>" : "") + "</div></div>" + summary + evidenceFreshnessHtml(freshness) + (state.evidenceError ? "<div class='error-banner' role='alert'><strong>来源检测失败</strong><br>" + e(state.evidenceError) + "</div>" : "") + toolbar +
+      return "<section aria-labelledby='evidence-inspector-title'><div class='section-heading'><h2 id='evidence-inspector-title'>Evidence Inspector</h2><div class='filter-row'><span class='count'>" + e(visible.length + " / " + provenance.length) + "</span>" + (studioBridgeOnline() ? "<button class='small-btn' type='button' data-evidence-action='refresh' " + (state.evidenceRefreshing ? "disabled" : "") + ">" + (state.evidenceRefreshing ? "检测中…" : "重新检测来源") + "</button>" : "") + "</div></div>" + summary + evidenceFreshnessHtml(freshness) + receiptWorkbench + (state.evidenceError ? "<div class='error-banner' role='alert'><strong>来源检测失败</strong><br>" + e(state.evidenceError) + "</div>" : "") + toolbar +
         "<div class='evidence-workbench'><section class='evidence-column' aria-label='事实列表'><div class='evidence-column-head'><strong>事实</strong><span class='count'>" + e(visible.length) + "</span></div><div class='evidence-list'>" + (factList || listEmpty) + "</div></section>" +
         "<section class='evidence-column' aria-label='证据与冲突'><div class='evidence-column-head'><strong>证据链与冲突</strong><span class='mono'>" + e(selected ? selected.id : "未选择") + "</span></div>" + evidenceChainHtml(selected, selectedBatch) + "</section>" +
         "<aside class='evidence-column' aria-label='来源详情'><div class='evidence-column-head'><strong>来源详情</strong><span class='count'>只读</span></div>" + evidenceSourceDetailsHtml(selected, selectedBatch, snapshot, binding, freshness) + "</aside></div></section>";
@@ -7529,6 +7665,13 @@
       if (target.dataset.versionId) { state.selectedVersionId = target.dataset.versionId; renderEvolution(); return; }
       if (target.dataset.provenanceId) { state.selectedProvenanceId = target.dataset.provenanceId; renderSource(); return; }
       if (target.dataset.evidenceAction === "refresh") { refreshEvidenceContext(); return; }
+      if (target.dataset.evidenceAction === "receipt-import") { var input = document.querySelector("[data-receipt-import]"); if (input) input.click(); return; }
+      if (target.dataset.evidenceAction === "receipt-proposal") { createVerificationReceiptProposal(); return; }
+      if (target.dataset.evidenceAction === "receipt-approve") { openReceiptApprovalDialog(); return; }
+      if (target.dataset.evidenceAction === "receipt-cancel-approval") { closeReceiptApprovalDialog(); return; }
+      if (target.dataset.evidenceAction === "receipt-submit-approval") { submitReceiptApproval(); return; }
+      if (target.dataset.evidenceAction === "receipt-apply") { applyVerificationReceiptProposal(); return; }
+      if (target.dataset.evidenceAction === "receipt-reload") { reloadCurrentPanoramaFromBridge(); return; }
       if (target.dataset.action === "close-drawer") { closeDrawer(); return; }
       if (target.dataset.action === "clear-module-filters") {
         state.moduleSearch = ""; state.layerFilter = "all"; state.sourceFilter = "all"; state.statusFilter = "all"; renderLogical(); return;
@@ -7583,6 +7726,7 @@
     document.addEventListener("change", function (event) {
       if ((state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) && event.target.closest(".studio-shell")) { showToast(state.studioBridge.applyResult ? "Apply 后 Studio 已冻结，请重新载入当前 Panorama" : "正式事务执行中，请等待完成"); return; }
       if (event.target.dataset.studioImport !== undefined) { importStudioSession(event.target.files && event.target.files[0]); return; }
+      if (event.target.dataset.receiptImport !== undefined) { importVerificationReceipt(event.target.files && event.target.files[0]); event.target.value = ""; return; }
       if (event.target.dataset.studioCompareId !== undefined) {
         var compareId = event.target.dataset.studioCompareId;
         if (event.target.checked) {

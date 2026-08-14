@@ -252,6 +252,9 @@
   候选 `Reference(test_report)`、Evidence 与 provenance，再经过 Formal Validation 和 Proposal。
 - 停止边界：Receipt 不执行测试、不调度 Agent、不自动选优、不直接把 Gate 设为 passed，也不形成
   Acceptance、Review、Approval 或 Waiver。
+- V0.4 P2 实现：独立 Receipt Schema 与 Reference extension 保存脱敏收据；Schema 0.2 复用现有
+  Fact Provenance/Observation Batch 记录导入来源，Schema 0.1 仅保留 Reference/Evidence mapping。没有新增
+  Panorama Schema 字段；若要正式持久多次运行、Finding mapping 或处置状态，仍须另行批准 SF-27 重构。
 
 ## V0.4 Design Approval 结论
 

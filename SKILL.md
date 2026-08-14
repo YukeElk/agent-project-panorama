@@ -198,6 +198,30 @@ python scripts/init_panorama.py `
 - Proposal Diff 必须直接展示 `propose_update.py` 返回的 JSON Patch、Affected Entities 与 Validation；
   不在 Renderer 中重算第二套 reconciliation，也不引入 Mission 执行器、Agent 调度或 Git Promote。
 
+### Verification Receipt
+
+完整读取 [Verification Receipt Contract](docs/verification-receipt-contract.md)。只接受通过独立
+`panorama-verification-receipt.v0.1` Schema 的脱敏外部验证元数据：
+
+```powershell
+python scripts/import_verification_receipt.py path/to/project-panorama.html `
+  path/to/verification-receipt.json `
+  --project-root path/to/project `
+  --output .panorama-work/verification-receipt-preview.json `
+  --proposal-output .panorama-work/pending-receipt-update.json
+```
+
+严格执行 `Schema Validate → Redaction Validate → Binding Check → Mapping Preview → Formal Validate →
+Proposal`。拒绝超过 1 MiB、嵌套超限、路径逃逸、不安全链接、敏感字段/明文、Receipt Hash、Project/
+Revision/Data/Source Binding 不匹配或未知 Gate/Acceptance/Evidence ID。原样保留
+`not_enforced/not_executed/unknown`，并将外部 Finding 明确标为 External Finding，不得制造 Formal
+Finding Code。
+
+只提出候选 `Reference(test_report)`、Gate/Acceptance Evidence mapping 与 Schema 0.2 Fact Provenance；
+Schema 0.1 不具备正式 provenance 字段时只保存 Reference 扩展与 Evidence mapping。不得执行测试、
+自动选优、修改 Gate/Acceptance 状态或 verificationStatus、生成 Review/Waiver/Approval。Proposal 仍须
+经过精确 Hash、独立 write-once Approval 与正常 Apply 事务。
+
 ## CONTINUOUS OBSERVATION
 
 Schema `0.2` 每次使用 Skill 时先比较 `sourceBinding.gitHead` 与项目 HEAD；不一致即执行补偿同步，不等待用户提醒：

@@ -1,0 +1,67 @@
+{
+  "format": "panorama-verification-receipt.v0.1",
+  "receiptId": "VREC-WS-CONC-001",
+  "projectBinding": {
+    "projectId": "PRJ-MARW",
+    "panoramaRevision": 3,
+    "panoramaDataHash": "bce7b8ee51209399a117d54bffc62ca480ef866beda4b78305555200720c3b5f",
+    "gitHead": null,
+    "sourceSnapshotHash": null,
+    "environment": "test"
+  },
+  "producer": {
+    "name": "external-verification-adapter",
+    "version": "1.0.0",
+    "generatedAt": "2026-08-13T14:00:00Z",
+    "receiptHash": "0edcbb361fa02294bee7c9221c52d5e562ffb65435204d3a5f2b9ce34b7f10e6"
+  },
+  "verifications": [
+    {
+      "verificationId": "VERIFY-WS-CONC-001",
+      "status": "partial",
+      "summary": "并发一致性检查完成，仍需补充长时间压力验证。",
+      "startedAt": "2026-08-13T13:50:00Z",
+      "completedAt": "2026-08-13T14:00:00Z",
+      "gateIds": ["GATE-WS-CONC"],
+      "acceptanceCriteriaIds": ["ACC-WS-CONSISTENCY"],
+      "evidenceIds": ["EVID-WS-CONC-001"],
+      "findings": [
+        {
+          "findingId": "EXT-FIND-WS-001",
+          "severity": "medium",
+          "category": "reliability",
+          "summary": "当前样本未覆盖持续一小时以上的并发负载。",
+          "evidenceIds": ["EVID-WS-CONC-001"]
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "EVID-WS-CONC-001",
+      "title": "Workspace concurrency verification summary",
+      "summary": "仅保存脱敏摘要、大小和内容哈希，不包含测试日志正文。",
+      "locationType": "inline_note",
+      "location": "receipt:VREC-WS-CONC-001#EVID-WS-CONC-001",
+      "sizeBytes": 4821,
+      "sha256": "5d865deae06f29b39b6f28bb7b081467f3af6b60c06af7c3db7782d2a7369f6c",
+      "sensitive": false
+    }
+  ],
+  "isolation": {
+    "networkIsolation": "not_enforced",
+    "filesystemIsolation": "not_enforced",
+    "processTreeIsolation": "not_executed"
+  },
+  "redaction": {
+    "applied": true,
+    "removedFields": [
+      "request.headers.authorization",
+      "process.environment"
+    ],
+    "sensitivity": "internal",
+    "truncated": true,
+    "notes": "原始日志未进入 Receipt。"
+  },
+  "extensions": {}
+}

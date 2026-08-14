@@ -1,10 +1,10 @@
-# Agent Project Panorama V0.4（Evidence + Journal + Trace Projection）
+# Agent Project Panorama V0.4（Evidence + Journal + Trace + Receipt）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
 部署与资源的理解，不是任务看板、文档编辑器或多人项目管理平台。
 
-## V0.4 P0 / P1 能力
+## V0.4 P0 / P1 / P2 能力
 
 - 无构建、无 CDN、无远程字体的 Single HTML Renderer；canonical/file 模式无网络请求，
   Bridge 模式只访问同源 `127.0.0.1` API；
@@ -45,6 +45,10 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
   Source 状态派生 `change_ready`。证据不足时只显示 `blocked / unknown`，不写回治理状态。
 - Studio Proposal 区直接投影 Bridge 返回的真实 JSON Patch、Affected Entities 和 Validation；这些字段
   来自 `propose_update.py`，Renderer 不建立第二套 Reconciliation Preview。
+- 独立 `panorama-verification-receipt.v0.1` Schema 与 experimental Adapter：拒绝超限、路径逃逸、
+  敏感明文、Hash/Binding 不匹配；只生成候选 `Reference(test_report)`、Evidence mapping 与 V0.2
+  Fact Provenance。Gate/Acceptance Drawer 按 Receipt Hash 去重显示验证时间线、External Finding、
+  Isolation 和 Redaction，不把外部 Finding 冒充 Formal Finding，也不自动推进任何治理状态。
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
@@ -474,6 +478,36 @@ Validator Finding Code，两者在 UI 中分区显示。`Gate / Acceptance Proje
 条件不足时显示 `blocked` 或 `unknown` 及原因。页面不会生成 `integrated` 布尔值、推进 Gate/Acceptance，
 也不会执行 Mission、Agent 调度或 Git Promote。
 
+## Verification Receipt Adapter（Experimental）
+
+外部测试、Trial 或 Eval 工具先生成符合
+[`schema/verification-receipt.schema.v0.1.json`](schema/verification-receipt.schema.v0.1.json)
+的脱敏 JSON。示例见
+[`examples/verification-receipt.v0.1.json`](examples/verification-receipt.v0.1.json)。Receipt 只保存摘要、
+外部位置、大小、SHA-256、Isolation 与 Redaction 声明；不得放入日志正文、凭据或项目源码。
+
+命令行预览和 Proposal：
+
+```powershell
+python scripts/import_verification_receipt.py project-panorama.v0.2.local.html `
+  verification-receipt.json `
+  --project-root path/to/project `
+  --output .panorama-work/verification-receipt-preview.json `
+  --proposal-output .panorama-work/pending-receipt-update.json
+```
+
+固定流程为 `Schema → Redaction → Binding → Mapping Preview → Formal Validator → Proposal`。Proposal
+仍须使用精确 Proposal Hash、独立 write-once Approval 与既有 `apply_patch.py` 事务；Receipt 不会直接把
+Gate 设为 `passed`、Acceptance 设为 `accepted`，也不会生成 Review、Approval、Waiver 或自动选优结论。
+
+通过受保护 Bridge 打开页面时，可在 `系统 → 架构来源 → Verification Receipt Adapter` 选择 JSON，
+查看 Preview 后再显式生成 Proposal、精确批准和 Apply。Apply 后，Gate/Acceptance Drawer 显示按
+Receipt Hash 去重的只读时间线。`not_enforced / not_executed / unknown` 会原样保留。
+
+完整边界见 [`docs/verification-receipt-contract.md`](docs/verification-receipt-contract.md)，实现与浏览器验收见
+[`docs/v0.4-p2-verification-receipt-validation.md`](docs/v0.4-p2-verification-receipt-validation.md)。
+V0.4 的本地发布审核记录见 [`docs/v0.4-release-audit.md`](docs/v0.4-release-audit.md)。
+
 ## 自动测试与 CI
 
 ```powershell
@@ -500,6 +534,7 @@ Reference HTML、验证 Renderer 升级保持 Data Hash，以及检查 Presentat
 - 建模缺口记录在 `docs/schema-findings.md`；
 - V0.2 不覆盖 v0.1；迁移默认输出新文件。当前 Presentation 升级 Renderer 为
   `0.4.0`，数据 Schema 仍为 0.1/0.2；Studio Session 使用独立 Schema，Evidence Inspector 与
-  Trace/Gate Projection 只派生现有事实，不重构 Panorama Schema。
+  Trace/Gate Projection 只派生现有事实；Verification Receipt 使用独立 Schema 与扩展投影，不重构
+  Panorama Schema。
 
 V0.2 已实现 Observation Snapshot；原 SF-03、SF-08、SF-09、SF-13 所述完整 Architecture Version Snapshot、Artifact Manifest、结构化 Replacement 和 Next Focus Snapshot 仍未实现。
