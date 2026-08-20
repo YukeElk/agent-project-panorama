@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/event-redaction-manifest.schema.v0.1.json",
+  "title": "Panorama Event Redaction Manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "manifestId",
+    "projectId",
+    "streamId",
+    "previousEpoch",
+    "nextEpoch",
+    "createdAt",
+    "reasonClass",
+    "affectedEventIds",
+    "previousEpochHeadHash",
+    "payloadDisposition",
+    "authorization",
+    "replacementGenesisEventId",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-event-redaction-manifest.v0.1"},
+    "manifestId": {"type": "string", "pattern": "^RDX-[A-F0-9]{16,64}$"},
+    "projectId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "streamId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previousEpoch": {"type": "integer", "minimum": 1},
+    "nextEpoch": {"type": "integer", "minimum": 2},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "reasonClass": {
+      "enum": ["retention_expired", "user_withdrawal", "legal_deletion", "secret_removal", "corruption_recovery"]
+    },
+    "affectedEventIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"}
+    },
+    "previousEpochHeadHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "payloadDisposition": {"enum": ["deleted", "redacted", "encryption_key_destroyed"]},
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "referenceId", "recordedAt"],
+      "properties": {
+        "method": {"enum": ["explicit_user_authorization", "legal_authority", "retention_policy"]},
+        "referenceId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+        "recordedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "replacementGenesisEventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+    "extensions": {"type": "object"}
+  }
+}

@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.4（Evidence + Journal + Trace + Receipt）
+# Agent Project Panorama V0.5 Foundation（V0.4 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -52,6 +52,100 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 
 正式全景数据对页面直接写入保持只读。核心实体编辑先进入隔离的 Architecture Studio
 会话；正式评审、精确 Hash 批准和文件写回仍由受控 Bridge 与既有更新事务完成。
+
+## V0.5 Engineering Event Foundation
+
+V0.5 增加 Project-local Engineering Event Sidecar、Approval Policy Core，以及 opt-in Proposal/Apply
+Governance Outbox；不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT
+事务尚未接入 Event Capture。
+
+V0.5.0 发布候选范围固定为 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。
+其余 Delegated Policy Operation Adapter、View IR、Renderer 改版、Dataset/RAG/Eval Export 与后训练不属于
+本候选版本，不能由当前 Core 能力外推为已经实现。
+
+先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
+
+```powershell
+python scripts/runtime_preflight.py --json
+```
+
+使用受约束的 Event Request 初始化并写入项目自己的 Store：
+
+```powershell
+python scripts/record_engineering_event.py `
+  examples/engineering-event-request.v0.1.json `
+  --store path/to/project/.panorama-work/event-store/v0.1 `
+  --project-root path/to/project
+
+python scripts/validate_event_store.py `
+  path/to/project/.panorama-work/event-store/v0.1 --json
+```
+
+当前 Foundation 已实现：
+
+- 唯一 `panorama-engineering-event.v0.1` Envelope；
+- Recorder clock、可空 occurrence time 和显式 time precision；
+- 确定性 Event ID、Request Hash、Event Hash、Sequence 与 Previous Hash；
+- 一事件一文件、独占 Store Lock、原子 Event/Head 发布、幂等与同键冲突拒绝；
+- Chain/Head/Schema/Safety Validator，以及显式 `--recover-head`；
+- Outbox、Retention/Redaction、Transformation Loss 的冻结机器合同；
+- Approval Policy Prepare/exact-hash Approval/Materialization、Use Ledger、Execution Receipt/Event Binding、
+  Revocation/supersede、Store Validator 与 pending recovery；
+- `apply_patch.py --event-store` 的 fail-closed Governance Outbox，以及 finalized/abandoned/conflict 和显式恢复；
+- Secret、敏感字段、本机绝对路径、路径逃逸、Project Content 和 `trainingEligibility` 的边界。
+
+详细规范见 [`docs/engineering-event-contract.md`](docs/engineering-event-contract.md)。当前未实现的其他
+Capture Adapter、Redaction 执行器、View IR、Renderer 改版和 Dataset Export 不得被描述为可用能力。
+
+### V0.5 Approval Policy Core
+
+V0.5 已完成审批门禁设计闭合并实现 Policy Core。合同将门禁分为 Decision、Delegated Policy、
+Automatic Quality 和 Read-only 四类：治理语义、Policy 自身、外部发布/导出、Hook、风险豁免和破坏性删除
+继续逐次精确批准；只读分析与自动质量检查不需要批准；Receipt Evidence、准确命令、Event Append、确定性
+Head Recovery、本地 last-good 和 fact-only 更新可在一次性批准的单 Operation Policy 内重复执行。
+
+Policy 生命周期示例：
+
+```powershell
+python scripts/prepare_approval_policy.py policy-semantics.json `
+  --output .panorama-work/policy/prepared.json
+python scripts/record_approval_policy_approval.py .panorama-work/policy/prepared.json `
+  --approved-hash <EXACT-HASH> --approved-by <USER> `
+  --output .panorama-work/policy/approval.json
+python scripts/materialize_approval_policy.py `
+  .panorama-work/policy/prepared.json .panorama-work/policy/approval.json `
+  --output .panorama-work/policy/active.json `
+  --store .panorama-work/approval-policy-store/v0.1
+python scripts/validate_approval_policy_store.py `
+  .panorama-work/approval-policy-store/v0.1 --json
+```
+
+机器合同见 [`docs/approval-policy-contract.md`](docs/approval-policy-contract.md) 与
+[`schema/approval-policy.schema.v0.1.json`](schema/approval-policy.schema.v0.1.json)；每次执行使用
+[`schema/policy-execution-receipt.schema.v0.1.json`](schema/policy-execution-receipt.schema.v0.1.json)
+形成带 Use Number 和 Previous Receipt Hash 的审计链，撤销使用
+[`schema/approval-policy-revocation.schema.v0.1.json`](schema/approval-policy-revocation.schema.v0.1.json)。示例见
+[`examples/approval-policy.verification-receipt.v0.1.json`](examples/approval-policy.verification-receipt.v0.1.json)。
+Core 不等于所有 Operation Adapter 已实现；尚未接入的 Operation 继续沿用现有逐次门禁。
+
+为普通 Studio Proposal 启用事件双写：
+
+```powershell
+python scripts/apply_patch.py project-panorama.html pending-update.json `
+  --approval studio-approval.json `
+  --event-store .panorama-work/event-store/v0.1
+```
+
+默认 Outbox 位于 `.panorama-work/event-outbox/v0.1/`。若 Event finalize 失败，Panorama 可能已精确提交，
+但 CLI 会返回失败并留下 pending；后续治理写被阻断，必须显式校验/恢复：
+
+```powershell
+python scripts/validate_governance_outbox.py `
+  .panorama-work/event-outbox/v0.1 `
+  --recover .panorama-work/event-outbox/v0.1/<TXN-ID>.json `
+  --panorama project-panorama.html `
+  --event-store .panorama-work/event-store/v0.1 --json
+```
 
 ## Continuous Observation
 
@@ -507,6 +601,7 @@ Receipt Hash 去重的只读时间线。`not_enforced / not_executed / unknown` 
 完整边界见 [`docs/verification-receipt-contract.md`](docs/verification-receipt-contract.md)，实现与浏览器验收见
 [`docs/v0.4-p2-verification-receipt-validation.md`](docs/v0.4-p2-verification-receipt-validation.md)。
 V0.4 的本地发布审核记录见 [`docs/v0.4-release-audit.md`](docs/v0.4-release-audit.md)。
+V0.5.0 的本地发布候选审核记录见 [`docs/v0.5-release-audit.md`](docs/v0.5-release-audit.md)。
 
 ## 自动测试与 CI
 

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/approval-policy-revocation.schema.v0.1.json",
+  "title": "Panorama Approval Policy Revocation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "revocationId",
+    "projectId",
+    "policyId",
+    "policyHash",
+    "revokedAt",
+    "revokedBy",
+    "revocationMethod",
+    "reasonClass",
+    "summary",
+    "privacy",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-approval-policy-revocation.v0.1"},
+    "revocationId": {"type": "string", "pattern": "^PRV-[A-F0-9]{32}$"},
+    "projectId": {"$ref": "#/$defs/stableId"},
+    "policyId": {"$ref": "#/$defs/stableId"},
+    "policyHash": {"$ref": "#/$defs/sha256"},
+    "revokedAt": {"type": "string", "format": "date-time"},
+    "revokedBy": {"type": "string", "minLength": 1, "maxLength": 256},
+    "revocationMethod": {
+      "enum": ["explicit_policy_reference", "superseding_policy_approval"]
+    },
+    "reasonClass": {
+      "enum": [
+        "user_request",
+        "scope_change",
+        "producer_compromise",
+        "project_change",
+        "safety_incident",
+        "superseded",
+        "other"
+      ]
+    },
+    "summary": {"type": "string", "maxLength": 2048},
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containsProjectContent", "containsSecret", "containsSensitivePersonalData"],
+      "properties": {
+        "containsProjectContent": {"const": false},
+        "containsSecret": {"const": false},
+        "containsSensitivePersonalData": {"const": false}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "revocationHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "revocationHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "revocation_without_integrity.revocationHash"}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}
+  }
+}

@@ -1,0 +1,449 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/approval-policy.schema.v0.1.json",
+  "title": "Panorama Approval Policy v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "policyId",
+    "supersedesPolicyId",
+    "operation",
+    "effectClass",
+    "projectBinding",
+    "validity",
+    "scope",
+    "stopConditions",
+    "audit",
+    "approvalBinding",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-approval-policy.v0.1"},
+    "policyId": {"$ref": "#/$defs/stableId"},
+    "supersedesPolicyId": {
+      "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+    },
+    "operation": {
+      "enum": [
+        "continuous_observation.apply",
+        "verification_receipt.import",
+        "validation_manifest.execute",
+        "engineering_event.record",
+        "event_head.recover",
+        "verified_delivery.promote",
+        "renderer.generate",
+        "source_freshness.reconcile"
+      ]
+    },
+    "effectClass": {
+      "enum": [
+        "fact_update",
+        "evidence_append",
+        "local_execution",
+        "event_append",
+        "deterministic_recovery",
+        "artifact_promotion",
+        "artifact_generation"
+      ]
+    },
+    "projectBinding": {"$ref": "#/$defs/projectBinding"},
+    "validity": {"$ref": "#/$defs/validity"},
+    "scope": {"$ref": "#/$defs/scope"},
+    "stopConditions": {"$ref": "#/$defs/stopConditions"},
+    "audit": {"$ref": "#/$defs/audit"},
+    "approvalBinding": {"$ref": "#/$defs/approvalBinding"},
+    "extensions": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"operation": {"const": "continuous_observation.apply"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "fact_update"},
+          "scope": {"properties": {"allowedPanoramaPathTemplates": {"minItems": 1}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "source_freshness.reconcile"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "fact_update"},
+          "scope": {"properties": {"allowedPanoramaPathTemplates": {"minItems": 1}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "verification_receipt.import"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "evidence_append"},
+          "projectBinding": {
+            "properties": {
+              "panoramaSchemaVersions": {"maxItems": 1, "contains": {"const": "0.2"}}
+            }
+          },
+          "scope": {
+            "properties": {
+              "allowedPanoramaPathTemplates": {"minItems": 1},
+              "producerBindings": {
+                "minItems": 1,
+                "items": {"$ref": "#/$defs/trustedProducerBinding"}
+              },
+              "receiptRules": {"$ref": "#/$defs/receiptRules"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "validation_manifest.execute"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "local_execution"},
+          "scope": {"properties": {"commandBindings": {"minItems": 1}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "engineering_event.record"}}, "required": ["operation"]},
+      "then": {"properties": {"effectClass": {"const": "event_append"}}}
+    },
+    {
+      "if": {"properties": {"operation": {"const": "event_head.recover"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "deterministic_recovery"},
+          "scope": {"properties": {"recoveryRules": {"$ref": "#/$defs/recoveryRules"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "verified_delivery.promote"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "artifact_promotion"},
+          "scope": {
+            "properties": {
+              "artifactRoots": {"minItems": 1},
+              "deliveryRules": {"$ref": "#/$defs/deliveryRules"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"operation": {"const": "renderer.generate"}}, "required": ["operation"]},
+      "then": {
+        "properties": {
+          "effectClass": {"const": "artifact_generation"},
+          "scope": {"properties": {"artifactRoots": {"minItems": 1}}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "jsonPointerTemplate": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 512,
+      "pattern": "^/(?:[A-Za-z0-9._~:-]+|\\*|-)(?:/(?:[A-Za-z0-9._~:-]+|\\*|-))*$"
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "panoramaSchemaVersions"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["0.1", "0.2"]}
+        }
+      }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effectiveAt", "expiresAt", "maxUses", "sourceBindingRule"],
+      "properties": {
+        "effectiveAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "maxUses": {"type": ["integer", "null"], "minimum": 1},
+        "sourceBindingRule": {"enum": ["revalidate_current_each_use", "not_applicable"]}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "governanceProtectionProfile",
+        "allowedPanoramaPathTemplates",
+        "additionalForbiddenPathTemplates",
+        "artifactRoots",
+        "producerBindings",
+        "commandBindings",
+        "receiptRules",
+        "recoveryRules",
+        "deliveryRules"
+      ],
+      "properties": {
+        "governanceProtectionProfile": {"const": "panorama-governance-v0.5"},
+        "allowedPanoramaPathTemplates": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/jsonPointerTemplate"}
+        },
+        "additionalForbiddenPathTemplates": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/jsonPointerTemplate"}
+        },
+        "artifactRoots": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeRelativePath"}
+        },
+        "producerBindings": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/producerBinding"}
+        },
+        "commandBindings": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/commandBinding"}
+        },
+        "receiptRules": {"oneOf": [{"$ref": "#/$defs/receiptRules"}, {"type": "null"}]},
+        "recoveryRules": {"oneOf": [{"$ref": "#/$defs/recoveryRules"}, {"type": "null"}]},
+        "deliveryRules": {"oneOf": [{"$ref": "#/$defs/deliveryRules"}, {"type": "null"}]}
+      }
+    },
+    "producerBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producerId", "producerVersion", "schemaVersion", "producerArtifactHash"],
+      "properties": {
+        "producerId": {"$ref": "#/$defs/stableId"},
+        "producerVersion": {"type": "string", "minLength": 1, "maxLength": 128},
+        "schemaVersion": {"type": "string", "minLength": 1, "maxLength": 128},
+        "producerArtifactHash": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "trustedProducerBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producerId", "producerVersion", "schemaVersion", "producerArtifactHash"],
+      "properties": {
+        "producerId": {"$ref": "#/$defs/stableId"},
+        "producerVersion": {"type": "string", "minLength": 1, "maxLength": 128},
+        "schemaVersion": {"type": "string", "minLength": 1, "maxLength": 128},
+        "producerArtifactHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "commandBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commandId",
+        "argvSha256",
+        "cwd",
+        "timeoutSeconds",
+        "allowedExitCodes",
+        "networkIsolation",
+        "filesystemIsolation",
+        "projectWriteCheck",
+        "secretAccessAllowed",
+        "stdoutStderrRetentionAllowed",
+        "dependencyInstallationAllowed",
+        "externalPublishAllowed"
+      ],
+      "properties": {
+        "commandId": {"$ref": "#/$defs/stableId"},
+        "argvSha256": {"$ref": "#/$defs/sha256"},
+        "cwd": {"$ref": "#/$defs/safeRelativePath"},
+        "timeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 3600},
+        "allowedExitCodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {"type": "integer", "minimum": 0, "maximum": 255}
+        },
+        "networkIsolation": {"enum": ["enforced_denied", "not_enforced"]},
+        "filesystemIsolation": {"enum": ["enforced_read_only", "not_enforced"]},
+        "projectWriteCheck": {"const": "post_execution_metadata_check"},
+        "secretAccessAllowed": {"const": false},
+        "stdoutStderrRetentionAllowed": {"const": false},
+        "dependencyInstallationAllowed": {"const": false},
+        "externalPublishAllowed": {"const": false}
+      }
+    },
+    "receiptRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowedReceiptSchemaVersions",
+        "requireSchemaValidation",
+        "requireRedactionValidation",
+        "requireReceiptHashValidation",
+        "requireExactProjectAndSourceBinding",
+        "requireFormalValidation",
+        "requireSchema02ForPolicyApply",
+        "requireNoGovernanceStateMutation"
+      ],
+      "properties": {
+        "allowedReceiptSchemaVersions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"const": "panorama-verification-receipt.v0.1"}
+        },
+        "requireSchemaValidation": {"const": true},
+        "requireRedactionValidation": {"const": true},
+        "requireReceiptHashValidation": {"const": true},
+        "requireExactProjectAndSourceBinding": {"const": true},
+        "requireFormalValidation": {"const": true},
+        "requireSchema02ForPolicyApply": {"const": true},
+        "requireNoGovernanceStateMutation": {"const": true}
+      }
+    },
+    "recoveryRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowedHeadStates",
+        "requireSchemaValidChain",
+        "requireHashValidChain",
+        "requireContiguousSequence",
+        "requireUniqueTail",
+        "requireExactProjectStreamEpochBinding",
+        "eventMutationAllowed"
+      ],
+      "properties": {
+        "allowedHeadStates": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["head_missing", "head_behind"]}
+        },
+        "requireSchemaValidChain": {"const": true},
+        "requireHashValidChain": {"const": true},
+        "requireContiguousSequence": {"const": true},
+        "requireUniqueTail": {"const": true},
+        "requireExactProjectStreamEpochBinding": {"const": true},
+        "eventMutationAllowed": {"const": false}
+      }
+    },
+    "deliveryRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredMachineChecks",
+        "allowPendingVisualReview",
+        "rejectedVisualReviewBlocks",
+        "atomicLastGoodReplace",
+        "coreMutationAllowed",
+        "externalPublicationAllowed"
+      ],
+      "properties": {
+        "requiredMachineChecks": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["semantic", "schema", "geometry", "browser", "privacy"]},
+          "allOf": [
+            {"contains": {"const": "semantic"}},
+            {"contains": {"const": "schema"}},
+            {"contains": {"const": "geometry"}},
+            {"contains": {"const": "privacy"}}
+          ]
+        },
+        "allowPendingVisualReview": {"const": true},
+        "rejectedVisualReviewBlocks": {"const": true},
+        "atomicLastGoodReplace": {"const": true},
+        "coreMutationAllowed": {"const": false},
+        "externalPublicationAllowed": {"const": false}
+      }
+    },
+    "stopConditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "onProjectMismatch",
+        "onPolicyHashMismatch",
+        "onExpiry",
+        "onUseLimit",
+        "onSourceConflict",
+        "onSchemaMismatch",
+        "onProtectedPathTouch",
+        "onUnrecognizedProducer",
+        "onUnrecognizedCommand",
+        "onValidationFailure",
+        "onTamperOrFork",
+        "onExternalEffect"
+      ],
+      "properties": {
+        "onProjectMismatch": {"const": true},
+        "onPolicyHashMismatch": {"const": true},
+        "onExpiry": {"const": true},
+        "onUseLimit": {"const": true},
+        "onSourceConflict": {"const": true},
+        "onSchemaMismatch": {"const": true},
+        "onProtectedPathTouch": {"const": true},
+        "onUnrecognizedProducer": {"const": true},
+        "onUnrecognizedCommand": {"const": true},
+        "onValidationFailure": {"const": true},
+        "onTamperOrFork": {"const": true},
+        "onExternalEffect": {"const": true}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionReceiptRequired", "policyBindingRequired", "eventRecordingRequired", "failureMode"],
+      "properties": {
+        "executionReceiptRequired": {"const": true},
+        "policyBindingRequired": {"const": true},
+        "eventRecordingRequired": {"const": true},
+        "failureMode": {"enum": ["fail_closed", "disclose_pending"]}
+      }
+    },
+    "approvalBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "approvalMethod",
+        "approvedBy",
+        "approvalRecordedAt",
+        "approvalTimeSource",
+        "policyHash",
+        "hashScope"
+      ],
+      "properties": {
+        "status": {"const": "approved"},
+        "approvalMethod": {"const": "explicit_hash_confirmation"},
+        "approvedBy": {"type": "string", "minLength": 1, "maxLength": 256},
+        "approvalRecordedAt": {"type": "string", "format": "date-time"},
+        "approvalTimeSource": {"const": "approval_recorder_clock"},
+        "policyHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "policy_without_approvalBinding"}
+      }
+    }
+  }
+}

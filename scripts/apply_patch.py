@@ -24,6 +24,14 @@ from panorama_io import (
     extract_data,
     replace_data,
 )
+from governance_outbox import (
+    GovernanceOutboxError,
+    GovernanceRecoveryRequired,
+    default_outbox_store,
+    ensure_governance_ready,
+    prepare_governance_outbox,
+    resolve_governance_outbox,
+)
 from validate_panorama import ValidationRuntimeError, validate_data
 
 
@@ -592,10 +600,22 @@ def _apply_update_package_locked(
     package: dict[str, Any],
     schema_path: str | os.PathLike[str] | None,
     approval_artifact: dict[str, Any] | None = None,
+    event_store_path: str | os.PathLike[str] | None = None,
+    outbox_store: str | os.PathLike[str] | None = None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Validate, stage, and atomically apply one approved update package."""
 
     source = Path(html_path)
+    event_target = Path(event_store_path) if event_store_path is not None else None
+    outbox_target = Path(outbox_store) if outbox_store is not None else None
+    if outbox_target is not None and event_target is None:
+        raise ApplyPatchError("启用 Governance Outbox 时必须同时提供 Event Store。")
+    if event_target is not None and outbox_target is None:
+        outbox_target = default_outbox_store(source)
+    if outbox_target is not None:
+        # recovery_required blocks before a new backup, Proposal composition or
+        # formal Panorama mutation is attempted.
+        ensure_governance_ready(outbox_target, event_store_path=event_target)
     if not isinstance(package, dict):
         raise ApplyPatchError("更新包必须是 JSON 对象。")
     original_text = _read_exact(source)
@@ -641,6 +661,7 @@ def _apply_update_package_locked(
     os.close(file_descriptor)
     staged = Path(stage_name)
     staged.unlink(missing_ok=True)
+    pending_outbox: Path | None = None
     try:
         replace_data(source, updated, staged)
         staged_text = _read_exact(staged)
@@ -652,6 +673,14 @@ def _apply_update_package_locked(
             raise RevisionConflictError(
                 "目标 Panorama 在 Base Revision/Data Hash 检查后发生变化；"
                 "已批准更新包未被应用。"
+            )
+        if outbox_target is not None:
+            pending_outbox = prepare_governance_outbox(
+                outbox_target,
+                current=current,
+                updated=updated,
+                proposal_hash=package["proposalHash"],
+                event_store_path=event_target,
             )
         try:
             atomic_write(source, staged_text)
@@ -672,7 +701,29 @@ def _apply_update_package_locked(
                     atomic_write(source, original_text)
             except (OSError, PanoramaIOError):
                 pass
+            if pending_outbox is not None and event_target is not None:
+                try:
+                    resolve_governance_outbox(
+                        pending_outbox,
+                        panorama_path=source,
+                        event_store_path=event_target,
+                    )
+                except GovernanceOutboxError as recovery_exc:
+                    raise GovernanceRecoveryRequired(
+                        "Apply 失败，且 pending Outbox 未能确定性解析；"
+                        "后续治理写入已停止。"
+                    ) from recovery_exc
             raise
+        if pending_outbox is not None and event_target is not None:
+            resolved = resolve_governance_outbox(
+                pending_outbox,
+                panorama_path=source,
+                event_store_path=event_target,
+            )
+            if resolved["status"] != "finalized":
+                raise GovernanceRecoveryRequired(
+                    "Apply 后的真实状态未产生 finalized Outbox；后续治理写入已停止。"
+                )
     finally:
         staged.unlink(missing_ok=True)
     warning_lines = [issue.render() for issue in report.warnings]
@@ -684,13 +735,20 @@ def apply_update_package(
     package: dict[str, Any],
     schema_path: str | os.PathLike[str] | None,
     approval_artifact: dict[str, Any] | None = None,
+    event_store_path: str | os.PathLike[str] | None = None,
+    outbox_store: str | os.PathLike[str] | None = None,
 ) -> tuple[Path, dict[str, Any], list[str]]:
     """Lock, validate, stage, and atomically apply one approved package."""
 
     source = Path(html_path)
     with _exclusive_update_lock(source):
         return _apply_update_package_locked(
-            source, package, schema_path, approval_artifact
+            source,
+            package,
+            schema_path,
+            approval_artifact,
+            event_store_path,
+            outbox_store,
         )
 
 
@@ -707,6 +765,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="独立的 Studio approval artifact；仅在内存中适配 legacy approval",
     )
+    parser.add_argument(
+        "--event-store",
+        type=Path,
+        default=None,
+        help="启用 V0.5 fail-closed Event Outbox 并写入指定 Engineering Event Store",
+    )
+    parser.add_argument(
+        "--outbox-store",
+        type=Path,
+        default=None,
+        help="覆盖默认 .panorama-work/event-outbox/v0.1 路径；必须与 --event-store 同用",
+    )
     return parser
 
 
@@ -721,12 +791,22 @@ def main(argv: list[str] | None = None) -> int:
             with args.approval.open("r", encoding="utf-8") as handle:
                 approval_artifact = json.load(handle)
         backup, updated, warnings = apply_update_package(
-            args.html, package, args.schema, approval_artifact
+            args.html,
+            package,
+            args.schema,
+            approval_artifact,
+            args.event_store,
+            args.outbox_store,
         )
     except RevisionConflictError as exc:
         print(f"冲突错误：{exc}", file=sys.stderr)
         return 1
-    except (ApplyPatchError, PanoramaIOError, ValidationRuntimeError) as exc:
+    except (
+        ApplyPatchError,
+        PanoramaIOError,
+        ValidationRuntimeError,
+        GovernanceOutboxError,
+    ) as exc:
         print(f"应用错误：{exc}", file=sys.stderr)
         return 1
     except (OSError, json.JSONDecodeError) as exc:

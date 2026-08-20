@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/engineering-event.schema.v0.1.json",
+  "title": "Panorama Engineering Event v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "eventId",
+    "idempotencyKey",
+    "eventType",
+    "recordedAt",
+    "occurredAt",
+    "timePrecision",
+    "actor",
+    "projectBinding",
+    "sourceBinding",
+    "stream",
+    "correlation",
+    "subjectRefs",
+    "authority",
+    "confidence",
+    "payload",
+    "evidenceBindings",
+    "informationGaps",
+    "outcome",
+    "privacy",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-engineering-event.v0.1"},
+    "eventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+    "idempotencyKey": {"$ref": "#/$defs/sha256"},
+    "eventType": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 128
+    },
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "occurredAt": {"type": ["string", "null"], "format": "date-time"},
+    "timePrecision": {
+      "enum": ["millisecond", "second", "minute", "date", "inferred", "unknown"]
+    },
+    "actor": {"$ref": "#/$defs/actor"},
+    "projectBinding": {"$ref": "#/$defs/projectBinding"},
+    "sourceBinding": {"$ref": "#/$defs/sourceBinding"},
+    "stream": {"$ref": "#/$defs/stream"},
+    "correlation": {"$ref": "#/$defs/correlation"},
+    "subjectRefs": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/subjectRef"}
+    },
+    "authority": {"enum": ["observed", "declared", "inferred", "unknown", "conflict"]},
+    "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+    "payload": {"type": "object"},
+    "evidenceBindings": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/evidenceBinding"}
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 512}
+    },
+    "outcome": {"$ref": "#/$defs/outcome"},
+    "privacy": {"$ref": "#/$defs/privacy"},
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "version"],
+      "properties": {
+        "kind": {"enum": ["human", "tool", "agent", "system", "unknown"]},
+        "id": {"$ref": "#/$defs/stableId"},
+        "version": {"type": ["string", "null"], "maxLength": 128}
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "panoramaSchemaVersion",
+        "baseRevision",
+        "resultRevision",
+        "baseDataHash",
+        "resultDataHash"
+      ],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaSchemaVersion": {"type": ["string", "null"], "enum": ["0.1", "0.2", null]},
+        "baseRevision": {"type": ["integer", "null"], "minimum": 0},
+        "resultRevision": {"type": ["integer", "null"], "minimum": 0},
+        "baseDataHash": {"$ref": "#/$defs/nullableSha256"},
+        "resultDataHash": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "gitHead", "sourceSnapshotHash", "sourceContentDigest", "coverage"],
+      "properties": {
+        "mode": {"enum": ["git", "content_digest", "not_applicable", "unknown"]},
+        "gitHead": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"},
+            {"type": "null"}
+          ]
+        },
+        "sourceSnapshotHash": {"$ref": "#/$defs/nullableSha256"},
+        "sourceContentDigest": {"$ref": "#/$defs/nullableSha256"},
+        "coverage": {"enum": ["complete", "partial", "not_applicable", "unknown"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "git"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "gitHead": {"type": "string", "pattern": "^[a-f0-9]{40}([a-f0-9]{24})?$"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "content_digest"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "sourceContentDigest": {"$ref": "#/$defs/sha256"},
+              "coverage": {"enum": ["complete", "partial"]}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"mode": {"const": "not_applicable"}}, "required": ["mode"]},
+          "then": {
+            "properties": {
+              "gitHead": {"type": "null"},
+              "sourceSnapshotHash": {"type": "null"},
+              "sourceContentDigest": {"type": "null"},
+              "coverage": {"const": "not_applicable"}
+            }
+          }
+        }
+      ]
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["streamId", "epoch", "sequence", "previousEventHash"],
+      "properties": {
+        "streamId": {"$ref": "#/$defs/stableId"},
+        "epoch": {"type": "integer", "minimum": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "previousEventHash": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "correlation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["correlationId", "causationEventIds", "supersedesEventIds"],
+      "properties": {
+        "correlationId": {"$ref": "#/$defs/stableId"},
+        "causationEventIds": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"}
+        },
+        "supersedesEventIds": {
+          "type": "array",
+          "maxItems": 128,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"}
+        }
+      }
+    },
+    "subjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "relationship"],
+      "properties": {
+        "type": {"$ref": "#/$defs/stableId"},
+        "id": {"$ref": "#/$defs/stableId"},
+        "relationship": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "evidenceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceId", "kind", "ref", "revision", "digest", "accessClass", "freshness"],
+      "properties": {
+        "evidenceId": {"$ref": "#/$defs/stableId"},
+        "kind": {"enum": ["relative_path", "json_pointer", "reference_id", "receipt_id", "event_id"]},
+        "ref": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "revision": {"type": ["string", "null"], "maxLength": 256},
+        "digest": {"$ref": "#/$defs/nullableSha256"},
+        "accessClass": {
+          "enum": [
+            "PUBLIC_PROJECT_EVIDENCE",
+            "PROJECT_OPERATIONAL_METADATA",
+            "PROJECT_CONTENT",
+            "SECRET",
+            "EXTERNAL_PRIVATE_DATA"
+          ]
+        },
+        "freshness": {"enum": ["current", "likely_current", "stale", "historical", "unknown"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "json_pointer"}}, "required": ["kind"]},
+          "then": {"properties": {"ref": {"type": "string", "pattern": "^/"}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "event_id"}}, "required": ["kind"]},
+          "then": {"properties": {"ref": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"}}}
+        }
+      ]
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "labelStrength", "summary"],
+      "properties": {
+        "status": {"enum": ["succeeded", "failed", "rejected", "no_op", "unknown"]},
+        "labelStrength": {
+          "enum": ["unlabeled", "reported", "observed", "formally_validated", "user_approved", "unknown"]
+        },
+        "summary": {"type": "string", "maxLength": 2048}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accessClass",
+        "containsProjectContent",
+        "containsSecret",
+        "containsSensitivePersonalData",
+        "redactionState",
+        "retentionPolicyId"
+      ],
+      "properties": {
+        "accessClass": {
+          "enum": ["PUBLIC_PROJECT_EVIDENCE", "PROJECT_OPERATIONAL_METADATA", "EXTERNAL_PRIVATE_DATA"]
+        },
+        "containsProjectContent": {"const": false},
+        "containsSecret": {"const": false},
+        "containsSensitivePersonalData": {"const": false},
+        "redactionState": {"enum": ["none", "redacted", "tombstoned"]},
+        "retentionPolicyId": {"type": ["string", "null"], "maxLength": 128}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "requestHash", "eventHash"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "requestHash": {"$ref": "#/$defs/sha256"},
+        "eventHash": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

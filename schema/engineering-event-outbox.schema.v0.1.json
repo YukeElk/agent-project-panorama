@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/engineering-event-outbox.schema.v0.1.json",
+  "title": "Panorama Engineering Event Outbox v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "transactionId",
+    "operationClass",
+    "policy",
+    "status",
+    "createdAt",
+    "updatedAt",
+    "projectBinding",
+    "eventRequestHash",
+    "observedResult",
+    "resolution",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-engineering-event-outbox.v0.1"},
+    "transactionId": {"type": "string", "pattern": "^TXN-[A-F0-9]{16,64}$"},
+    "operationClass": {"enum": ["governance", "observation", "verification", "studio", "init"]},
+    "policy": {"enum": ["fail_closed", "compensatable"]},
+    "status": {"enum": ["pending", "finalized", "abandoned", "conflict"]},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "updatedAt": {"type": "string", "format": "date-time"},
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "baseRevision",
+        "expectedResultRevision",
+        "baseDataHash",
+        "expectedResultDataHash"
+      ],
+      "properties": {
+        "projectId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+        "baseRevision": {"type": ["integer", "null"], "minimum": 0},
+        "expectedResultRevision": {"type": ["integer", "null"], "minimum": 0},
+        "baseDataHash": {"$ref": "#/$defs/nullableSha256"},
+        "expectedResultDataHash": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "eventRequestHash": {"$ref": "#/$defs/sha256"},
+    "observedResult": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["revision", "dataHash", "observedAt"],
+          "properties": {
+            "revision": {"type": ["integer", "null"], "minimum": 0},
+            "dataHash": {"$ref": "#/$defs/nullableSha256"},
+            "observedAt": {"type": "string", "format": "date-time"}
+          }
+        }
+      ]
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventId", "eventHash", "reason"],
+      "properties": {
+        "eventId": {
+          "oneOf": [
+            {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+            {"type": "null"}
+          ]
+        },
+        "eventHash": {"$ref": "#/$defs/nullableSha256"},
+        "reason": {"type": ["string", "null"], "maxLength": 2048}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "stateHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "stateHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "outbox_without_integrity"}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"operationClass": {"const": "governance"}}, "required": ["operationClass"]},
+      "then": {"properties": {"policy": {"const": "fail_closed"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "finalized"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "observedResult": {"type": "object"},
+          "resolution": {
+            "properties": {
+              "eventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+              "eventHash": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["abandoned", "conflict"]}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "observedResult": {"type": "object"},
+          "resolution": {"properties": {"reason": {"type": "string", "minLength": 1}}}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    }
+  }
+}

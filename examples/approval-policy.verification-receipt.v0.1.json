@@ -1,0 +1,80 @@
+{
+  "formatVersion": "panorama-approval-policy.v0.1",
+  "policyId": "POLICY-RECEIPT-REFERENCE",
+  "supersedesPolicyId": null,
+  "operation": "verification_receipt.import",
+  "effectClass": "evidence_append",
+  "projectBinding": {
+    "projectId": "REFERENCE-PROJECT",
+    "panoramaSchemaVersions": ["0.2"]
+  },
+  "validity": {
+    "effectiveAt": "2026-08-20T08:00:00Z",
+    "expiresAt": "2026-09-20T08:00:00Z",
+    "maxUses": 100,
+    "sourceBindingRule": "revalidate_current_each_use"
+  },
+  "scope": {
+    "governanceProtectionProfile": "panorama-governance-v0.5",
+    "allowedPanoramaPathTemplates": [
+      "/references/-",
+      "/gates/*/evidenceReferenceIds/-",
+      "/acceptanceCriteria/*/evidenceReferenceIds/-",
+      "/factProvenance/-",
+      "/observationBatches/-"
+    ],
+    "additionalForbiddenPathTemplates": [],
+    "artifactRoots": [".panorama-work/verification-receipts"],
+    "producerBindings": [
+      {
+        "producerId": "trusted-ci",
+        "producerVersion": "1.4.0",
+        "schemaVersion": "panorama-verification-receipt.v0.1",
+        "producerArtifactHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "commandBindings": [],
+    "receiptRules": {
+      "allowedReceiptSchemaVersions": ["panorama-verification-receipt.v0.1"],
+      "requireSchemaValidation": true,
+      "requireRedactionValidation": true,
+      "requireReceiptHashValidation": true,
+      "requireExactProjectAndSourceBinding": true,
+      "requireFormalValidation": true,
+      "requireSchema02ForPolicyApply": true,
+      "requireNoGovernanceStateMutation": true
+    },
+    "recoveryRules": null,
+    "deliveryRules": null
+  },
+  "stopConditions": {
+    "onProjectMismatch": true,
+    "onPolicyHashMismatch": true,
+    "onExpiry": true,
+    "onUseLimit": true,
+    "onSourceConflict": true,
+    "onSchemaMismatch": true,
+    "onProtectedPathTouch": true,
+    "onUnrecognizedProducer": true,
+    "onUnrecognizedCommand": true,
+    "onValidationFailure": true,
+    "onTamperOrFork": true,
+    "onExternalEffect": true
+  },
+  "audit": {
+    "executionReceiptRequired": true,
+    "policyBindingRequired": true,
+    "eventRecordingRequired": true,
+    "failureMode": "fail_closed"
+  },
+  "approvalBinding": {
+    "status": "approved",
+    "approvalMethod": "explicit_hash_confirmation",
+    "approvedBy": "reference-user",
+    "approvalRecordedAt": "2026-08-20T08:00:01Z",
+    "approvalTimeSource": "approval_recorder_clock",
+    "policyHash": "d7359f8b691e5471fa60ce9d9c5df07806ae3cd07bbb4badbbfcb40e12c904d8",
+    "hashScope": "policy_without_approvalBinding"
+  },
+  "extensions": {}
+}

@@ -267,3 +267,114 @@
 - P1 已在不修改 Schema 的前提下从现有 ID 字段派生 Trace Route 与四类治理投影；缺少引用、证据或
   实时绑定时保持 Candidate/unknown/blocked。若未来需要持久 Trace Edge、用户处置 Gap 或可写投影状态，
   必须另立 Schema Finding，不能复用本次 Presentation 授权。
+
+## SF-28 跨记录流缺少统一 Engineering Event Envelope
+
+- 证据：Observation Batch、Proposal/Approval/Apply、Studio Session/Checkpoint 和 Verification Receipt
+  分别保存局部历史，字段、时间精度、来源绑定与结果语义不一致。
+- 影响：无法按同一 `asOf` 边界重放项目演进，也无法安全地产生可审计的 RAG/Eval 投影。
+- V0.5 决策：新增独立 `panorama-engineering-event.v0.1` Sidecar Schema；不修改 Panorama 0.1/0.2。
+  Envelope 固定使用 `recordedAt`、可空 `occurredAt` 和 `timePrecision`；`capturedAt/recordedDate/
+  timestampPrecision` 只作为实验字段，不进入正式 v0.1。
+- 兼容边界：Raw Capture、Post-hoc Record、Derived Projection 通过事件类型、Authority、Evidence Binding
+  和 Adapter Loss Report 区分，不在一个字段中压平。
+
+## SF-29 Proposal Supersession、Causation 与 Artifact Invalidation 缺少稳定关系
+
+- 证据：现有 Change/Review 可绑定 Proposal，但无法统一表达 Proposal 被替代、验证由何事件触发、
+  或哪个制品因 Source/Data 漂移失效。
+- 影响：时间线只能显示相邻记录，不能证明因果、替代或失效链。
+- V0.5 决策：Event Envelope 使用稳定 `eventId`，并通过 `correlationId`、`causationEventIds` 和
+  `supersedesEventIds` 表达显式关系；不得从时间邻近、文本相似或 Viewer 操作推断关系。
+- 兼容边界：缺少来源关系时保存空数组或 Unknown，不回填虚构关联。
+
+## SF-30 非 Git 项目缺少完整 Source Content Digest Binding
+
+- 证据：cat-sys 等真实样本不是 Git 仓库；Git HEAD 无法表达其 Source 覆盖与内容身份。
+- 影响：事件、Proposal、验证与导出可能绑定到无法复核的来源状态。
+- V0.5 决策：`sourceBinding.mode` 支持 `git`、`content_digest`、`not_applicable`、`unknown`；
+  非 Git 的 `content_digest` 必须同时保存 coverage，只有完整覆盖才可称为 current/matched。
+- 兼容边界：mtime、目录名和文件计数不能替代 Source Content Digest；不完整覆盖保持 partial/unknown。
+
+## SF-31 Append-only 与 Retention、合法删除、Redaction 的合同冲突
+
+- 证据：事件链需要篡改检测，但项目内容、隐私数据、撤回授权或意外 Secret 必须能够真正删除。
+- 影响：把 append-only 解释为不可删除会造成合规风险；静默删除又会伪造完整链。
+- V0.5 决策：默认 Event 只保存工程元数据，Secret 永不允许；合法删除使用版本化 Redaction Manifest，
+  删除/脱敏载荷后结束当前 Stream Epoch，并以新 Genesis 事件绑定 Manifest 和前一 Epoch Head。
+- 兼容边界：不得重算旧 Hash 冒充原链连续；删除授权、影响 Event ID、处置方式和旧 Head 必须可审计。
+
+## SF-32 Event 与 Panorama State 双写缺少 Outbox/Recovery 合同
+
+- 证据：Panorama Apply、Observation 和 Receipt Import 已有各自事务，但 Event Sidecar 是第二个文件系统边界。
+- 影响：崩溃可能形成“状态已更新、事件未完成”或“事件声称成功、状态实际未更新”。
+- V0.5 决策：使用 Project-local Transactional Outbox。治理操作采用 `fail_closed`：结果写入后若 Event
+  尚未 finalized，不得向调用方报告完整成功，后续治理写入必须进入 recovery-required；只读 Trigger/
+  Observation 可使用 `compensatable`，但仍须保留 pending/conflict 状态。
+- 恢复边界：只按 Base/Expected/Observed Result Binding 决定 finalize、abandon 或 conflict，不自动 rebase，
+  不回滚已经可见但无法安全逆转的项目事实。
+
+## SF-33 Dataset Label Strength、Usage Authorization 与 Leakage Boundary 缺少正式模型
+
+- 证据：轨迹实验能生成 Event、ATIF、MLflow 和 RAG 样本，但缺少 reward、模型、token、失败归因、许可
+  与稳定 Gold Label。
+- 影响：把记录存在直接解释为 SFT/RL 资格会产生错误训练标签和时间泄漏。
+- V0.5 决策：Event 只保存 `outcome.labelStrength` 与事实来源；`trainingEligibility` 不进入 Event Schema。
+  RAG/Eval/Training 资格由带 `asOf`、项目级 split、许可和人工审阅的 Export Policy 动态计算。
+- 停止边界：V0.5 Event Core 不执行训练、不托管向量库、不调度 Agent，也不输出训练就绪声明。
+
+## SF-34 Core/Event 到只读 View IR 的 Binding 与可重算合同缺失
+
+- 证据：当前 Renderer 直接消费 Panorama 大对象；验证原型表明多视图需要共享稳定身份和明确 Loss 边界。
+- 影响：若 View IR 可写或缺少输入 Hash，它会变成 Core/Event 之外的第三套事实源。
+- V0.5 决策：View IR 只由 Core Data Hash、Event Checkpoint/`asOf`、Compiler Version 和 Source Binding
+  确定性编译；任何 Viewer/布局状态均不写回 Core、Event 或 View IR。
+- 兼容边界：V0.5.0 只冻结合同，不在 Event Core 稳定前重写 Renderer。
+
+## SF-35 关系稳定身份与 Exact-ID Delta 缺少统一合同
+
+- 证据：正式实体和 Studio Candidate 已按类型 + ID 对齐，但关系在不同投影或外部作者模型中没有统一身份。
+- 影响：数组重排、布局变化或同名关系可能被误报为架构语义变化。
+- V0.5 决策：关系 ID 由关系类型、精确端点 ID、端口/方向和明确 discriminator 的 canonical identity
+  生成；Delta 只按稳定 ID 分类 added/removed/changed/unchanged。
+- 兼容边界：显示名称、坐标、主题和文本相似度不得用于认定同一关系。
+
+## SF-36 派生制品缺少 Machine Receipt、last-good 与视觉状态合同
+
+- 证据：结构/几何检查能发现溢出，但不能证明人工视觉通过；候选失败也缺少统一 last-good 交付语义。
+- 影响：漂亮但错误的制品可能覆盖可用版本，或自动检查被误报为人工验收。
+- V0.5 决策：Verified Delivery Receipt 分开记录 semantic、schema、geometry、browser、privacy 和
+  `visualReview=pending|accepted|rejected|skipped`；只有候选全部满足相应门禁才原子替换 last-good。
+- 兼容边界：自动视觉检查不生成 `accepted`；浏览器不可用时保持 structural-only，不得提升为交互通过。
+
+## SF-37 审批粒度按机械步骤切分，缺少可委托且可验证的 Policy Envelope
+
+- 证据：治理 Apply、Receipt Import、项目测试、Event Head Recovery、Studio 正式化与派生制品交付分别
+  使用独立人工确认；其中一部分确认只重复授权确定性机械步骤，并不产生新的治理决策。
+- 影响：长期轨迹采集和验证会频繁打断，用户容易把“机器校验通过”“人工查看过”和“批准风险边界”混为
+  一谈；若直接跳过现有 Approval，又会伪造授权或让 Agent 自行扩权。
+- V0.5 决策：新增独立 `panorama-approval-policy.v0.1` Sidecar Schema，将门禁分为 Decision、Delegated
+  Policy、Automatic Quality 和 Read-only 四类。每个 Policy 只允许一个固定 Operation，绑定 Project、
+  Producer/Command/Path/Artifact Scope、有效期、使用次数、停止条件、Policy Hash 和人工批准。
+- 保留边界：Target/Requirement/Decision/Review/Acceptance/Gate/Waiver/Guidance/Credential/Architecture
+  Candidate 的正式语义变化、Policy 自身变化、冲突裁决、风险豁免、外部发布、数据集导出、Hook 安装和
+  破坏性删除继续要求逐次精确人工批准。
+- 自动边界：Schema 0.2 受信 Receipt Evidence 追加、预批准命令、Event Append、完全确定性的 Head 重建、
+  机器门禁通过后的本地 last-good 晋升、Renderer Candidate 和 fact-only Freshness/Observation 可在 Policy
+  范围内免逐次审批；每次执行仍须生成绑定 Policy ID/Hash 的 Receipt/Event，并 fail closed。
+- 单次批准：Studio Freeze 产生的规范 Proposal 与 Apply 使用同一 Approval；不得再要求第二个普通 Proposal
+  Approval。Schema 0.1 Receipt 因缺少正式 Provenance/Observation Batch，仍保留人工 Proposal 路径。
+- 实现边界：本轮只冻结 `approval-policy-contract.md`、Policy/Execution Receipt/Revocation Schema、示例和契约测试；
+  在 Policy Runtime 与各 Adapter 实现前，现有命令行行为保持不变，不以提示词绕过 Approval。
+
+## V0.5 Design Closure 结论
+
+- 2026-08-20 用户批准先完成设计闭合，再开始 V0.5 迭代。
+- SF-28～SF-37 以 Sidecar-first、Panorama Schema 0.1/0.2 不变为前提进入实现。
+- 唯一正式 Event v0.1 合同使用 `recordedAt / occurredAt / timePrecision`；实验 Schema v0.2 仅作验证输入。
+- 首个实现切片限定为 Runtime Preflight、Event Schema、Event Store、Recorder、Validator 与受控测试；
+  不包括现有事务 Adapter、Renderer 改版、C4 全量导入、Dataset Export 或后训练。
+- Outbox、Retention/Redaction、Transformation Loss 先冻结机器合同；只有基础 Event Store 通过原子、并发、
+  幂等、篡改和恢复测试后，才允许将其接入 Proposal/Apply、Observation、Receipt、Studio 或 INIT。
+- Approval Policy 只授权预定义低风险 Operation；Policy 激活本身仍是治理决策。只有 Policy Hash、Expiry、
+  Use Ledger、Execution Receipt、保护路径和 fail-closed 测试全部通过后，才允许取消对应的逐次人工确认。

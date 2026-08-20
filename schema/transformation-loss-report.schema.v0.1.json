@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/transformation-loss-report.schema.v0.1.json",
+  "title": "Panorama Transformation Loss Report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "reportId",
+    "generatedAt",
+    "adapter",
+    "inputBinding",
+    "outputBinding",
+    "status",
+    "counts",
+    "preservation",
+    "losses",
+    "informationGaps",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-transformation-loss-report.v0.1"},
+    "reportId": {"type": "string", "pattern": "^LOSS-[A-F0-9]{16,64}$"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+        "version": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "inputBinding": {"$ref": "#/$defs/artifactBinding"},
+    "outputBinding": {"$ref": "#/$defs/artifactBinding"},
+    "status": {"enum": ["lossless", "partial", "blocked"]},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output", "preserved", "lost", "degraded", "unknown"],
+      "properties": {
+        "input": {"type": "integer", "minimum": 0},
+        "output": {"type": "integer", "minimum": 0},
+        "preserved": {"type": "integer", "minimum": 0},
+        "lost": {"type": "integer", "minimum": 0},
+        "degraded": {"type": "integer", "minimum": 0},
+        "unknown": {"type": "integer", "minimum": 0}
+      }
+    },
+    "preservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "elements",
+        "relationships",
+        "views",
+        "order",
+        "timestamps",
+        "evidence",
+        "layout",
+        "documentsAndAdrs"
+      ],
+      "properties": {
+        "elements": {"$ref": "#/$defs/preservationState"},
+        "relationships": {"$ref": "#/$defs/preservationState"},
+        "views": {"$ref": "#/$defs/preservationState"},
+        "order": {"$ref": "#/$defs/preservationState"},
+        "timestamps": {"$ref": "#/$defs/preservationState"},
+        "evidence": {"$ref": "#/$defs/preservationState"},
+        "layout": {"$ref": "#/$defs/preservationState"},
+        "documentsAndAdrs": {"$ref": "#/$defs/preservationState"}
+      }
+    },
+    "losses": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "sourceRef", "severity", "reason", "preservedAs"],
+        "properties": {
+          "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"},
+          "sourceRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "severity": {"enum": ["informational", "partial", "unsupported", "blocked"]},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 2048},
+          "preservedAs": {"type": ["string", "null"], "maxLength": 1024}
+        }
+      }
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 1000,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "artifactBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "revision", "sha256"],
+      "properties": {
+        "format": {"type": "string", "minLength": 1, "maxLength": 128},
+        "revision": {"type": ["string", "null"], "maxLength": 256},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "preservationState": {
+      "enum": ["preserved", "partial", "lost", "not_applicable", "unknown"]
+    }
+  }
+}

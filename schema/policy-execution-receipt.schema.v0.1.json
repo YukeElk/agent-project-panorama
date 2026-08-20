@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/policy-execution-receipt.schema.v0.1.json",
+  "title": "Panorama Policy Execution Receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "receiptId",
+    "policyBinding",
+    "projectBinding",
+    "execution",
+    "validation",
+    "effect",
+    "eventBinding",
+    "privacy",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-policy-execution-receipt.v0.1"},
+    "receiptId": {"type": "string", "pattern": "^PEX-[A-F0-9]{32}$"},
+    "policyBinding": {"$ref": "#/$defs/policyBinding"},
+    "projectBinding": {"$ref": "#/$defs/projectBinding"},
+    "execution": {"$ref": "#/$defs/execution"},
+    "validation": {"$ref": "#/$defs/validation"},
+    "effect": {"$ref": "#/$defs/effect"},
+    "eventBinding": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/eventBinding"}]
+    },
+    "privacy": {"$ref": "#/$defs/privacy"},
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "extensions": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {"status": {"enum": ["succeeded", "no_op"]}},
+            "required": ["status"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "validation": {
+            "properties": {
+              "policyHashValid": {"const": true},
+              "withinValidity": {"const": true},
+              "withinUseLimit": {"const": true},
+              "projectMatched": {"const": true},
+              "sourceBindingStatus": {"enum": ["matched", "not_applicable"]},
+              "operationAllowed": {"const": true},
+              "scopeMatched": {"const": true},
+              "governanceProtected": {"const": true},
+              "formalValidation": {"enum": ["passed", "not_applicable"]}
+            }
+          },
+          "effect": {
+            "properties": {
+              "externalEffectObserved": {"const": false},
+              "governanceMutationObserved": {"const": false}
+            }
+          },
+          "eventBinding": {"$ref": "#/$defs/eventBinding"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {"status": {"const": "succeeded"}},
+            "required": ["status"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "execution": {
+            "properties": {"outputHash": {"$ref": "#/$defs/sha256"}}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "operation": {
+      "enum": [
+        "continuous_observation.apply",
+        "verification_receipt.import",
+        "validation_manifest.execute",
+        "engineering_event.record",
+        "event_head.recover",
+        "verified_delivery.promote",
+        "renderer.generate",
+        "source_freshness.reconcile"
+      ]
+    },
+    "effectClass": {
+      "enum": [
+        "fact_update",
+        "evidence_append",
+        "local_execution",
+        "event_append",
+        "deterministic_recovery",
+        "artifact_promotion",
+        "artifact_generation"
+      ]
+    },
+    "policyBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyId", "policyHash", "operation"],
+      "properties": {
+        "policyId": {"$ref": "#/$defs/stableId"},
+        "policyHash": {"$ref": "#/$defs/sha256"},
+        "operation": {"$ref": "#/$defs/operation"}
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectId",
+        "panoramaSchemaVersion",
+        "baseRevision",
+        "resultRevision",
+        "baseDataHash",
+        "resultDataHash",
+        "sourceBindingHash"
+      ],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaSchemaVersion": {"type": ["string", "null"], "enum": ["0.1", "0.2", null]},
+        "baseRevision": {"type": ["integer", "null"], "minimum": 0},
+        "resultRevision": {"type": ["integer", "null"], "minimum": 0},
+        "baseDataHash": {"$ref": "#/$defs/nullableSha256"},
+        "resultDataHash": {"$ref": "#/$defs/nullableSha256"},
+        "sourceBindingHash": {"$ref": "#/$defs/nullableSha256"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "useNumber",
+        "allocatedAt",
+        "startedAt",
+        "completedAt",
+        "status",
+        "inputHash",
+        "outputHash",
+        "effectClass",
+        "bindingId",
+        "summary"
+      ],
+      "properties": {
+        "useNumber": {"type": "integer", "minimum": 1},
+        "allocatedAt": {"type": "string", "format": "date-time"},
+        "startedAt": {"type": "string", "format": "date-time"},
+        "completedAt": {"type": "string", "format": "date-time"},
+        "status": {"enum": ["succeeded", "failed", "no_op"]},
+        "inputHash": {"$ref": "#/$defs/sha256"},
+        "outputHash": {"$ref": "#/$defs/nullableSha256"},
+        "effectClass": {"$ref": "#/$defs/effectClass"},
+        "bindingId": {"oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]},
+        "summary": {"type": "string", "maxLength": 2048}
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policyHashValid",
+        "withinValidity",
+        "withinUseLimit",
+        "projectMatched",
+        "sourceBindingStatus",
+        "operationAllowed",
+        "scopeMatched",
+        "governanceProtected",
+        "formalValidation"
+      ],
+      "properties": {
+        "policyHashValid": {"type": "boolean"},
+        "withinValidity": {"type": "boolean"},
+        "withinUseLimit": {"type": "boolean"},
+        "projectMatched": {"type": "boolean"},
+        "sourceBindingStatus": {"enum": ["matched", "not_applicable", "mismatch", "unknown"]},
+        "operationAllowed": {"type": "boolean"},
+        "scopeMatched": {"type": "boolean"},
+        "governanceProtected": {"type": "boolean"},
+        "formalValidation": {"enum": ["passed", "failed", "not_applicable"]}
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actualPanoramaPaths",
+        "artifactRefs",
+        "externalEffectObserved",
+        "governanceMutationObserved"
+      ],
+      "properties": {
+        "actualPanoramaPaths": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^/", "maxLength": 1024}
+        },
+        "artifactRefs": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeRelativePath"}
+        },
+        "externalEffectObserved": {"type": "boolean"},
+        "governanceMutationObserved": {"type": "boolean"}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containsProjectContent", "containsSecret", "containsSensitivePersonalData"],
+      "properties": {
+        "containsProjectContent": {"const": false},
+        "containsSecret": {"const": false},
+        "containsSensitivePersonalData": {"const": false}
+      }
+    },
+    "eventBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventId", "eventHash"],
+      "properties": {
+        "eventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+        "eventHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "previousReceiptHash", "receiptHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "previousReceiptHash": {"$ref": "#/$defs/nullableSha256"},
+        "receiptHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "receipt_without_integrity.receiptHash"}
+      }
+    }
+  }
+}

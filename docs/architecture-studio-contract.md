@@ -50,6 +50,10 @@ header 获取受保护的 `/studio/document`，fragment 随即从地址栏移除
 10. Apply 再次验证 Proposal/Approval/Source Binding、Schema、跨引用、Presentation Hash 和并发状态，
     创建备份后原子替换正式 HTML。失败不得自动 rebase、修复或重批。
 
+Studio Freeze 生成的就是通用 Apply 消费的规范 Proposal；第 9 步的独立 Approval 是该语义变更唯一的
+人工批准，不得在 Apply 前再要求一次普通 Proposal Approval。只有 Proposal Operations、Candidate Semantic
+Hash、Data/Git/Source/CAS Binding 变化时才要求重新批准。
+
 ## 数据与治理边界
 
 - Session 使用独立 Schema `schema/architecture-session.schema.v0.1.json`，不写入

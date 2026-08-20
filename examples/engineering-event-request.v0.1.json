@@ -1,0 +1,72 @@
+{
+  "requestVersion": "panorama-engineering-event-request.v0.1",
+  "idempotencyKey": "b3f206d0e07a3f6a7a53ed0b406c2e51c5f0d8b6a22b5a721667fe2d24a7d494",
+  "eventType": "validation.completed",
+  "occurredAt": "2026-08-20T02:00:00Z",
+  "timePrecision": "second",
+  "actor": {
+    "kind": "tool",
+    "id": "validate_panorama",
+    "version": "0.5.0"
+  },
+  "projectBinding": {
+    "projectId": "REFERENCE-PROJECT",
+    "panoramaSchemaVersion": "0.2",
+    "baseRevision": 2,
+    "resultRevision": 2,
+    "baseDataHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "resultDataHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "sourceBinding": {
+    "mode": "git",
+    "gitHead": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "sourceSnapshotHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "sourceContentDigest": null,
+    "coverage": "complete"
+  },
+  "correlation": {
+    "correlationId": "CORR-REFERENCE-VALIDATION",
+    "causationEventIds": [],
+    "supersedesEventIds": []
+  },
+  "subjectRefs": [
+    {
+      "type": "gate",
+      "id": "GATE-REFERENCE",
+      "relationship": "validates"
+    }
+  ],
+  "authority": "observed",
+  "confidence": "high",
+  "payload": {
+    "validator": "validate_panorama",
+    "errorCount": 0,
+    "warningCount": 0
+  },
+  "evidenceBindings": [
+    {
+      "evidenceId": "EVD-REFERENCE-VALIDATION",
+      "kind": "relative_path",
+      "ref": "reports/validation-receipt.json",
+      "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "accessClass": "PROJECT_OPERATIONAL_METADATA",
+      "freshness": "current"
+    }
+  ],
+  "informationGaps": [],
+  "outcome": {
+    "status": "succeeded",
+    "labelStrength": "formally_validated",
+    "summary": "Panorama Validator completed without errors."
+  },
+  "privacy": {
+    "accessClass": "PROJECT_OPERATIONAL_METADATA",
+    "containsProjectContent": false,
+    "containsSecret": false,
+    "containsSensitivePersonalData": false,
+    "redactionState": "none",
+    "retentionPolicyId": null
+  },
+  "extensions": {}
+}

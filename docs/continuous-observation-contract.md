@@ -21,6 +21,10 @@ Current 与实际进展割裂。自动化只观察、记录和披露；不修改
 首次启用时创建 `continuous-observation-policy.v0.2` 并计算 canonical Policy SHA-256。后续
 Observation Batch 必须绑定该 Hash。策略变更要求重新显式启用，不得由 Hook 自行扩大权限。
 
+V0.5 的 `panorama-approval-policy.v0.1` 作为该持久策略的外部人工授权与审计 Envelope，不替换
+Panorama 0.2 内的 `observationPolicy`。两者的 Project、Operation、Policy Hash 与保护范围必须同时有效；
+任一失配均停止自动 Apply。迁移到 Envelope 需要单独实现，不能把现有 `enabled=true` 静默解释为新授权。
+
 策略只允许写入：
 
 - Panorama HTML 的 `project-panorama-data`；

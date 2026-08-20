@@ -1,0 +1,68 @@
+{
+  "formatVersion": "panorama-policy-execution-receipt.v0.1",
+  "receiptId": "PEX-0123456789ABCDEF0123456789ABCDEF",
+  "policyBinding": {
+    "policyId": "POLICY-RECEIPT-REFERENCE",
+    "policyHash": "d7359f8b691e5471fa60ce9d9c5df07806ae3cd07bbb4badbbfcb40e12c904d8",
+    "operation": "verification_receipt.import"
+  },
+  "projectBinding": {
+    "projectId": "REFERENCE-PROJECT",
+    "panoramaSchemaVersion": "0.2",
+    "baseRevision": 1,
+    "resultRevision": 2,
+    "baseDataHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "resultDataHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "sourceBindingHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "execution": {
+    "useNumber": 1,
+    "allocatedAt": "2026-08-20T08:01:00Z",
+    "startedAt": "2026-08-20T08:01:00Z",
+    "completedAt": "2026-08-20T08:01:01Z",
+    "status": "succeeded",
+    "inputHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "outputHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "effectClass": "evidence_append",
+    "bindingId": "trusted-ci",
+    "summary": "Receipt evidence and provenance appended without governance state mutation."
+  },
+  "validation": {
+    "policyHashValid": true,
+    "withinValidity": true,
+    "withinUseLimit": true,
+    "projectMatched": true,
+    "sourceBindingStatus": "matched",
+    "operationAllowed": true,
+    "scopeMatched": true,
+    "governanceProtected": true,
+    "formalValidation": "passed"
+  },
+  "effect": {
+    "actualPanoramaPaths": [
+      "/references/-",
+      "/gates/0/evidenceReferenceIds/-",
+      "/factProvenance/-",
+      "/observationBatches/-"
+    ],
+    "artifactRefs": [".panorama-work/verification-receipts/receipt-reference.json"],
+    "externalEffectObserved": false,
+    "governanceMutationObserved": false
+  },
+  "eventBinding": {
+    "eventId": "EVT-0123456789ABCDEF0123456789ABCDEF",
+    "eventHash": "1212121212121212121212121212121212121212121212121212121212121212"
+  },
+  "privacy": {
+    "containsProjectContent": false,
+    "containsSecret": false,
+    "containsSensitivePersonalData": false
+  },
+  "integrity": {
+    "hashAlgorithm": "sha256",
+    "previousReceiptHash": null,
+    "receiptHash": "00e699b85b5e892c8a524c7fce1a9c5e5ab3ce51fa098c4276201d2841547de2",
+    "hashScope": "receipt_without_integrity.receiptHash"
+  },
+  "extensions": {}
+}

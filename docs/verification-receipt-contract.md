@@ -13,7 +13,7 @@ Agent 调度器或自动选优系统。功能默认标记为 experimental，且�
 - Receipt 不得包含测试日志正文、项目源码、环境变量、请求头、Cookie、凭据或其他 Secret value。
 - Redaction manifest 只说明生产方声明删除的字段，不证明所有敏感信息已经移除；Adapter 仍执行本地扫描。
 
-## 3. 固定流程
+## 3. 固定预检与两种 Apply 路径
 
 ```text
 Schema Validate
@@ -23,13 +23,22 @@ Schema Validate
 → Evidence Path 与 Mapping ID Check
 → Mapping Preview
 → Panorama Formal Validator
-→ Proposal
-→ 精确 Hash 人工批准
-→ write-once Approval
-→ Apply
 ```
 
-前六步不会修改 Panorama。Proposal 也只是 pending 制品；只有现有批准和 Apply 事务可以正式写入。
+以上步骤不会修改 Panorama。预检通过后只能进入下列一条路径：
+
+```text
+人工路径（Schema 0.1/0.2）
+→ Proposal → 精确 Hash 人工批准 → write-once Approval → Apply
+
+策略路径（仅 Schema 0.2）
+→ Approval Policy Validate → Receipt-specific Policy Transaction
+→ Execution Receipt / Engineering Event → Apply Result Validate
+```
+
+策略路径要求独立 `verification_receipt.import` Policy，且只允许 Evidence Append。它不能向普通 Proposal
+注入伪造的用户 Approval，也不能绕过 Panorama Formal Validator。当前 V0.4 Adapter 尚未实现该路径，
+在 Policy Runtime 落地前继续使用人工路径。
 
 ## 4. 输入限制
 
@@ -71,6 +80,9 @@ Schema 0.1 没有这些字段，只保存 Reference extension 与 Evidence mappi
   普通 Proposal wrapper。
 - Approval 要求精确输入 `批准 Receipt Proposal <64位Hash>`；Apply 前再次检查 Receipt Preview、
   Operations Hash、Revision、Data Hash、Git/Snapshot、Source Content Digest 和 Presentation Hash。
+- 后续 Policy Adapter 只能对 Schema 0.2、受信 Producer、完整 Binding 且无 Conflict 的 Receipt 提供
+  policy apply；Policy ID/Hash、Use Count、输入/结果 Hash 和 Execution Receipt 必须可见。Schema 0.1、
+  未识别 Producer、旧/漂移 Source 或任何治理状态修改继续进入人工路径。
 - Bridge 继续只绑定随机 `127.0.0.1`、使用 capability/Origin/CSRF/no-store；Receipt API 不接受路径、
   executable、argv 或测试命令。
 

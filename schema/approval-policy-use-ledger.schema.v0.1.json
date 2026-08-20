@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/approval-policy-use-ledger.schema.v0.1.json",
+  "title": "Panorama Approval Policy Use Ledger v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "policyId",
+    "policyHash",
+    "nextUseNumber",
+    "previousReceiptHash",
+    "pending",
+    "updatedAt",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-approval-policy-use-ledger.v0.1"},
+    "policyId": {"$ref": "#/$defs/stableId"},
+    "policyHash": {"$ref": "#/$defs/sha256"},
+    "nextUseNumber": {"type": "integer", "minimum": 1},
+    "previousReceiptHash": {"$ref": "#/$defs/nullableSha256"},
+    "pending": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/pendingExecution"}]
+    },
+    "updatedAt": {"type": "string", "format": "date-time"},
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "ledgerHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "ledgerHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "ledger_without_integrity.ledgerHash"}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "pendingExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "useNumber",
+        "allocatedAt",
+        "startedAt",
+        "operation",
+        "effectClass",
+        "inputHash",
+        "bindingId",
+        "projectBinding",
+        "sourceBindingStatus",
+        "actualPanoramaPaths",
+        "artifactRefs"
+      ],
+      "properties": {
+        "useNumber": {"type": "integer", "minimum": 1},
+        "allocatedAt": {"type": "string", "format": "date-time"},
+        "startedAt": {"type": "string", "format": "date-time"},
+        "operation": {
+          "enum": [
+            "continuous_observation.apply",
+            "verification_receipt.import",
+            "validation_manifest.execute",
+            "engineering_event.record",
+            "event_head.recover",
+            "verified_delivery.promote",
+            "renderer.generate",
+            "source_freshness.reconcile"
+          ]
+        },
+        "effectClass": {
+          "enum": [
+            "fact_update",
+            "evidence_append",
+            "local_execution",
+            "event_append",
+            "deterministic_recovery",
+            "artifact_promotion",
+            "artifact_generation"
+          ]
+        },
+        "inputHash": {"$ref": "#/$defs/sha256"},
+        "bindingId": {"oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]},
+        "projectBinding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["projectId", "panoramaSchemaVersion", "baseRevision", "baseDataHash", "sourceBindingHash"],
+          "properties": {
+            "projectId": {"$ref": "#/$defs/stableId"},
+            "panoramaSchemaVersion": {"type": ["string", "null"], "enum": ["0.1", "0.2", null]},
+            "baseRevision": {"type": ["integer", "null"], "minimum": 0},
+            "baseDataHash": {"$ref": "#/$defs/nullableSha256"},
+            "sourceBindingHash": {"$ref": "#/$defs/nullableSha256"}
+          }
+        },
+        "sourceBindingStatus": {"enum": ["matched", "not_applicable"]},
+        "actualPanoramaPaths": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^/", "maxLength": 1024}
+        },
+        "artifactRefs": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/safeRelativePath"}
+        }
+      }
+    }
+  }
+}

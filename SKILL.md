@@ -1,12 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.4 Single HTML，持续自动追踪 Git/实现/验证/运行事实，检查证据来源与 Freshness，基于项目规范进行评审与风险披露，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile an unfamiliar or existing project, inspect fact provenance and source drift, compare architecture candidates, or apply an architecture-centric Panorama update without making governance decisions."
+description: "操作 Agent Project Panorama V0.1–V0.5，持续自动追踪 Git/实现/验证/运行事实，检查证据来源与 Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile a project, inspect fact provenance and source drift, record or validate project-local engineering events, manage bounded delegated approvals, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
-将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.4 支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`。
+将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
+V0.5.0 发布候选只包含 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox；其他 Operation Adapter、View IR、Renderer 改版与 Export 不在本候选范围。
 
 ## 不变量
 
@@ -20,6 +21,26 @@ V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观�
 - 摘要不得输出 Embedded 明文；除非用户明确要求对应敏感值，否则不得使用 `--unsafe-include-secrets`。
 - 中文仅用于显示层与用户消息；Schema Key、枚举原值、ID、Finding Code、JSON Patch Path 和 CLI Flag 保持英文。
 - 正常 Skill 调用不得读取 executing Skill 自身的 `evals/` 或任何 Oracle；目标项目自己的 `evals/` 可以作为 Verification Evidence，但不得作为生产实现根。
+
+## APPROVAL GATE ROUTING（V0.5 DESIGN CONTRACT）
+
+完整读取 [Approval Gate and Delegated Policy Contract](docs/approval-policy-contract.md)。审批绑定风险边界，
+不绑定同一风险边界之后的每个机械步骤：
+
+- Target、Requirement、Decision、Review、Acceptance/Gate 状态、Waiver、Guidance、Credential、正式架构选型、
+  Policy 自身变化、冲突裁决、外部发布/导出、Hook 安装和破坏性删除继续要求准确 Hash 的人工批准；
+- Inspect、Discovery、Preview、Diff、Validation、Studio 草稿/布局和 Advisory Review 不需要人工批准；
+- `continuous_observation.apply`、`verification_receipt.import`、`validation_manifest.execute`、
+  `engineering_event.record`、`event_head.recover`、`verified_delivery.promote`、`renderer.generate` 和
+  `source_freshness.reconcile` 只能在经过人工批准的 `panorama-approval-policy.v0.1` 精确范围内免逐次批准；
+- 每个 Policy 只允许一个 Operation，必须绑定 Project、有效期、使用次数、Producer/Command/Path/Artifact
+  Scope、保护配置、停止条件、Policy Hash 和 Execution Receipt；Agent 不得批准、续期或扩大 Policy；
+- 用户精确引用 Policy ID/Hash 后可立即写入 Revocation；撤销先于审计 Event 生效，不能自动恢复；
+- Studio Freeze 的规范 Proposal 只批准一次；同一独立 Approval 直接供 Apply 使用，不再增加第二次批准。
+
+当前 V0.5 已实现 Policy Core，但只接入普通 Proposal/Apply 的一次性 Approval Outbox，尚未接入 allowlist
+Operation Adapter。在各自 Adapter 的 fail-closed 测试完成前，Receipt、项目测试、Head Recovery 和
+last-good 晋升继续使用现有门禁；不得通过伪造 Approval、直接调用 Core、修改提示词或跳过字段提前取消审批。
 
 ## INIT
 
@@ -222,6 +243,64 @@ Schema 0.1 不具备正式 provenance 字段时只保存 Reference 扩展与 Evi
 自动选优、修改 Gate/Acceptance 状态或 verificationStatus、生成 Review/Waiver/Approval。Proposal 仍须
 经过精确 Hash、独立 write-once Approval 与正常 Apply 事务。
 
+## V0.5 ENGINEERING EVENT FOUNDATION
+
+需要记录或校验 Engineering Event 时，完整读取 [Engineering Event Fabric Contract](docs/engineering-event-contract.md)。先执行离线 Preflight：
+
+```powershell
+python scripts/runtime_preflight.py --json
+```
+
+Recorder 只接受通过安全检查的 `panorama-engineering-event-request.v0.1`，并写入项目自己的 Sidecar：
+
+```powershell
+python scripts/record_engineering_event.py event-request.json `
+  --store path/to/project/.panorama-work/event-store/v0.1 `
+  --project-root path/to/project
+python scripts/validate_event_store.py `
+  path/to/project/.panorama-work/event-store/v0.1 --json
+```
+
+- Event Store 不修改正式 Panorama、业务项目或治理状态；
+- `eventId`、Sequence、Previous Hash、Request/Event Hash 由 Recorder 计算，调用方不得提供；
+- Event 不保存 `trainingEligibility`、Secret、项目正文、Prompt、模型回答正文或隐藏推理；
+- Head 漂移时普通写入必须停止；当前 CLI 只有用户明确要求恢复时才可使用 `--recover-head`。未来只有在
+  `event_head.recover` Policy 下且 Chain 完整有效、Sequence 连续、Project/Stream/Epoch 一致、Tail 唯一、
+  Head 仅 missing/behind 时可免逐次批准；Chain 无效、Fork、Head ahead 或歧义仍失败；
+- Proposal/Apply 只有显式提供 `--event-store` 时才接入 Governance Outbox；Observation、Receipt、Studio
+  Session 或 INIT 尚未自动记录；
+- Approval Policy Core 已实现，但各 Operation Adapter 必须逐个通过 fail-closed 门禁；View IR、Renderer
+  和 Dataset Export 仍按合同分阶段实现，不得用实验转换脚本冒充正式能力。
+
+### Approval Policy Core
+
+需要减少机械性逐次审批时，完整读取 [Approval Gate and Delegated Policy Contract](docs/approval-policy-contract.md)。
+Policy 只能从冻结 allowlist 中选择一个 Operation；治理语义、Policy 本身、冲突裁决、外部发布/导出、Hook、
+风险豁免和破坏性删除仍需人工精确批准。
+
+固定生命周期为：
+
+```powershell
+python scripts/prepare_approval_policy.py policy-semantics.json `
+  --output .panorama-work/policy/prepared.json
+python scripts/record_approval_policy_approval.py .panorama-work/policy/prepared.json `
+  --approved-hash <EXACT-HASH> --approved-by <USER> `
+  --output .panorama-work/policy/approval.json
+python scripts/materialize_approval_policy.py `
+  .panorama-work/policy/prepared.json .panorama-work/policy/approval.json `
+  --output .panorama-work/policy/active.json `
+  --store .panorama-work/approval-policy-store/v0.1
+python scripts/validate_approval_policy_store.py `
+  .panorama-work/approval-policy-store/v0.1 --json
+```
+
+- 展示完整 Scope、Stop Conditions、Expiry 和 64 位 Policy Hash 后停止；只有用户精确确认该 Hash 才记录 Approval；
+- Runtime 必须在副作用前分配 Use Number；失败也消耗 Use，同一 Policy 最多一个 Pending；
+- 成功/no-op 必须先有 durable Engineering Event，再写 Receipt 并推进 Ledger；Event 失败保留 pending；
+- durable Receipt 已存在但 Ledger 未推进时，才允许 `validate_approval_policy_store.py --recover-policy <ID>`；
+- 撤销使用 `revoke_approval_policy.py <STORE> <POLICY-ID> --policy-hash <HASH> --revoked-by <USER>`；
+- Core 可执行不代表 Operation Adapter 可用。尚未接入的 Operation 继续逐次审批，不得直接调用 Runtime 绕过 Adapter。
+
 ## CONTINUOUS OBSERVATION
 
 Schema `0.2` 每次使用 Skill 时先比较 `sourceBinding.gitHead` 与项目 HEAD；不一致即执行补偿同步，不等待用户提醒：
@@ -289,10 +368,26 @@ Proposal 的 `reviewDraft` 保持 pending，`reviewedBy` 为空、`reviewedAt` �
 ```powershell
 python scripts/apply_patch.py `
   path/to/project-panorama.html `
-  pending-update.json
+  pending-update.json `
+  --event-store path/to/project/.panorama-work/event-store/v0.1
 ```
 
 让脚本强制执行 Approval/Hash 绑定、Review/UpdateBatch 关系、Base Revision/Data Hash、独占锁、备份、校验、Presentation Hash 不变、提交时并发检测和原子替换。Apply 必须用 Approval 的 `approvedBy` / `approvedAt` 确定性物化最终 approved/waived Review，不得沿用提案生成时间。
+
+启用 `--event-store` 后，Apply 在同一 Writer Lock 内先写 pending Outbox；真实结果精确等于 Expected 才写
+Event 并 finalized，仍等于 Base 则 abandoned，其他状态 conflict。Event 或 finalize 失败时不得报告完整成功，
+后续治理写必须停止。Outbox 的完整状态必须受 `integrity.stateHash` 保护，篡改 status、Observed Result 或
+Resolution 必须 fail closed。只允许显式恢复：
+
+```powershell
+python scripts/validate_governance_outbox.py `
+  path/to/project/.panorama-work/event-outbox/v0.1 `
+  --recover path/to/project/.panorama-work/event-outbox/v0.1/<TXN-ID>.json `
+  --panorama path/to/project-panorama.html `
+  --event-store path/to/project/.panorama-work/event-store/v0.1 --json
+```
+
+恢复只接受精确 Expected（幂等 finalize）或精确 Base（abandoned）；第三状态保持 conflict 并转人工，不 rebase。
 
 失败时不得静默修复、rebase 或重新批准；重新执行 INSPECT 与 PROPOSE UPDATE。成功后执行 VALIDATE 与 INSPECT，并汇报新 Revision、语义结果、剩余 High/Critical、备份和 HTML 路径。
 
