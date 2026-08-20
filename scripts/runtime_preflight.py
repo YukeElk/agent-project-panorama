@@ -20,6 +20,13 @@ from panorama_cli import ChineseArgumentParser
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _preferred_encoding() -> str:
+    getencoding = getattr(locale, "getencoding", None)
+    if callable(getencoding):
+        return getencoding()
+    return locale.getpreferredencoding(False)
+
+
 def _command_version(command: str, flag: str = "--version") -> dict[str, Any]:
     executable = shutil.which(command)
     if executable is None:
@@ -54,7 +61,7 @@ def run_preflight(root: Path = ROOT) -> dict[str, Any]:
         checks[label] = {"status": "available" if available else "unavailable"}
     checks["git"] = _command_version("git")
     checks["node"] = _command_version("node")
-    preferred_encoding = locale.getencoding()
+    preferred_encoding = _preferred_encoding()
     checks["textEncoding"] = {
         "status": "compatible" if preferred_encoding.lower().replace("-", "") == "utf8" else "legacy_default",
         "preferred": preferred_encoding,
