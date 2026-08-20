@@ -24,6 +24,11 @@ def test_runtime_preflight_is_offline_and_core_ready(project_root):
 def test_runtime_preflight_supports_python_310_locale_api(project_root, monkeypatch):
     import runtime_preflight
 
+    monkeypatch.setattr(
+        runtime_preflight,
+        "_command_version",
+        lambda command, flag="--version": {"status": "unavailable", "version": None},
+    )
     monkeypatch.delattr(runtime_preflight.locale, "getencoding", raising=False)
     monkeypatch.setattr(
         runtime_preflight.locale,
