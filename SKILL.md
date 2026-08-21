@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/View IR 开发候选；持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译只读多视图候选，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound Model/View IR candidates, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/View IR 多视图发布候选；持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译只读多视图候选，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound Model/View IR candidates, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑接入首个真实 Delegated Operation Adapter：`event_head.recover`；V0.6 WP6 Machine Slice 接入第二个 Adapter：`verified_delivery.promote`。两者均已本地验证但未随 V0.6 公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer/Delivery 只能作为本地 Development Candidate 使用。
+V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑接入首个真实 Delegated Operation Adapter：`event_head.recover`；V0.6 WP6 Machine Slice 接入第二个 Adapter：`verified_delivery.promote`。两者均已本地验证但未随 V0.6 公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer/Delivery 已进入本地 Release Candidate，三个精确 Artifact Hash 的独立人工视觉验收关闭前不得称为已发布能力。
 
 ## 不变量
 
@@ -271,7 +271,7 @@ python scripts/validate_event_store.py `
 - Proposal/Apply 只有显式提供 `--event-store` 时才接入 Governance Outbox；Observation、Receipt、Studio
   Session 或 INIT 尚未自动记录；
 - Approval Policy Core 已实现；V0.5.1 只接入 `event_head.recover`，其他 Operation Adapter 必须逐个通过
-  fail-closed 门禁。V0.6 View IR/Renderer 是未发布 Development Candidate；Dataset Export 尚未实现，不得把
+  fail-closed 门禁。V0.6 View IR/Renderer 是未发布 Release Candidate；Dataset Export 尚未实现，不得把
   候选或实验转换脚本冒充正式发布能力。
 
 ### Event Head Recovery Policy Adapter（V0.5.1 Internal Milestone）
@@ -339,7 +339,7 @@ python scripts/validate_approval_policy_store.py `
 - 撤销使用 `revoke_approval_policy.py <STORE> <POLICY-ID> --policy-hash <HASH> --revoked-by <USER>`；
 - Core 可执行不代表 Operation Adapter 可用。尚未接入的 Operation 继续逐次审批，不得直接调用 Runtime 绕过 Adapter。
 
-## V0.6 MULTI-VIEW FOUNDATION（DEVELOPMENT CANDIDATE）
+## V0.6 MULTI-VIEW FOUNDATION（RELEASE CANDIDATE；HUMAN VISUAL PENDING）
 
 需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
 [Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
