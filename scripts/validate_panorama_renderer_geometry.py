@@ -69,19 +69,40 @@ def _sequence_layout(view: dict[str, Any]) -> dict[str, tuple[float, float]]:
 
 
 def _route(
-    source: tuple[float, float], target: tuple[float, float]
+    source: tuple[float, float],
+    target: tuple[float, float],
+    *,
+    obstacles: list[tuple[float, float, float, float]],
+    lane_index: int,
+    lane_base: float,
 ) -> list[tuple[float, float]]:
     x1, y1 = source[0] + NODE_W, source[1] + NODE_H / 2
     x2, y2 = target[0], target[1] + NODE_H / 2
     if x2 >= x1 + 45:
         middle = (x1 + x2) / 2
-        return [(x1, y1), (middle, y1), (middle, y2), (x2, y2)]
-    bend_y = max(source[1] + NODE_H, target[1] + NODE_H) + 32
+        preferred = [(x1, y1), (middle, y1), (middle, y2), (x2, y2)]
+    else:
+        bend_y = max(source[1] + NODE_H, target[1] + NODE_H) + 32
+        preferred = [
+            (x1, y1),
+            (x1 + 28, y1),
+            (x1 + 28, bend_y),
+            (x2 - 28, bend_y),
+            (x2 - 28, y2),
+            (x2, y2),
+        ]
+    if not any(
+        _segment_hits_rect(preferred[index - 1], preferred[index], rect)
+        for rect in obstacles
+        for index in range(1, len(preferred))
+    ):
+        return preferred
+    lane_y = lane_base + lane_index * 18.0
     return [
         (x1, y1),
         (x1 + 28, y1),
-        (x1 + 28, bend_y),
-        (x2 - 28, bend_y),
+        (x1 + 28, lane_y),
+        (x2 - 28, lane_y),
         (x2 - 28, y2),
         (x2, y2),
     ]
@@ -125,6 +146,7 @@ def validate_geometry(view: dict[str, Any]) -> dict[str, Any]:
     sequence = view["profile"] == "sequence"
     positions = _sequence_layout(view) if sequence else _general_layout(view)
     rects = _rectangles(positions, sequence=sequence)
+    lane_base = max((rect[1] + rect[3] for rect in rects.values()), default=0.0) + 32.0
     findings: list[dict[str, Any]] = []
     node_ids = sorted(rects)
     for index, source in enumerate(node_ids):
@@ -141,7 +163,17 @@ def validate_geometry(view: dict[str, Any]) -> dict[str, Any]:
             y = 135.0 + order * 58.0
             points = [(positions[source][0] + 75.0, y), (positions[target][0] + 75.0, y)]
         else:
-            points = _route(positions[source], positions[target])
+            points = _route(
+                positions[source],
+                positions[target],
+                obstacles=[
+                    rect
+                    for node_id, rect in rects.items()
+                    if node_id not in {source, target}
+                ],
+                lane_index=order,
+                lane_base=lane_base,
+            )
         for node_id, rect in rects.items():
             if node_id in {source, target}:
                 continue

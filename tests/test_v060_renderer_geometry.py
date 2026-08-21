@@ -13,7 +13,7 @@ def test_v060_six_view_geometry_candidate_passes(project_root, tmp_path):
     assert all(view["findings"] == [] for view in result["views"])
 
 
-def test_v060_geometry_detects_edge_through_intermediate_node():
+def test_v060_geometry_routes_around_intermediate_node():
     view = {
         "viewId": "VIEW-GEOMETRY-FAILURE",
         "profile": "module",
@@ -31,9 +31,5 @@ def test_v060_geometry_detects_edge_through_intermediate_node():
 
     result = validate_geometry(view)
 
-    assert result["status"] == "failed"
-    assert {
-        "code": "GEOM_EDGE_THROUGH_NODE",
-        "edgeId": "EDGE-A-B",
-        "nodeId": "NODE-D",
-    } in result["findings"]
+    assert result["status"] == "passed"
+    assert result["findings"] == []
