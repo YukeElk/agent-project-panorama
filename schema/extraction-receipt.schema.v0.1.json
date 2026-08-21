@@ -117,7 +117,7 @@
       "properties": {
         "networkAccessed": {"const": false},
         "projectMutated": {"const": false},
-        "sourceBodiesReadTransiently": {"const": true},
+        "sourceBodiesReadTransiently": {"type": "boolean"},
         "sourceBodyPersisted": {"const": false},
         "classifiedSecretPathsRead": {"const": false},
         "embeddedSecretScan": {"const": "not_performed"},

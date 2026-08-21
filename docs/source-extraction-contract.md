@@ -77,8 +77,11 @@ JS/TS 当前不是完整 parser，Receipt 固定披露 `javascript_typescript_fu
   `evals/`；
 - 不执行项目代码、不安装依赖、不访问网络、不修改项目。
 
-Receipt 的安全陈述必须区分：`sourceBodiesReadTransiently=true`、`sourceBodyPersisted=false`、
-`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed`。
+Receipt 的安全陈述必须区分：有支持的输入时 `sourceBodiesReadTransiently=true`，零个受支持输入时为 `false`；
+`sourceBodyPersisted=false`、`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed` 保持固定。
+发现 Java/Kotlin/Go/Rust/C/C++/C#/Ruby/PHP/Swift/Scala 等 source-like 文件但没有对应 Adapter 时，
+`coverage/status/lossReport` 必须为 `partial` 并披露 `unsupported_source_languages_present`，不得以 0 files
+报告 completed。
 
 ## 8. 命令
 

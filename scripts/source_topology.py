@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import posixpath
 import re
 import stat
 import subprocess
@@ -64,6 +65,10 @@ SOURCE_SUFFIXES = {
     ".cjs": ("source", "javascript"),
     ".ts": ("source", "typescript"),
     ".tsx": ("source", "typescript"),
+}
+SOURCE_LIKE_UNSUPPORTED_SUFFIXES = {
+    ".c", ".cc", ".cpp", ".cs", ".go", ".h", ".hpp", ".java", ".kt",
+    ".kts", ".php", ".rb", ".rs", ".scala", ".swift",
 }
 MANIFEST_NAMES = {
     "package.json": ("manifest", "json"),
@@ -203,6 +208,7 @@ def _inventory(root: Path) -> tuple[list[dict[str, Any]], dict[str, int], str | 
 
     inventory: list[dict[str, Any]] = []
     unsupported = 0
+    unsupported_source = 0
     secret_risk = 0
     total_bytes = 0
     supported_discovered = 0
@@ -220,6 +226,8 @@ def _inventory(root: Path) -> tuple[list[dict[str, Any]], dict[str, int], str | 
         kind = _supported_kind(relative)
         if kind is None:
             unsupported += 1
+            if relative.suffix.casefold() in SOURCE_LIKE_UNSUPPORTED_SUFFIXES:
+                unsupported_source += 1
             continue
         supported_discovered += 1
         if supported_discovered > MAX_FILES:
@@ -260,6 +268,7 @@ def _inventory(root: Path) -> tuple[list[dict[str, Any]], dict[str, int], str | 
     return inventory, {
         "ignored": ignored,
         "unsupported": unsupported,
+        "unsupportedSource": unsupported_source,
         "secretRisk": secret_risk,
         "supportedDiscovered": supported_discovered,
     }, git_head
@@ -694,7 +703,12 @@ def _resolve_js_relative(
 ) -> str | None:
     if not specifier.startswith("."):
         return None
-    base = (Path(source_path).parent / specifier).as_posix()
+    # Inventory paths are canonical POSIX project-relative strings.  Path.as_posix()
+    # changes separators but deliberately preserves ``..`` segments, so use a
+    # lexical POSIX normalization before matching the inventory index.
+    base = posixpath.normpath(posixpath.join(posixpath.dirname(source_path), specifier))
+    if base == ".." or base.startswith("../") or base.startswith("/"):
+        return None
     suffixes = ("", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx")
     candidates = [base + suffix for suffix in suffixes]
     candidates.extend(f"{base}/index{suffix}" for suffix in suffixes[1:])
@@ -1071,7 +1085,7 @@ def extract_source_topology(
         "mode": "git" if git_head else "content_digest",
         "gitHead": git_head,
         "contentDigest": content_digest,
-        "coverage": "complete",
+        "coverage": "partial" if excluded["unsupportedSource"] else "complete",
         "currentness": "current",
         "includedFileCount": len(inventory),
         "includedByteCount": sum(item["size"] for item in inventory),
@@ -1160,6 +1174,20 @@ def extract_source_topology(
         information_gaps.append("javascript_typescript_full_parser_not_used")
     if any(item["parseStatus"] == "failed" for item in inventory):
         information_gaps.append("source_parse_failures_present")
+    if excluded["unsupportedSource"]:
+        information_gaps.append("unsupported_source_languages_present")
+        losses.append(
+            {
+                "kind": "source_language.unsupported",
+                "sourceRef": "$project",
+                "severity": "unsupported",
+                "reason": (
+                    f"{excluded['unsupportedSource']} source-like files use languages "
+                    "without a V0.6 extractor adapter and were not read."
+                ),
+                "preservedAs": "inventory.excluded.unsupported",
+            }
+        )
     observation_id = _derived_id(
         "SRCOBS",
         {
@@ -1212,6 +1240,7 @@ def extract_source_topology(
     partial = bool(
         parse_failures
         or unresolved
+        or excluded["unsupportedSource"]
         or any(
             item["severity"] in {"partial", "unsupported", "blocked"}
             for item in losses
@@ -1331,7 +1360,7 @@ def extract_source_topology(
         "safety": {
             "networkAccessed": False,
             "projectMutated": False,
-            "sourceBodiesReadTransiently": True,
+            "sourceBodiesReadTransiently": bool(public_inventory),
             "sourceBodyPersisted": False,
             "classifiedSecretPathsRead": False,
             "embeddedSecretScan": "not_performed",

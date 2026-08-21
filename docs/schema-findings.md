@@ -562,3 +562,25 @@
 - `verified_delivery.promote` 成为第二个真实 Approval Policy Operation Adapter，沿用单 Operation、Use-before-
   effect、Event/Receipt/Ledger 与确定性 resume 边界；
 - 该结论只允许内部 Candidate/last-good，不代表 Proof Lab、人工视觉、安装、Tag、Push 或公开 Release 完成。
+
+## SF-51 Source Resolver 的路径规范化是事实准确性门禁
+
+- 证据：Panorama × Archify 受控同项目实验首次发现，JS/TS `../../` 与 `../../../` 内部 import 在匹配
+  Inventory 前只转换了分隔符、没有消解 `..`，使 5/5 可解析内部依赖被错误标成 unresolved。
+- 影响：Dependency View 会创建伪 Unknown Target，降低实体闭包与事实召回；单元测试中的 `./helper` 不能覆盖
+  多包仓常见的父目录相对导入。
+- V0.6 修复：使用 project-relative POSIX lexical normalization；规范化后越出根的路径仍拒绝，合法父目录相对
+  import 精确匹配已读取 Inventory。受控项目由 6 files / 11 elements / 5 unresolved 变为 6 files /
+  6 elements / 0 unresolved；新增父目录相对 import 回归测试。
+
+## SF-52 零个受支持输入不能报告 Source Extraction completed
+
+- 证据：固定 Spring PetClinic 快照包含 63 个 Java 源文件；V0.6 Extractor 没有 Java Adapter，旧逻辑返回
+  0 files / 0 elements / 0 relations 且 status=completed。
+- 影响：空图会被误读为“项目没有架构关系”而不是“工具不支持该语言”，直接违反 Loss/Unknown 边界，并让
+  公开项目门禁产生假阳性。
+- V0.6 修复：识别常见 source-like 未支持扩展；存在时 Source coverage、Receipt、Loss Report 固定为 partial，
+  披露 `unsupported_source_languages_present` 与聚合 Loss，不读取正文。零个受支持输入时
+  `sourceBodiesReadTransiently=false`；Extraction Receipt Schema 允许该布尔值如实表达。
+- 发布影响：Spring PetClinic 仍是明确的 unsupported/partial 案例；在 Java Adapter 或另一个受支持语言的固定
+  公开项目通过之前，V0.6 “基于源码生成架构”公开门禁不满足。

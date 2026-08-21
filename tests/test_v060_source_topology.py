@@ -182,6 +182,52 @@ def test_v060_extraction_preserves_typed_unresolved_and_declared_boundaries(
     assert "dynamic_or_unresolved_dependencies_present" in observation["informationGaps"]
 
 
+def test_v060_javascript_parent_relative_imports_resolve_lexically(tmp_path):
+    root = tmp_path / "nested-source-project"
+    _write(root / "services" / "api" / "src" / "orders.ts", "import { reserve } from '../../inventory/src/stock';\n")
+    _write(root / "services" / "inventory" / "src" / "stock.ts", "export const reserve = true;\n")
+
+    observation = extract_source_topology(
+        root, project_id="PRJ-NESTED", observed_at=OBSERVED_AT
+    )["observation"]
+    relation = next(
+        item
+        for item in observation["relations"]
+        if item["attributes"].get("specifier") == "../../inventory/src/stock"
+    )
+    target = next(
+        item for item in observation["elements"] if item["id"] == relation["toElementId"]
+    )
+
+    assert relation["resolution"] == "resolved"
+    assert target["kind"] == "source_file"
+    assert target["path"] == "services/inventory/src/stock.ts"
+
+
+def test_v060_unsupported_source_language_is_partial_not_empty_success(tmp_path):
+    root = tmp_path / "java-project"
+    _write(root / "src" / "Main.java", "class Main {}\n")
+    _write(root / "README.md", "documentation is not a source adapter input\n")
+
+    bundle = extract_source_topology(
+        root, project_id="PRJ-JAVA", observed_at=OBSERVED_AT
+    )
+
+    observation = bundle["observation"]
+    receipt = bundle["receipt"]
+    assert observation["sourceBinding"]["coverage"] == "partial"
+    assert observation["inventory"]["excluded"]["unsupported"] == 2
+    assert "unsupported_source_languages_present" in observation["informationGaps"]
+    assert receipt["status"] == "partial"
+    assert receipt["counts"]["filesRead"] == 0
+    assert receipt["safety"]["sourceBodiesReadTransiently"] is False
+    assert bundle["lossReport"]["status"] == "partial"
+    assert any(
+        item["kind"] == "source_language.unsupported"
+        for item in bundle["lossReport"]["losses"]
+    )
+
+
 def test_v060_extraction_does_not_persist_source_or_secret_bodies(tmp_path):
     bundle = extract_source_topology(
         _source_project(tmp_path),
