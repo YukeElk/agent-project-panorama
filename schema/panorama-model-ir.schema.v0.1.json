@@ -241,6 +241,7 @@
             "release",
             "data_store",
             "actor",
+            "source_element",
             "unknown"
           ]
         },

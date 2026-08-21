@@ -16,13 +16,14 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 from panorama_io import compute_canonical_hash, compute_data_hash
+from source_topology import validate_source_observation
 from validate_panorama import load_panorama, validate_data
 
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_SCHEMA = ROOT / "schema" / "panorama-model-ir.schema.v0.1.json"
 VIEW_SCHEMA = ROOT / "schema" / "panorama-view-ir.schema.v0.1.json"
-MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.1.0"}
+MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.2.0"}
 VIEW_COMPILER = {"id": "panorama-module-view-compiler", "version": "0.1.0"}
 
 
@@ -155,6 +156,37 @@ def _source_binding(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _observation_source_binding(observation: dict[str, Any]) -> dict[str, Any]:
+    source = observation["sourceBinding"]
+    return {
+        "mode": source["mode"],
+        "gitHead": source["gitHead"],
+        "sourceSnapshotHash": observation["integrity"]["semanticHash"],
+        "sourceContentDigest": source["contentDigest"],
+        "coverage": source["coverage"],
+        "currentness": source["currentness"],
+    }
+
+
+def _model_source_pin(pin: dict[str, Any]) -> dict[str, Any]:
+    line = pin.get("line")
+    column = pin.get("column")
+    suffix = ""
+    if line is not None:
+        suffix = f"#L{line}"
+        if column is not None:
+            suffix += f":{column}"
+    return {
+        "evidenceId": pin["evidenceId"],
+        "kind": "source_location",
+        "ref": pin["ref"] + suffix,
+        "revision": pin["revision"],
+        "digest": pin["digest"],
+        "accessClass": pin["accessClass"],
+        "freshness": pin["freshness"],
+    }
+
+
 def compute_model_semantic_hash(model: dict[str, Any]) -> str:
     value = deepcopy(model)
     value.pop("integrity", None)
@@ -172,7 +204,11 @@ def compute_view_layout_hash(view: dict[str, Any]) -> str:
     return compute_canonical_hash(view.get("layout"))
 
 
-def compile_model_ir(data: dict[str, Any]) -> dict[str, Any]:
+def compile_model_ir(
+    data: dict[str, Any],
+    *,
+    source_observation: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     report = validate_data(data)
     if report.errors:
         details = "; ".join(issue.render() for issue in report.errors[:10])
@@ -288,7 +324,6 @@ def compile_model_ir(data: dict[str, Any]) -> dict[str, Any]:
         )
     relations.sort(key=lambda item: item["id"])
 
-    source_binding = _source_binding(data)
     project_binding = {
         "projectId": project["id"],
         "projectName": project["name"],
@@ -296,13 +331,101 @@ def compile_model_ir(data: dict[str, Any]) -> dict[str, Any]:
         "revision": meta["revision"],
         "dataHash": data_hash,
     }
+    source_observation_binding: dict[str, Any] | None = None
+    if source_observation is not None:
+        observation_errors = validate_source_observation(source_observation)
+        if observation_errors:
+            raise PanoramaViewIRError(
+                "Source Observation 无效：" + "; ".join(observation_errors[:10])
+            )
+        if source_observation["projectBinding"]["projectId"] != project["id"]:
+            raise PanoramaViewIRError(
+                "Source Observation projectId 与 Panorama Core 不匹配。"
+            )
+        source_binding = _observation_source_binding(source_observation)
+        compiled_at = source_observation["observedAt"]
+        source_observation_binding = {
+            "observationId": source_observation["observationId"],
+            "semanticHash": source_observation["integrity"]["semanticHash"],
+            "producer": source_observation["producer"],
+        }
+        for source_element in source_observation["elements"]:
+            entities.append(
+                {
+                    "id": source_element["id"],
+                    "kind": "source_element",
+                    "name": source_element["name"],
+                    "layerBindings": {
+                        "current": None,
+                        "target": None,
+                        "historical": None,
+                    },
+                    "architectureScopes": ["current"],
+                    "purpose": "源码抽取候选；不是正式 Panorama Module。",
+                    "factStatus": source_element["factStatus"],
+                    "authority": source_element["authority"],
+                    "confidence": source_element["confidence"],
+                    "evidencePins": [
+                        _model_source_pin(pin)
+                        for pin in source_element["evidencePins"]
+                    ],
+                    "attributes": {
+                        "sourceObservationId": source_observation["observationId"],
+                        "sourceKind": source_element["kind"],
+                        "path": source_element["path"],
+                        "language": source_element["language"],
+                        "parseStatus": source_element["parseStatus"],
+                        "sourceAttributes": source_element["attributes"],
+                    },
+                }
+            )
+        for source_relation in source_observation["relations"]:
+            relations.append(
+                {
+                    "id": source_relation["id"],
+                    "kind": "dependency",
+                    "name": source_relation["name"],
+                    "fromEntityId": source_relation["fromElementId"],
+                    "toEntityId": source_relation["toElementId"],
+                    "direction": "one_way",
+                    "architectureScopes": ["current"],
+                    "factStatus": source_relation["factStatus"],
+                    "authority": source_relation["authority"],
+                    "confidence": source_relation["confidence"],
+                    "evidencePins": [
+                        _model_source_pin(pin)
+                        for pin in source_relation["evidencePins"]
+                    ],
+                    "semantics": {
+                        "protocol": None,
+                        "mode": source_relation["kind"],
+                        "dataSummary": None,
+                        "order": None,
+                        "asynchronous": None,
+                    },
+                    "attributes": {
+                        "sourceObservationId": source_observation["observationId"],
+                        "sourceRelationKind": source_relation["kind"],
+                        "resolution": source_relation["resolution"],
+                        "runtimeObserved": False,
+                        "sourceAttributes": source_relation["attributes"],
+                    },
+                }
+            )
+        entities.sort(key=lambda item: item["id"])
+        relations.sort(key=lambda item: item["id"])
+    else:
+        source_binding = _source_binding(data)
     event_binding = {
         "status": "not_provided",
         "checkpointId": None,
         "checkpointHash": None,
         "asOfSequence": None,
     }
-    as_of = {"mode": "recorded_as_of", "value": compiled_at}
+    as_of = {
+        "mode": "explicit_time" if source_observation is not None else "recorded_as_of",
+        "value": compiled_at,
+    }
     model_id = _stable_derived_id(
         "MODEL",
         {
@@ -316,6 +439,8 @@ def compile_model_ir(data: dict[str, Any]) -> dict[str, Any]:
     information_gaps = ["event_checkpoint_not_provided"]
     if source_binding["currentness"] != "current":
         information_gaps.append("source_currentness_not_verified")
+    if source_observation is not None:
+        information_gaps.extend(source_observation["informationGaps"])
 
     model: dict[str, Any] = {
         "formatVersion": "panorama-model-ir.v0.1",
@@ -330,7 +455,11 @@ def compile_model_ir(data: dict[str, Any]) -> dict[str, Any]:
         "entities": entities,
         "relations": relations,
         "informationGaps": sorted(information_gaps),
-        "extensions": {},
+        "extensions": (
+            {"sourceObservationBinding": source_observation_binding}
+            if source_observation_binding is not None
+            else {}
+        ),
     }
     model["integrity"] = {
         "hashAlgorithm": "sha256",
@@ -614,6 +743,15 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     return errors
 
 
-def load_and_compile_model_ir(path: Path) -> dict[str, Any]:
+def load_and_compile_model_ir(
+    path: Path, *, source_observation_path: Path | None = None
+) -> dict[str, Any]:
     data, _ = load_panorama(path)
-    return compile_model_ir(data)
+    source_observation = None
+    if source_observation_path is not None:
+        source_observation = json.loads(
+            source_observation_path.read_text(encoding="utf-8")
+        )
+        if not isinstance(source_observation, dict):
+            raise PanoramaViewIRError("Source Observation 根必须是 JSON object。")
+    return compile_model_ir(data, source_observation=source_observation)

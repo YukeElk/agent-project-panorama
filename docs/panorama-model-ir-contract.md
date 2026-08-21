@@ -1,6 +1,6 @@
 # Panorama Model IR Contract v0.1
 
-状态：Implementation Slice A
+状态：Implementation Slice B；Core + optional Source Observation
 
 对应 Finding：SF-34、SF-35、SF-39、SF-40
 
@@ -11,15 +11,16 @@
 
 ## 2. 输入门禁
 
-Slice A 只接受通过 Panorama Formal Validator 的 Schema 0.1/0.2 JSON 或 Single HTML。当前只读取：
+编译器必须接受通过 Panorama Formal Validator 的 Schema 0.1/0.2 JSON 或 Single HTML。Core 路径读取：
 
 - `project`、`meta` 和 Schema Version；
 - `architecture.layers/modules/connections`；
 - exact-path `factProvenance`；
 - recorded `sourceBinding`。
 
-不得从页面文案、DOM、文件相邻、名称相似、目录结构或 LLM 输出补实体和关系。Source/Event 输入在相应
-Adapter 完成前固定为未提供或 recorded metadata，不能冒充运行观察。
+可选 Source 输入只接受通过 `source-topology-observation.v0.1` Schema、Semantic Hash、Evidence/Inventory
+Digest、Endpoint 与 Project ID 绑定检查的 Observation。不得从页面文案、DOM、文件相邻、名称相似、目录
+结构或 LLM 输出补实体和关系。Event 输入在相应 Adapter 完成前固定为未提供，不能冒充运行观察。
 
 ## 3. 身份与关系
 
@@ -27,7 +28,9 @@ Adapter 完成前固定为未提供或 recorded metadata，不能冒充运行观
 - derived ID 只用于 Model、Evidence、View Node/Edge/Group 等投影对象，由 canonical input 生成；
 - Relation 必须保留精确端点、方向、Scope、protocol、mode 和 data summary；
 - import/dependency/data flow/runtime call/sequence message 是不同 Relation Kind，不允许扁平化；
-- Slice A 只生成 `communication` Relation，不从 Connection 推断 Sequence Order。
+- Core 生成 `communication` Relation；Source Observation 元素固定投影为 `source_element`，typed import/
+  declared dependency 固定投影为 `dependency` Relation，不得提升为 Module、runtime call 或 sequence message；
+- Core Connection 与 Source Dependency 的 `semantics.order` 均固定为 null。
 
 Layer 对 Current、Target、Historical 分别绑定。Target 使用 `targetLayerId`，缺失时才回退到正式 `layerId`；
 同时投影多个 Architecture Scope 会造成 Layer 归属歧义，因此 module profile v0.1 每次只允许一个 Scope。
@@ -49,6 +52,10 @@ freshness=recorded_as_of
 `factStatus=derived`，不升级为 observed。离线编译不比较实时 Git；即使记录了 Git Head，也必须保留
 `source_currentness_not_verified`。
 
+提供新鲜 Source Observation 时，Source Location Pin 保留精确路径、行号（若有）、文件 Digest、Git HEAD
+或完整 Content Digest，并把 Observation ID/Semantic Hash/Producer 放入 Model `extensions`。Source
+Observation 在抽取瞬间可标为 current，但后续漂移必须由 Freshness Reconcile 重新验证。
+
 ## 5. Hash 与验证
 
 Model Semantic Hash 覆盖删除顶层 `integrity` 后的完整 Model，包括 Project/Source/Event/`asOf` Binding、
@@ -68,6 +75,10 @@ Validator 必须拒绝：
 ```powershell
 python scripts/compile_panorama_model_ir.py project-panorama.json `
   --output .panorama-work/views/project.model-ir.json
+
+python scripts/compile_panorama_model_ir.py project-panorama.json `
+  --source-observation .panorama-work/source-observation.json `
+  --output .panorama-work/views/project.source-bound.model-ir.json
 ```
 
 输出已存在时默认停止；`--overwrite` 只覆盖候选制品，不修改正式 Panorama。

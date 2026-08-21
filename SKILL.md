@@ -342,10 +342,18 @@ python scripts/validate_approval_policy_store.py `
 
 需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
 [Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
-当前只实现 Formal Panorama Core → Model IR → single-scope Module Architecture View IR：
+当前实现 Formal Panorama Core + optional Source Observation → Model IR → single-scope Module Architecture View IR。
+需要源码输入时先完整读取 [Source Extraction Contract](docs/source-extraction-contract.md)：
 
 ```powershell
+python scripts/extract_source_topology.py path/to/project `
+  --project-id PRJ-ID --observed-at 2026-08-21T12:00:00Z `
+  --observation-output .panorama-work/views/source-observation.json `
+  --receipt-output .panorama-work/views/extraction-receipt.json `
+  --loss-output .panorama-work/views/extraction-loss.json
+
 python scripts/compile_panorama_model_ir.py path/to/project-panorama.json `
+  --source-observation .panorama-work/views/source-observation.json `
   --output .panorama-work/views/project.model-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile module --scope current `
@@ -358,12 +366,16 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
 - authored Module/Connection ID 原样保留；View Node/Edge/Group 使用确定性 derived ID；
 - module profile v0.1 每次只接受一个 current/target/historical Scope，Edge 只有端点和 Scope 都匹配才投影；
 - 离线 Source 固定为 recorded_as_of，未提供 Event Checkpoint 保留 Information Gap；不得宣称实时源码一致；
+- Source Extractor 只读取 project root 内有界普通源码；已分类 Secret 路径与 in-scope link/reparse path 拒绝，
+  普通源码正文仅瞬时解析且不持久化；当前未执行 embedded Secret scan，必须如实披露；
+- Python AST、JS/TS 有界静态 import 与 manifest dependency 只生成 `source_element`/dependency candidate；
+  文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
-- 源码 Extractor、其他 View Profile、Renderer、HTML Delivery 与 Event Capture 尚未实现，不得由 Slice A 外推。
+- 完整 JS/TS parser、其他 View Profile、Renderer、HTML Delivery 与 Event Capture 尚未实现，不得由当前切片外推。
 
-将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Source Extraction
-开始时读取 [Source Extraction Contract](docs/source-extraction-contract.md)；Renderer/Delivery 实现时再读取各自合同。
+将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
+实现时再读取各自合同。
 
 ## CONTINUOUS OBSERVATION
 

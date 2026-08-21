@@ -453,3 +453,32 @@
   Source/Renderer/Delivery 行为合同已闭合，对应 Schema 随真实工作包实现冻结。
 - WP1 Slice A 只支持 Formal Panorama Core → Model IR → single-scope Module Architecture View IR；源码抽取、
   多图 Renderer、Sequence、Event Capture、last-good、Export 和后训练仍不得外推为已实现。
+
+## SF-44 Source Extraction 安全 Receipt 容易把“未读 Secret 路径”误写成“未读任何 Secret 值”
+
+- 证据：WP2 真实原型需要瞬时读取普通源码正文才能运行 AST/静态 import parser；普通源码中可能嵌入未分类
+  Secret，而本轮没有执行源码 Secret scanner。
+- 影响：若 Receipt 使用 `secretValuesRead=false`，会把路径策略误报为内容级隐私证明，并与实际 parser 行为
+  冲突。
+- V0.6 决策：安全 Receipt 拆分为 `sourceBodiesReadTransiently=true`、`sourceBodyPersisted=false`、
+  `classifiedSecretPathsRead=false`、`embeddedSecretScan=not_performed`。只有分类为 Secret 的路径保证不读取；
+  不对普通源码内容做“无 Secret”声明。
+- 保留边界：Source Body、Prompt、模型输出和 Secret 值均不得进入 Observation/Receipt/Loss/Model/View。
+
+## SF-45 JS/TS 有界静态模式不能冒充完整语言解析器
+
+- 证据：WP2 首个无依赖实现可识别 comment-aware `import/export from`、`import type`、`require` 与 dynamic
+  import，但不具备完整 AST、路径别名、生成代码、条件导出和 bundler resolution 语义。
+- 影响：若 Adapter 只输出关系而不披露解析器能力，缺失关系可能被误解为不存在，低置信关系也可能被提升为
+  精确源码事实。
+- V0.6 决策：JS/TS Adapter 固定为 `partial`，关系 Authority 为 `inferred`、Confidence 为 `medium`，并在
+  Information Gap 与 Loss Report 中记录 `javascript_typescript_full_parser_not_used`。后续完整 parser 必须使用
+  新 Adapter Version 与独立对照测试，不能静默替换语义。
+
+## V0.6 WP2 Slice A 结论
+
+- Repository Inventory、Python AST、JS/TS 有界静态 import、package/pyproject manifest、Source Observation、
+  Extraction Receipt 与 Loss Report 已形成端到端消费者后冻结机器 Schema；
+- Source Observation 可合并进 Model IR，但始终使用 `source_element` 与 dependency candidate，不改变正式
+  Module Architecture View；
+- Source Extraction 仍不是多图 Renderer、完整 JS/TS parser、runtime trace、Sequence 或正式架构采纳。

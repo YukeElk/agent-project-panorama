@@ -18,6 +18,11 @@ def build_parser() -> argparse.ArgumentParser:
         description="将正式 Panorama Core 确定性编译为只读 Model IR。"
     )
     parser.add_argument("input", type=Path, help="Panorama JSON 或 Single HTML")
+    parser.add_argument(
+        "--source-observation",
+        type=Path,
+        help="可选、已验证的 panorama-source-topology-observation.v0.1",
+    )
     parser.add_argument("--output", type=Path, required=True, help="新 Model IR JSON")
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖既有候选文件")
     return parser
@@ -31,7 +36,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Model IR 输出已存在：{args.output}", file=sys.stderr)
         return 2
     try:
-        model = load_and_compile_model_ir(args.input)
+        model = load_and_compile_model_ir(
+            args.input, source_observation_path=args.source_observation
+        )
         atomic_write(
             args.output,
             json.dumps(model, ensure_ascii=False, indent=2) + "\n",

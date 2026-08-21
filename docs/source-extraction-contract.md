@@ -1,6 +1,6 @@
 # Source Extraction Contract v0.1
 
-状态：Behavioral Design Closed；WP2 Machine Schema/Implementation Pending
+状态：WP2 Slice A Implemented；Python/JS/TS/Manifest Foundation；未进入公开发布
 
 对应 Finding：SF-24、SF-30、SF-39、SF-40
 
@@ -9,8 +9,10 @@
 Source Extraction 把源码、manifest、构建/部署配置和语言工具输出转换为 typed Source Topology Observation。
 Observation 是带 Evidence 的输入，不是正式 Module、Current Architecture 或 Runtime Truth。
 
-Extractor 不读取 Secret、外部私有正文或项目根之外的路径；不把源码正文写入 Observation、Model/View IR、
-Receipt、Event 或 Renderer。路径、位置、大小与 digest 属于有界工程元数据。
+Extractor 不读取已分类 Secret 路径、外部私有正文或项目根之外的路径；普通源码正文仅在进程内瞬时解析，
+不写入 Observation、Model/View IR、Receipt、Event 或 Renderer。路径、位置、大小、digest 与 import/package
+标识属于有界工程元数据。当前不扫描普通源码中的嵌入式 Secret，因此 Receipt 必须记录
+`embeddedSecretScan=not_performed`，不得声称源码一定不含 Secret。
 
 ## 2. Adapter 分层
 
@@ -43,3 +45,55 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 只有 Repository Inventory 与至少一个 Language/Config Adapter 端到端原型通过后，才冻结
 `source-topology-observation.v0.1` 和 `extraction-receipt.v0.1`。Schema 必须由真实输出与负向测试证明，不先创建
 无人消费的字段集合。
+
+该门禁已由 Slice A 满足并冻结以下真实消费者合同：
+
+- `source-topology-observation.schema.v0.1.json`；
+- `extraction-receipt.schema.v0.1.json`；
+- 既有 `transformation-loss-report.schema.v0.1.json`；
+- `source_topology.py`、`extract_source_topology.py` 与 Model IR 可选 Source Observation 输入。
+
+## 6. Slice A 支持范围
+
+- Repository Inventory：Git tracked + 非忽略 untracked，或非 Git 有界目录清单；
+- Python：标准库 AST 的静态 import、type-only import、相对 import 与 dynamic import candidate；
+- JavaScript/TypeScript：有界 comment-aware 静态模式，保留 `import type`、`require` 与 dynamic import；
+- Manifest：`package.json` 与 `pyproject.toml` 声明依赖；`pyproject.toml` 使用 Python 3.11+ 标准库
+  `tomllib`，Python 3.10 无 TOML parser 时保留 parse failure/Loss，不静默猜测；
+- 每个文件、元素和关系绑定 Source Location、文件 SHA-256、Git HEAD 或完整 Content Digest；
+- Observation 可选合并进 Model IR，但实体保持 `source_element`，关系保持 derived/declared dependency，
+  不进入 module profile，也不生成 Sequence Order。
+
+JS/TS 当前不是完整 parser，Receipt 固定披露 `javascript_typescript_full_parser_not_used`。import/dependency
+始终保持 `runtimeObserved=false`、`sequenceOrder=null`。缺失相对目标、动态表达式与解析失败进入 Loss/Unknown，
+不得删除以制造“完整”拓扑。
+
+## 7. 安全与容量
+
+- 拒绝 project root 或 in-scope 文件的 symlink/junction/reparse point；
+- 拒绝绝对路径、`..` 逃逸、超过 32 层的路径；
+- 单文件上限 1 MiB、总量上限 128 MiB、文件上限 20,000，超限 fail closed；
+- 排除 `.env*`、私钥/keystore 后缀、Secret 目录、依赖/构建/cache、`.panorama-work` 与执行 Skill 的
+  `evals/`；
+- 不执行项目代码、不安装依赖、不访问网络、不修改项目。
+
+Receipt 的安全陈述必须区分：`sourceBodiesReadTransiently=true`、`sourceBodyPersisted=false`、
+`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed`。
+
+## 8. 命令
+
+```powershell
+python scripts/extract_source_topology.py path/to/project `
+  --project-id PRJ-ID `
+  --observed-at 2026-08-21T12:00:00Z `
+  --observation-output .panorama-work/source-observation.json `
+  --receipt-output .panorama-work/extraction-receipt.json `
+  --loss-output .panorama-work/extraction-loss.json
+
+python scripts/compile_panorama_model_ir.py project-panorama.json `
+  --source-observation .panorama-work/source-observation.json `
+  --output .panorama-work/source-bound.model-ir.json
+```
+
+`--observed-at` 是显式 as-of 输入，避免运行时钟破坏可重算性。输出存在时默认拒绝覆盖；`--overwrite`
+只覆盖候选制品，不修改正式 Panorama 或业务源码。
