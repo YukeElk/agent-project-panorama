@@ -1,0 +1,353 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/panorama-model-ir.schema.v0.1.json",
+  "title": "Panorama Model IR v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "modelId",
+    "compiledAt",
+    "compiler",
+    "projectBinding",
+    "sourceBinding",
+    "eventBinding",
+    "asOf",
+    "layers",
+    "entities",
+    "relations",
+    "informationGaps",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-model-ir.v0.1"},
+    "modelId": {"type": "string", "pattern": "^MODEL-[A-F0-9]{24}$"},
+    "compiledAt": {"type": "string", "format": "date-time"},
+    "compiler": {"$ref": "#/$defs/compiler"},
+    "projectBinding": {"$ref": "#/$defs/projectBinding"},
+    "sourceBinding": {"$ref": "#/$defs/sourceBinding"},
+    "eventBinding": {"$ref": "#/$defs/eventBinding"},
+    "asOf": {"$ref": "#/$defs/asOf"},
+    "layers": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {"$ref": "#/$defs/layer"}
+    },
+    "entities": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {"$ref": "#/$defs/entity"}
+    },
+    "relations": {
+      "type": "array",
+      "maxItems": 500000,
+      "items": {"$ref": "#/$defs/relation"}
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableSha256": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "version": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "projectName", "panoramaSchemaVersion", "revision", "dataHash"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "projectName": {"type": "string", "minLength": 1, "maxLength": 512},
+        "panoramaSchemaVersion": {"enum": ["0.1", "0.2"]},
+        "revision": {"type": "integer", "minimum": 0},
+        "dataHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "gitHead",
+        "sourceSnapshotHash",
+        "sourceContentDigest",
+        "coverage",
+        "currentness"
+      ],
+      "properties": {
+        "mode": {
+          "enum": ["git", "content_digest", "recorded_metadata", "not_applicable", "unknown"]
+        },
+        "gitHead": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-fA-F0-9]{40}([a-fA-F0-9]{24})?$"},
+            {"type": "null"}
+          ]
+        },
+        "sourceSnapshotHash": {"$ref": "#/$defs/nullableSha256"},
+        "sourceContentDigest": {"$ref": "#/$defs/nullableSha256"},
+        "coverage": {"enum": ["complete", "partial", "not_applicable", "unknown"]},
+        "currentness": {"enum": ["current", "stale", "recorded_as_of", "unknown"]}
+      }
+    },
+    "eventBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checkpointId", "checkpointHash", "asOfSequence"],
+      "properties": {
+        "status": {"enum": ["not_provided", "complete", "incomplete", "invalid"]},
+        "checkpointId": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "checkpointHash": {"$ref": "#/$defs/nullableSha256"},
+        "asOfSequence": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "not_provided"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "checkpointId": {"type": "null"},
+              "checkpointHash": {"type": "null"},
+              "asOfSequence": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "asOf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "value"],
+      "properties": {
+        "mode": {"enum": ["recorded_as_of", "event_checkpoint", "explicit_time"]},
+        "value": {"type": "string", "format": "date-time"}
+      }
+    },
+    "evidencePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "kind",
+        "ref",
+        "revision",
+        "digest",
+        "accessClass",
+        "freshness"
+      ],
+      "properties": {
+        "evidenceId": {"$ref": "#/$defs/stableId"},
+        "kind": {
+          "enum": ["json_pointer", "source_location", "reference_id", "receipt_id", "event_id"]
+        },
+        "ref": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "revision": {"type": ["string", "null"], "maxLength": 256},
+        "digest": {"$ref": "#/$defs/nullableSha256"},
+        "accessClass": {
+          "enum": [
+            "PUBLIC_PROJECT_EVIDENCE",
+            "PROJECT_OPERATIONAL_METADATA",
+            "PROJECT_CONTENT",
+            "EXTERNAL_PRIVATE_DATA"
+          ]
+        },
+        "freshness": {
+          "enum": ["current", "likely_current", "stale", "historical", "recorded_as_of", "unknown"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "json_pointer"}}, "required": ["kind"]},
+          "then": {"properties": {"ref": {"type": "string", "pattern": "^/"}}}
+        }
+      ]
+    },
+    "factStatus": {
+      "enum": ["observed", "declared", "derived", "unknown", "conflict"]
+    },
+    "authority": {
+      "enum": ["observed", "declared", "inferred", "unknown", "conflict"]
+    },
+    "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+    "architectureScopes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {"enum": ["current", "target", "transition", "historical"]}
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "order", "summary", "evidencePins"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 256},
+        "order": {"type": "integer"},
+        "summary": {"type": "string", "maxLength": 2048},
+        "evidencePins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {"$ref": "#/$defs/evidencePin"}
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "layerBindings",
+        "architectureScopes",
+        "purpose",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePins",
+        "attributes"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {
+          "enum": [
+            "module",
+            "external_system",
+            "resource",
+            "deployment",
+            "release",
+            "data_store",
+            "actor",
+            "unknown"
+          ]
+        },
+        "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "layerBindings": {"$ref": "#/$defs/layerBindings"},
+        "architectureScopes": {"$ref": "#/$defs/architectureScopes"},
+        "purpose": {"type": "string", "maxLength": 4096},
+        "factStatus": {"$ref": "#/$defs/factStatus"},
+        "authority": {"$ref": "#/$defs/authority"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "evidencePins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {"$ref": "#/$defs/evidencePin"}
+        },
+        "attributes": {"type": "object"}
+      }
+    },
+    "layerBindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current", "target", "historical"],
+      "properties": {
+        "current": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "target": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "historical": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        }
+      }
+    },
+    "relationSemantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "mode", "dataSummary", "order", "asynchronous"],
+      "properties": {
+        "protocol": {"type": ["string", "null"], "maxLength": 512},
+        "mode": {"type": ["string", "null"], "maxLength": 128},
+        "dataSummary": {"type": ["string", "null"], "maxLength": 4096},
+        "order": {"type": ["integer", "null"], "minimum": 0},
+        "asynchronous": {"type": ["boolean", "null"]}
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "fromEntityId",
+        "toEntityId",
+        "direction",
+        "architectureScopes",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePins",
+        "semantics",
+        "attributes"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "kind": {
+          "enum": [
+            "communication",
+            "dependency",
+            "data_flow",
+            "deployment",
+            "runtime_call",
+            "sequence_message",
+            "state_transition",
+            "trace",
+            "unknown"
+          ]
+        },
+        "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "fromEntityId": {"$ref": "#/$defs/stableId"},
+        "toEntityId": {"$ref": "#/$defs/stableId"},
+        "direction": {"enum": ["one_way", "two_way", "unknown"]},
+        "architectureScopes": {"$ref": "#/$defs/architectureScopes"},
+        "factStatus": {"$ref": "#/$defs/factStatus"},
+        "authority": {"$ref": "#/$defs/authority"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "evidencePins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {"$ref": "#/$defs/evidencePin"}
+        },
+        "semantics": {"$ref": "#/$defs/relationSemantics"},
+        "attributes": {"type": "object"}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "semanticHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "semanticHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "model_without_integrity"}
+      }
+    }
+  }
+}

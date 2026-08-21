@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/panorama-view-ir.schema.v0.1.json",
+  "title": "Panorama View IR v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "viewId",
+    "generatedAt",
+    "compiler",
+    "modelBinding",
+    "viewType",
+    "profile",
+    "title",
+    "description",
+    "filters",
+    "groups",
+    "nodes",
+    "edges",
+    "informationGaps",
+    "layout",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-view-ir.v0.1"},
+    "viewId": {"type": "string", "pattern": "^VIEW-[A-F0-9]{24}$"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "compiler": {"$ref": "#/$defs/compiler"},
+    "modelBinding": {"$ref": "#/$defs/modelBinding"},
+    "viewType": {
+      "enum": ["architecture", "dataflow", "deployment", "sequence", "lifecycle", "evolution"]
+    },
+    "profile": {
+      "enum": [
+        "system_context",
+        "module",
+        "dependency_dataflow",
+        "deployment_runtime",
+        "sequence",
+        "lifecycle",
+        "evolution_risk"
+      ]
+    },
+    "title": {"type": "string", "minLength": 1, "maxLength": 512},
+    "description": {"type": "string", "maxLength": 2048},
+    "filters": {"$ref": "#/$defs/filters"},
+    "groups": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {"$ref": "#/$defs/group"}
+    },
+    "nodes": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {"$ref": "#/$defs/node"}
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 500000,
+      "items": {"$ref": "#/$defs/edge"}
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 10000,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "layout": {"$ref": "#/$defs/layout"},
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stableId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "version": {"type": "string", "minLength": 1, "maxLength": 128}
+      }
+    },
+    "modelBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelId",
+        "modelSemanticHash",
+        "projectId",
+        "panoramaDataHash",
+        "asOf"
+      ],
+      "properties": {
+        "modelId": {"type": "string", "pattern": "^MODEL-[A-F0-9]{24}$"},
+        "modelSemanticHash": {"$ref": "#/$defs/sha256"},
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaDataHash": {"$ref": "#/$defs/sha256"},
+        "asOf": {"type": "string", "format": "date-time"}
+      }
+    },
+    "filters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architectureScopes", "factStatuses"],
+      "properties": {
+        "architectureScopes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"enum": ["current", "target", "transition", "historical"]}
+        },
+        "factStatuses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"enum": ["observed", "declared", "derived", "unknown", "conflict"]}
+        }
+      }
+    },
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "entity"},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "relationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "relation"},
+        "id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "layerId", "label", "order"],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "layerId": {"$ref": "#/$defs/stableId"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 512},
+        "order": {"type": "integer"}
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "entityRef",
+        "label",
+        "kind",
+        "groupId",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePinIds",
+        "emphasis"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "entityRef": {"$ref": "#/$defs/entityRef"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 512},
+        "kind": {"$ref": "#/$defs/stableId"},
+        "groupId": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "factStatus": {"enum": ["observed", "declared", "derived", "unknown", "conflict"]},
+        "authority": {"enum": ["observed", "declared", "inferred", "unknown", "conflict"]},
+        "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "emphasis": {"enum": ["default", "primary", "risk", "unknown"]}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "relationRef",
+        "fromNodeId",
+        "toNodeId",
+        "label",
+        "kind",
+        "direction",
+        "order",
+        "evidencePinIds"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "relationRef": {"$ref": "#/$defs/relationRef"},
+        "fromNodeId": {"$ref": "#/$defs/stableId"},
+        "toNodeId": {"$ref": "#/$defs/stableId"},
+        "label": {"type": "string", "maxLength": 1024},
+        "kind": {"$ref": "#/$defs/stableId"},
+        "direction": {"enum": ["one_way", "two_way", "unknown"]},
+        "order": {"type": ["integer", "null"], "minimum": 0},
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        }
+      }
+    },
+    "layoutPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodeId", "x", "y"],
+      "properties": {
+        "nodeId": {"$ref": "#/$defs/stableId"},
+        "x": {"type": "number"},
+        "y": {"type": "number"}
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "positions"],
+      "properties": {
+        "strategy": {"enum": ["auto_layered", "authored", "none"]},
+        "positions": {
+          "type": "array",
+          "maxItems": 100000,
+          "items": {"$ref": "#/$defs/layoutPosition"}
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hashAlgorithm",
+        "semanticHash",
+        "semanticHashScope",
+        "layoutHash",
+        "layoutHashScope"
+      ],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "semanticHash": {"$ref": "#/$defs/sha256"},
+        "semanticHashScope": {"const": "view_without_layout_or_integrity"},
+        "layoutHash": {"$ref": "#/$defs/sha256"},
+        "layoutHashScope": {"const": "layout_only"}
+      }
+    }
+  }
+}

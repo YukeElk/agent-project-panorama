@@ -395,3 +395,61 @@
   第三状态、Binding/Hash 篡改或歧义均 fail closed，不重做 Event、不推断 Epoch、不自动 rebase。
 - 后续门禁：第二个 Operation Adapter 必须证明此事务模式可复用或登记其特有的 Effect Contract；不得直接
   以 Policy Pending 充当通用 Saga/Agent Runtime。
+
+## SF-39 Source Topology Observation 缺少 typed edge、解析状态与 Extractor Receipt
+
+- 证据：现有 Panorama Module/Connection 是正式架构模型，`factProvenance` 能绑定观察来源，但没有保存
+  import/dependency/call/data-flow/config relation 的种类、resolved/unresolved/non-followable、工具版本和 Loss。
+- 影响：直接从源码生成架构时，import、package、service、runtime call 与 data flow 容易被压成同一种 Edge，
+  动态加载和缺失解析也可能被错误显示为不存在。
+- V0.6 决策：Source Extraction 先输出独立 typed Observation 与 Extraction Receipt，再由 Model Compiler
+  归一化；每条输出绑定工具版本、Source Revision/Digest、位置、解析状态、Access Class 和 Loss Report。
+- 实现门禁：只有 Repository Inventory 与至少一个 Language/Config Adapter 原型通过正负向测试后才冻结
+  Source Observation/Receipt Schema；不得先创建无消费者的空壳机器合同。
+
+## SF-40 Source Grouping 与正式 Architecture Adoption 缺少权威边界
+
+- 证据：源码目录、package、workspace 和 import cluster 可以帮助理解结构，但不自动具备正式 Module 的职责、
+  状态所有权、部署边界或 Target 评审事实。
+- 影响：若 Extractor/LLM 直接创建 Current Module，会把启发式分组冒充治理事实，并绕过 Architecture Proposal。
+- V0.6 决策：源码分组只能是 `derived candidate`；已有正式 Module 映射继续使用 authored ID。采纳新分组为
+  Current/Target/Decision 必须经过精确 Proposal Hash 的人工批准。
+- Slice A：Core Model Compiler 只投影正式 `architecture.modules/connections/layers`，不读取目录或源码补边。
+
+## SF-41 Sequence Message Order 与运行因果缺少来源合同
+
+- 证据：Connection、import、dependency 和时间相邻事件都不能证明一次请求中消息的实际顺序、同步/异步、
+  return、retry 或 failure path。
+- 影响：直接把静态拓扑转为时序图会制造运行因果，漂亮的箭头可能被误认为 observed trace。
+- V0.6 决策：Sequence 只接受有序 Engineering Event/runtime trace、作者 Dynamic View、可验证控制流
+  `derived_possible_sequence` 或用户批准的 Declared/Target 流程。每条 Message 必须绑定顺序来源。
+- Slice A：Model Connection 的 `semantics.order` 固定为 null；Schema 虽预留 Sequence Profile，但没有 Compiler，
+  不得描述为已实现。
+
+## SF-42 Cross-view Scope、Layer 与 Partial Graph Closure 缺少确定性规则
+
+- 证据：同一 Module 可同时属于 Current/Target，并可能在 Target 使用不同 Layer；Relation 只有端点和 Scope
+  同时满足时才应进入某个 View。
+- 影响：复用单一 `layerId` 或为保持图连通而补代理边，会混淆 Current/Target，产生悬空 Edge 或错误 Boundary。
+- V0.6 决策：Model IR 分别保存 current/target/historical Layer Binding；module View v0.1 每次只投影一个
+  Architecture Scope。Edge 仅在两个端点 Node 均存在且 Relation Scope 匹配时进入 View。
+- Hash 边界：Scope/Label/Binding/Evidence 进入 View Semantic Hash；坐标和 Viewer State 不进入。
+
+## SF-43 Multi-view Candidate 缺少跨语义、几何、交互与性能的发布证明
+
+- 证据：现有 Formal Validator 验证 Panorama Core，SF-36 只冻结了通用派生交付边界；多视图还需要验证
+  cross-view ID、Evidence Pin、Sequence Order、Geometry、Deep Link、viewport、可访问性和容量分层。
+- 影响：单个 Schema-valid JSON 或一张漂亮截图不能证明多图一致、可交互、可读或适合公开发布。
+- V0.6 决策：View Validator、Renderer Validator、Browser Evidence、Machine Receipt 和人工视觉状态分层；
+  失败候选不替换 last-good。代表性公开制品必须绑定精确 Artifact Hash 的人工 `accepted`。
+- 实现门禁：Renderer 前至少准备 Architecture/Data Flow/Sequence 三种 Schema-valid Fixture；Delivery Schema
+  只有 Candidate/last-good/Receipt/Transaction 故障测试通过后才冻结。
+
+## V0.6 WP0 Core Design Closure 结论
+
+- 2026-08-21 用户批准开始 V0.6 迭代；V0.5.1 以本地内部基线提交 `b0b2e47` 保留，不单独发布。
+- SF-34～SF-36 与 SF-39～SF-43 共同冻结 Truth → Model → View → Layout/Viewer State 边界。
+- 本轮只冻结并实现已有消费者的 `panorama-model-ir.v0.1` 和 `panorama-view-ir.v0.1` Machine Schema；
+  Source/Renderer/Delivery 行为合同已闭合，对应 Schema 随真实工作包实现冻结。
+- WP1 Slice A 只支持 Formal Panorama Core → Model IR → single-scope Module Architecture View IR；源码抽取、
+  多图 Renderer、Sequence、Event Capture、last-good、Export 和后训练仍不得外推为已实现。

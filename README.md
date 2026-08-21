@@ -158,6 +158,30 @@ python scripts/recover_event_head_with_policy.py resume `
 [`schema/event-head-recovery-transaction.schema.v0.1.json`](schema/event-head-recovery-transaction.schema.v0.1.json)。
 Policy 创建、变更、续期、替换和撤销仍要求准确 Hash 的人工批准。
 
+## V0.6 Multi-View Foundation（开发中）
+
+V0.6 已开始实现共享 Model/View IR。当前 Slice A 只把通过 Formal Validator 的 Panorama Core
+`layers/modules/connections` 编译为只读 Model IR，再生成单 Scope 的 Module Architecture View IR：
+
+```powershell
+python scripts/compile_panorama_model_ir.py project-panorama.json `
+  --output .panorama-work/views/project.model-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile module --scope current `
+  --output .panorama-work/views/project.current.module.view-ir.json
+```
+
+Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evidence Pin 与 Semantic Hash；View
+另外分离 Layout Hash。离线 Source 固定为 `recorded_as_of`，未提供 Event Checkpoint 时保留 Information Gap。
+它们是可删除、可重算的候选，不能反向 Apply 到正式 Panorama。
+
+当前尚未实现源码 Extractor、Data Flow/Deployment/Sequence/Lifecycle/Evolution 编译器、互动 Renderer、
+HTML Delivery 或 Event Capture。设计闭合与精确边界见
+[`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
+[`docs/panorama-model-ir-contract.md`](docs/panorama-model-ir-contract.md) 和
+[`docs/panorama-view-ir-contract.md`](docs/panorama-view-ir-contract.md)。首切片验证见
+[`docs/v0.6-model-view-ir-validation.md`](docs/v0.6-model-view-ir-validation.md)。
+
 为普通 Studio Proposal 启用事件双写：
 
 ```powershell

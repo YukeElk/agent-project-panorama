@@ -1,6 +1,6 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.5，持续自动追踪 Git/实现/验证/运行事实，检查证据来源与 Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or continuously reconcile a project, inspect fact provenance and source drift, record or validate project-local engineering events, manage bounded delegated approvals, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/View IR 开发候选；持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译只读多视图候选，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound Model/View IR candidates, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
@@ -337,6 +337,33 @@ python scripts/validate_approval_policy_store.py `
 - durable Receipt 已存在但 Ledger 未推进时，才允许 `validate_approval_policy_store.py --recover-policy <ID>`；
 - 撤销使用 `revoke_approval_policy.py <STORE> <POLICY-ID> --policy-hash <HASH> --revoked-by <USER>`；
 - Core 可执行不代表 Operation Adapter 可用。尚未接入的 Operation 继续逐次审批，不得直接调用 Runtime 绕过 Adapter。
+
+## V0.6 MULTI-VIEW FOUNDATION（DEVELOPMENT CANDIDATE）
+
+需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
+[Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
+当前只实现 Formal Panorama Core → Model IR → single-scope Module Architecture View IR：
+
+```powershell
+python scripts/compile_panorama_model_ir.py path/to/project-panorama.json `
+  --output .panorama-work/views/project.model-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile module --scope current `
+  --output .panorama-work/views/project.current.module.view-ir.json
+```
+
+- Model/View Compile、Validate 与新 Candidate 输出不修改正式 Panorama，不要求人工批准；覆盖候选必须显式
+  使用 `--overwrite`；
+- Model IR 必须绑定 Project/Data/Source/Event/`asOf`、Compiler 和 Evidence Pin；View 必须精确绑定 Model；
+- authored Module/Connection ID 原样保留；View Node/Edge/Group 使用确定性 derived ID；
+- module profile v0.1 每次只接受一个 current/target/historical Scope，Edge 只有端点和 Scope 都匹配才投影；
+- 离线 Source 固定为 recorded_as_of，未提供 Event Checkpoint 保留 Information Gap；不得宣称实时源码一致；
+- Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
+  错配必须 fail closed；
+- 源码 Extractor、其他 View Profile、Renderer、HTML Delivery 与 Event Capture 尚未实现，不得由 Slice A 外推。
+
+将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Source Extraction
+开始时读取 [Source Extraction Contract](docs/source-extraction-contract.md)；Renderer/Delivery 实现时再读取各自合同。
 
 ## CONTINUOUS OBSERVATION
 
