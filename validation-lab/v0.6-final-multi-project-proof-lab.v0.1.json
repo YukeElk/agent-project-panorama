@@ -1,0 +1,60 @@
+{
+  "formatVersion": "panorama-final-multi-project-proof-lab.v0.1",
+  "generatedAt": "2026-08-21T20:40:00Z",
+  "testedCodeRevision": "20c7576",
+  "protocolBinding": {
+    "protocol": "validation-lab/protocol.md",
+    "protocolSha256": "9585644d393ab16e885eb72137b88d33a18dd2fc713dc302bb75dc2c182de8f6"
+  },
+  "cases": [
+    {
+      "id": "controlled-orders",
+      "kind": "controlled_oracle_and_guided_multiview",
+      "source": {"files": 6, "elements": 6, "relations": 5, "unresolved": 0},
+      "model": {"modelId": "MODEL-5A1992C06870A6D5A66FD7FC", "semanticHash": "01fa708b27a74c415e0a066836a24e72a035a9b50c9fc541c1560284c1c7ab2f", "entities": 12, "relations": 11},
+      "views": {"viewSetId": "PVS-E2F5BA61F67FCC8CD96137A7", "viewSetHash": "86618ddb54a12614ab5c724371209d2f0bfa63e0b12e95bc7f208e9516478ad2", "chapters": 7, "currentModule": {"nodes": 5, "edges": 4}, "targetModule": {"nodes": 5, "edges": 4}, "dependency": {"nodes": 5, "edges": 5}, "emptyEvidenceBoundViews": 4},
+      "browser": {"desktopViewports": 4, "narrowViewports": 2, "nodeOverlaps": 0, "edgeThroughNodes": 0, "sideOverflow": 0, "consoleErrors": 0, "consoleWarnings": 0, "evidenceId": "PBE-B097F94B76B1549F98847807", "evidenceHash": "f987aa16e9fa351c0d3e37dfdc807d13adac3bc2616f0a9e0abf68c4cf5c48e8", "visualReview": "pending"},
+      "delivery": {"deliveryId": "PVD-8B1FF4A5F25AD5FBD3B0D0C8", "receiptHash": "5060bbc65792234e98e68641a08fb5f1810e645b2ae464ab63836ba3cd7c6c27", "artifactSha256": "fba3ca1493c4d7b197bf11bb79f5cc04762fc39cc8b9239c18e6b662a5c0774c", "artifactBytes": 74166, "lastGoodModified": false}
+    },
+    {
+      "id": "spring-petclinic-88e37c1",
+      "kind": "public_java_semantic_and_mapping",
+      "upstreamCommit": "88e37c15cf6fc8490b01bc3e8e2c800cec1ac272",
+      "source": {"files": 53, "java": 49, "properties": 3, "maven": 1, "elements": 255, "relations": 498, "unresolved": 0, "contentDigest": "4b56c804dc59067dc4602f5583d3e32b19337e116f9e591aa05b99aa57ae6225"},
+      "semantics": {"supportedFactRecall": 0.8, "partialFactCount": 1, "contradictedFactCount": 0, "forbiddenClaimAvoidance": 1.0, "secretCanaryDetected": false},
+      "mapping": {"proposalId": "MAP-1AE751BC39685FA27786539A", "mappingProposalHash": "76efd59d8bfd33d7c98f4493ca7ec8b038e6fe42694174e0acfc13a07f16e37e", "candidateCount": 5, "formalModulesCreated": 0, "status": "pending_review"},
+      "model": {"modelId": "MODEL-4C2B50DDB05727FBFC77101C", "semanticHash": "9f28747bab2d13b9358e79f49ed51daa283bdd3dc64f61550df2390ae56758bb", "entities": 255, "relations": 498},
+      "representativeView": {"viewSetId": "PVS-C7AA7D9548415E85595715E6", "nodes": 7, "edges": 6, "root": "PetClinicApplication.java", "maxDepth": 2, "maxNodes": 30},
+      "browser": {"desktopViewports": 4, "narrowViewports": 2, "nodeOverlaps": 0, "edgeThroughNodes": 0, "sideOverflow": 0, "consoleErrors": 0, "consoleWarnings": 0, "evidenceId": "PBE-8579422B7DC36BC072EB20FD", "evidenceHash": "4dfd8e8d1e7702f5b17e21610256c22c073c4d8a74ea25e1f1304915089d58b0", "visualReview": "pending"},
+      "delivery": {"deliveryId": "PVD-68BB947AEF78D4B65523284B", "receiptHash": "08184efd6910ec037567e9865701005081de17fc15575e49bd56c1f5a7006095", "artifactSha256": "d08f66af7688285a2f5646f3cbb3a8110908ecc9c60549e4df03ff23bce9709e", "artifactBytes": 1051067, "lastGoodModified": false}
+    },
+    {
+      "id": "backstage-3c7c082-three-package-slice",
+      "kind": "public_typescript_scale_and_routing",
+      "source": {"files": 295, "elements": 349, "relations": 710, "unresolved": 26, "parseFailures": 0, "status": "partial", "contentDigest": "7c5df2536e872219e9471cc7343034266eafc8cf323c47acac0a4b1f7e965dbd"},
+      "mapping": {"proposalId": "MAP-1EFB80DE2511C980BD4637AA", "candidateCount": 0, "unmappedSourceElementCount": 295, "formalModulesCreated": 0, "reason": "non_java_auto_promotion_forbidden"},
+      "model": {"modelId": "MODEL-968FF1DAFD6C2DEC180AFB67", "semanticHash": "a66e2f87eb9c13708c218ab5e3eac2e0bb7b9725641a1905c274cb86e0afd27c", "entities": 349, "relations": 710},
+      "representativeView": {"viewSetId": "PVS-9371C025772009988133577C", "nodes": 9, "edges": 10, "root": "packages/catalog-client/src/index.ts", "maxDepth": 2, "maxNodes": 40},
+      "routingRegression": {"initialEdgeThroughNodeCount": 3, "fixedEdgeThroughNodeCount": 0, "strategy": "obstacle_aware_bounded_fallback_lanes"},
+      "browser": {"desktopViewports": 4, "narrowViewports": 2, "nodeOverlaps": 0, "edgeThroughNodes": 0, "sideOverflow": 0, "consoleErrors": 0, "consoleWarnings": 0, "searchInteraction": "9_nodes_to_1_node", "evidenceId": "PBE-614C47F778212A8C5B1D339D", "evidenceHash": "b39b680d5fdc0a426909b3e748892d4245d3e013792c342707753bd892292d5f", "visualReview": "pending"},
+      "delivery": {"deliveryId": "PVD-73E56B9626B04EC8FE201E09", "receiptHash": "d64a60a4f9e25186ada5141df938e23bc2c3b16db97439796183c7a223342fd1", "artifactSha256": "ba56d1a6c076373cd1b94c1d11a003560d4e31bea2e886a7b9f7550f63465023", "artifactBytes": 1241714, "lastGoodModified": false}
+    }
+  ],
+  "findings": [
+    {"id": "FPL-01", "severity": "high", "status": "fixed", "summary": "Backstage 9-node dependency view exposed three edge-through-node routes; obstacle-aware fallback lanes reduce the count to zero without changing Model/View facts."},
+    {"id": "FPL-02", "severity": "high", "status": "open_external", "summary": "Exact final candidate hashes have machine browser evidence but independent human visual review remains pending."}
+  ],
+  "validation": {
+    "pytest": {"passed": 408, "skipped": 2, "failed": 0, "revision": "20c7576"},
+    "v060Focused": {"passed": 59, "failed": 0, "revision": "20c7576"},
+    "runtimePreflight": {"readyForCore": true, "schemaCount": 25, "schemaErrors": 0},
+    "skillValidator": "passed",
+    "validationLab": "passed"
+  },
+  "releaseDecision": {
+    "status": "machine_ready_human_visual_pending",
+    "publishV060Now": false,
+    "closedGates": ["SUPPORTED_PUBLIC_SOURCE_PROJECT", "PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING", "GUIDED_MULTI_VARIANT_ARCHITECTURE_VIEWS", "CURRENT_PROOF_LAB_ON_FINAL_IMPLEMENTATION_COMMIT"],
+    "blockingGates": ["INDEPENDENT_HUMAN_VISUAL_ACCEPTANCE_FOR_EXACT_V060_HASH"]
+  }
+}

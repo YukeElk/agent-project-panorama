@@ -623,3 +623,11 @@
 - V0.6 决策：Properties 只记录 key/line/Evidence Pin 和白名单安全值，datasource URL 只保留 scheme，其他值
   `omitted_by_policy`。Mapping Artifact 固定 `pending_review`、`suggestedModuleId=null`，绑定 Observation Hash、
   Source Element 与 Evidence Pin；正式采纳继续走精确 Hash 的 Proposal/Approval/Apply。
+
+## SF-56 小型图通过不代表多列依赖图不会穿节点
+
+- 证据：Controlled 5 nodes / 5 edges 与 PetClinic 小图均通过；Backstage 9 nodes / 10 edges 首轮出现 3 条
+  `GEOM_EDGE_THROUGH_NODE`。固定 midpoint orthogonal route 会穿过中间列节点。
+- 影响：只用小图做视觉门禁会把复杂依赖图的可读性回归带入发布；增加项目数量但不增加拓扑形态也不足。
+- V0.6 修复：路由先尝试紧凑路径并对全部非端点矩形做 obstacle check；命中后使用确定性、有界的底部 lane。
+  Python Geometry Validator 与浏览器 Renderer 共享同一策略。Backstage 修复后 3→0，三项目六档矩阵均为 0。

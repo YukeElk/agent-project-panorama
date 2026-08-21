@@ -231,7 +231,8 @@ Source Element 保持候选身份，不自动变成正式 Module，import/depend
 当前已实现 hash-bound Single HTML Renderer Candidate、Guided Current/Target/Transition/Historical Variant、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
 统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
 Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
-展开、完整 Java parser/模板解析、通用 Event Capture Adapter、最终 Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+展开、完整 Java parser/模板解析与通用 Event Capture Adapter 仍未完成；最终三项目 Machine Proof Lab 已通过，
+精确候选 Hash 的独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
 Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
@@ -240,6 +241,7 @@ Runtime Call。Renderer 验证见
 [`docs/panorama-view-set-contract.md`](docs/panorama-view-set-contract.md)。验证见
 [`docs/v0.6-model-view-ir-validation.md`](docs/v0.6-model-view-ir-validation.md) 和
 [`docs/v0.6-source-extraction-validation.md`](docs/v0.6-source-extraction-validation.md) 和
+[`docs/v0.6-final-multi-project-proof-lab.md`](docs/v0.6-final-multi-project-proof-lab.md) 和
 [`docs/v0.6-multiview-compiler-validation.md`](docs/v0.6-multiview-compiler-validation.md) 和
 [`docs/v0.6-event-projection-validation.md`](docs/v0.6-event-projection-validation.md) 和
 [`docs/v0.6-guided-view-set-validation.md`](docs/v0.6-guided-view-set-validation.md) 和

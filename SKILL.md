@@ -457,7 +457,8 @@ python scripts/validate_panorama_renderer_geometry.py `
 且无正式 Conflict Fact 时不能生成 Conflict Story；在
 [Java Source Adapter Validation](docs/v0.6-java-source-adapter-validation.md) 与
 [Semantic Source and Module Mapping Validation](docs/v0.6-semantic-source-module-validation.md) 以及
-[Proof Lab](docs/v0.6-panorama-archify-proof-lab.md) 的阻塞项关闭前，不得描述为通用源码架构生成或公开发布就绪。
+[Final Multi-project Proof Lab](docs/v0.6-final-multi-project-proof-lab.md) 已关闭机器门禁；精确候选 Hash 的独立人工
+视觉 Acceptance 关闭前不得公开发布。即使发布后，也不得把 bounded parser 描述为通用/完整源码架构生成器。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：
 
