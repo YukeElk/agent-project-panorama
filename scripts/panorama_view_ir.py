@@ -1,9 +1,10 @@
 """Deterministic, read-only Panorama Model IR and View IR compilation.
 
 V0.6 keeps Core/Event truth separate from derived reading projections.  This
-module initially supports only the formal Panorama Core architecture model and
-the module architecture profile.  Source extraction, event sequence views,
-layout rendering, and last-good delivery are separate later work packages.
+module compiles the formal Panorama Core plus bounded source observations into
+shared Model IR and deterministic architecture, dependency/data-flow, and
+deployment/runtime reading projections.  Event sequence views, interactive
+rendering, and last-good delivery remain separate work packages.
 """
 
 from __future__ import annotations
@@ -23,8 +24,16 @@ from validate_panorama import load_panorama, validate_data
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_SCHEMA = ROOT / "schema" / "panorama-model-ir.schema.v0.1.json"
 VIEW_SCHEMA = ROOT / "schema" / "panorama-view-ir.schema.v0.1.json"
-MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.2.0"}
+MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.3.0"}
 VIEW_COMPILER = {"id": "panorama-module-view-compiler", "version": "0.1.0"}
+DEPENDENCY_VIEW_COMPILER = {
+    "id": "panorama-dependency-dataflow-view-compiler",
+    "version": "0.1.0",
+}
+DEPLOYMENT_VIEW_COMPILER = {
+    "id": "panorama-deployment-runtime-view-compiler",
+    "version": "0.1.0",
+}
 
 
 class PanoramaViewIRError(ValueError):
@@ -62,6 +71,48 @@ def _architecture_scopes(value: str) -> list[str]:
     if value in {"current", "target", "historical"}:
         return [value]
     raise PanoramaViewIRError(f"未知 architectureScope：{value!r}")
+
+
+def _release_scopes(status: str) -> list[str]:
+    mapping = {
+        "planned": ["target"],
+        "development": ["transition"],
+        "candidate": ["transition"],
+        "deployed": ["current"],
+        "retired": ["historical"],
+    }
+    if status not in mapping:
+        raise PanoramaViewIRError(f"未知 Release status：{status!r}")
+    return mapping[status]
+
+
+def _deployment_scopes(status: str) -> list[str]:
+    mapping = {
+        "planned": ["target"],
+        "deploying": ["transition"],
+        "active": ["current"],
+        "degraded": ["current"],
+        "stopped": ["historical"],
+        "retired": ["historical"],
+    }
+    if status not in mapping:
+        raise PanoramaViewIRError(f"未知 Deployment status：{status!r}")
+    return mapping[status]
+
+
+def _resource_scopes(status: str) -> list[str]:
+    mapping = {
+        "planned": ["target"],
+        "reserved": ["target"],
+        "active": ["current"],
+        "degraded": ["current"],
+        "inactive": ["historical"],
+        "retired": ["historical"],
+        "unknown": ["current"],
+    }
+    if status not in mapping:
+        raise PanoramaViewIRError(f"未知 Resource status：{status!r}")
+    return mapping[status]
 
 
 def _layer_bindings(module: dict[str, Any], scopes: list[str]) -> dict[str, Any]:
@@ -269,6 +320,107 @@ def compile_model_ir(
                 },
             }
         )
+
+    for index, release in enumerate(data.get("releases", [])):
+        pointer = f"/releases/{index}"
+        fact_status, authority, confidence = _fact_projection(data, pointer)
+        entities.append(
+            {
+                "id": release["id"],
+                "kind": "release",
+                "name": release["name"],
+                "layerBindings": {
+                    "current": None,
+                    "target": None,
+                    "historical": None,
+                },
+                "architectureScopes": _release_scopes(release["status"]),
+                "purpose": "正式 Panorama Release 记录。",
+                "factStatus": fact_status,
+                "authority": authority,
+                "confidence": confidence,
+                "evidencePins": [
+                    _evidence_pin(pointer=pointer, value=release, data_hash=data_hash)
+                ],
+                "attributes": {
+                    "version": release["version"],
+                    "status": release["status"],
+                    "architectureVersionId": release["architectureVersionId"],
+                    "stageId": release["stageId"],
+                    "createdAt": release["createdAt"],
+                    "releasedAt": release.get("releasedAt"),
+                },
+            }
+        )
+
+    for index, deployment in enumerate(data.get("deployments", [])):
+        pointer = f"/deployments/{index}"
+        fact_status, authority, confidence = _fact_projection(data, pointer)
+        entities.append(
+            {
+                "id": deployment["id"],
+                "kind": "deployment",
+                "name": deployment["name"],
+                "layerBindings": {
+                    "current": None,
+                    "target": None,
+                    "historical": None,
+                },
+                "architectureScopes": _deployment_scopes(deployment["status"]),
+                "purpose": "正式 Panorama Deployment 记录；状态不自动提升为运行观察。",
+                "factStatus": fact_status,
+                "authority": authority,
+                "confidence": confidence,
+                "evidencePins": [
+                    _evidence_pin(
+                        pointer=pointer, value=deployment, data_hash=data_hash
+                    )
+                ],
+                "attributes": {
+                    "environment": deployment["environment"],
+                    "status": deployment["status"],
+                    "releaseId": deployment["releaseId"],
+                    "architectureVersionId": deployment["architectureVersionId"],
+                    "deployedAt": deployment.get("deployedAt"),
+                },
+            }
+        )
+
+    for index, resource in enumerate(data.get("resources", [])):
+        pointer = f"/resources/{index}"
+        fact_status, authority, confidence = _fact_projection(data, pointer)
+        entities.append(
+            {
+                "id": resource["id"],
+                "kind": (
+                    "data_store"
+                    if resource["type"]
+                    in {"database", "cache", "object_store", "vector_store"}
+                    else "resource"
+                ),
+                "name": resource["name"],
+                "layerBindings": {
+                    "current": None,
+                    "target": None,
+                    "historical": None,
+                },
+                "architectureScopes": _resource_scopes(resource["status"]),
+                "purpose": "正式 Panorama Resource 记录；不包含 Access/Credential 正文。",
+                "factStatus": fact_status,
+                "authority": authority,
+                "confidence": confidence,
+                "evidencePins": [
+                    _evidence_pin(pointer=pointer, value=resource, data_hash=data_hash)
+                ],
+                "attributes": {
+                    "resourceType": resource["type"],
+                    "environment": resource["environment"],
+                    "status": resource["status"],
+                    "provider": resource.get("provider"),
+                    "location": resource.get("location"),
+                },
+            }
+        )
     entities.sort(key=lambda item: item["id"])
 
     relations: list[dict[str, Any]] = []
@@ -322,6 +474,143 @@ def compile_model_ir(
                 },
             }
         )
+
+    for deployment_index, deployment in enumerate(data.get("deployments", [])):
+        scopes = _deployment_scopes(deployment["status"])
+        release_pointer = f"/deployments/{deployment_index}/releaseId"
+        fact_status, authority, confidence = _fact_projection(
+            data, release_pointer
+        )
+        relations.append(
+            {
+                "id": _stable_derived_id(
+                    "REL",
+                    {
+                        "kind": "deployment_release",
+                        "deploymentId": deployment["id"],
+                        "releaseId": deployment["releaseId"],
+                    },
+                ),
+                "kind": "deployment",
+                "name": "部署使用发布",
+                "fromEntityId": deployment["id"],
+                "toEntityId": deployment["releaseId"],
+                "direction": "one_way",
+                "architectureScopes": scopes,
+                "factStatus": fact_status,
+                "authority": authority,
+                "confidence": confidence,
+                "evidencePins": [
+                    _evidence_pin(
+                        pointer=release_pointer,
+                        value=deployment["releaseId"],
+                        data_hash=data_hash,
+                    )
+                ],
+                "semantics": {
+                    "protocol": None,
+                    "mode": "deployment_release",
+                    "dataSummary": None,
+                    "order": None,
+                    "asynchronous": None,
+                },
+                "attributes": {
+                    "environment": deployment["environment"],
+                    "deploymentStatus": deployment["status"],
+                    "runtimeObserved": authority == "observed",
+                },
+            }
+        )
+        for module_index, module_deployment in enumerate(
+            deployment.get("moduleDeployments", [])
+        ):
+            pointer = (
+                f"/deployments/{deployment_index}/moduleDeployments/{module_index}"
+            )
+            fact_status, authority, confidence = _fact_projection(data, pointer)
+            relations.append(
+                {
+                    "id": _stable_derived_id(
+                        "REL",
+                        {
+                            "kind": "module_deployment",
+                            "moduleId": module_deployment["moduleId"],
+                            "deploymentId": deployment["id"],
+                        },
+                    ),
+                    "kind": "deployment",
+                    "name": "模块部署到环境",
+                    "fromEntityId": module_deployment["moduleId"],
+                    "toEntityId": deployment["id"],
+                    "direction": "one_way",
+                    "architectureScopes": scopes,
+                    "factStatus": fact_status,
+                    "authority": authority,
+                    "confidence": confidence,
+                    "evidencePins": [
+                        _evidence_pin(
+                            pointer=pointer,
+                            value=module_deployment,
+                            data_hash=data_hash,
+                        )
+                    ],
+                    "semantics": {
+                        "protocol": None,
+                        "mode": "module_deployment",
+                        "dataSummary": None,
+                        "order": None,
+                        "asynchronous": None,
+                    },
+                    "attributes": {
+                        "environment": deployment["environment"],
+                        "deploymentStatus": deployment["status"],
+                        "moduleDeploymentStatus": module_deployment["status"],
+                        "artifactVersion": module_deployment["artifactVersion"],
+                        "runtimeObserved": authority == "observed",
+                    },
+                }
+            )
+        for resource_index, resource_id in enumerate(deployment.get("resourceIds", [])):
+            pointer = f"/deployments/{deployment_index}/resourceIds/{resource_index}"
+            fact_status, authority, confidence = _fact_projection(data, pointer)
+            relations.append(
+                {
+                    "id": _stable_derived_id(
+                        "REL",
+                        {
+                            "kind": "deployment_resource",
+                            "deploymentId": deployment["id"],
+                            "resourceId": resource_id,
+                        },
+                    ),
+                    "kind": "deployment",
+                    "name": "部署使用资源",
+                    "fromEntityId": deployment["id"],
+                    "toEntityId": resource_id,
+                    "direction": "one_way",
+                    "architectureScopes": scopes,
+                    "factStatus": fact_status,
+                    "authority": authority,
+                    "confidence": confidence,
+                    "evidencePins": [
+                        _evidence_pin(
+                            pointer=pointer, value=resource_id, data_hash=data_hash
+                        )
+                    ],
+                    "semantics": {
+                        "protocol": None,
+                        "mode": "deployment_resource",
+                        "dataSummary": None,
+                        "order": None,
+                        "asynchronous": None,
+                    },
+                    "attributes": {
+                        "environment": deployment["environment"],
+                        "deploymentStatus": deployment["status"],
+                        "runtimeObserved": authority == "observed",
+                    },
+                }
+            )
     relations.sort(key=lambda item: item["id"])
 
     project_binding = {
@@ -537,7 +826,8 @@ def compile_module_view_ir(
     selected_relations = [
         relation
         for relation in model["relations"]
-        if relation["fromEntityId"] in selected_entity_ids
+        if relation["kind"] == "communication"
+        and relation["fromEntityId"] in selected_entity_ids
         and relation["toEntityId"] in selected_entity_ids
         and set(relation["architectureScopes"]) & set(ordered_scopes)
     ]
@@ -557,6 +847,8 @@ def compile_module_view_ir(
         groups.append(
             {
                 "id": group_id,
+                "groupType": "layer",
+                "groupRef": layer["id"],
                 "layerId": layer["id"],
                 "label": layer["name"],
                 "order": layer["order"],
@@ -666,6 +958,417 @@ def compile_module_view_ir(
     return view
 
 
+def _checked_single_scope(
+    architecture_scopes: list[str] | None, *, profile: str
+) -> list[str]:
+    scopes = architecture_scopes or ["current"]
+    allowed = {"current", "target", "transition", "historical"}
+    if not scopes or len(scopes) != len(set(scopes)) or not set(scopes) <= allowed:
+        raise PanoramaViewIRError(
+            f"{profile} architecture_scopes 必须是非空、唯一的合法范围。"
+        )
+    if len(scopes) != 1:
+        raise PanoramaViewIRError(f"{profile} 每次只允许一个 architecture scope。")
+    return [
+        scope
+        for scope in ("current", "target", "transition", "historical")
+        if scope in scopes
+    ]
+
+
+def _view_node(entity: dict[str, Any], *, group_id: str | None) -> dict[str, Any]:
+    return {
+        "id": _stable_derived_id("NODE", {"entityId": entity["id"]}, 20),
+        "entityRef": {"type": "entity", "id": entity["id"]},
+        "label": entity["name"],
+        "kind": entity["kind"],
+        "groupId": group_id,
+        "factStatus": entity["factStatus"],
+        "authority": entity["authority"],
+        "confidence": entity["confidence"],
+        "evidencePinIds": sorted(
+            pin["evidenceId"] for pin in entity["evidencePins"]
+        ),
+        "emphasis": "unknown" if entity["factStatus"] == "unknown" else "default",
+    }
+
+
+def _view_edge(
+    relation: dict[str, Any], *, node_by_entity: dict[str, str]
+) -> dict[str, Any]:
+    return {
+        "id": _stable_derived_id("EDGE", {"relationId": relation["id"]}, 20),
+        "relationRef": {"type": "relation", "id": relation["id"]},
+        "fromNodeId": node_by_entity[relation["fromEntityId"]],
+        "toNodeId": node_by_entity[relation["toEntityId"]],
+        "label": relation["name"],
+        "kind": relation["kind"],
+        "direction": relation["direction"],
+        "order": relation["semantics"]["order"],
+        "evidencePinIds": sorted(
+            pin["evidenceId"] for pin in relation["evidencePins"]
+        ),
+    }
+
+
+def compile_dependency_dataflow_view_ir(
+    model: dict[str, Any],
+    *,
+    architecture_scopes: list[str] | None = None,
+    root_entity_ids: list[str] | None = None,
+    max_depth: int = 2,
+    max_nodes: int = 30,
+) -> dict[str, Any]:
+    model_errors = validate_model_ir(model)
+    if model_errors:
+        raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:10]))
+    scopes = _checked_single_scope(
+        architecture_scopes, profile="dependency_dataflow"
+    )
+    if max_depth < 0 or max_depth > 16:
+        raise PanoramaViewIRError("max_depth 必须位于 0..16。")
+    if max_nodes < 1 or max_nodes > 100000:
+        raise PanoramaViewIRError("max_nodes 必须位于 1..100000。")
+    roots = root_entity_ids or []
+    if len(roots) != len(set(roots)):
+        raise PanoramaViewIRError("root_entity_ids 不能重复。")
+
+    entities_by_id = {item["id"]: item for item in model["entities"]}
+    eligible_relations = [
+        relation
+        for relation in model["relations"]
+        if relation["kind"] in {"dependency", "data_flow"}
+        and set(relation["architectureScopes"]) & set(scopes)
+    ]
+    endpoint_ids = {
+        entity_id
+        for relation in eligible_relations
+        for entity_id in (relation["fromEntityId"], relation["toEntityId"])
+    }
+    selected_ids: set[str]
+    if roots:
+        unknown = sorted(set(roots) - set(entities_by_id))
+        if unknown:
+            raise PanoramaViewIRError(
+                "dependency_dataflow 使用未知 root entity：" + ", ".join(unknown)
+            )
+        out_of_scope = sorted(
+            entity_id
+            for entity_id in roots
+            if not set(entities_by_id[entity_id]["architectureScopes"])
+            & set(scopes)
+        )
+        if out_of_scope:
+            raise PanoramaViewIRError(
+                "dependency_dataflow root entity 不属于所选 scope："
+                + ", ".join(out_of_scope)
+            )
+        selected_ids = set(roots)
+        adjacency: dict[str, set[str]] = {}
+        for relation in eligible_relations:
+            source = relation["fromEntityId"]
+            target = relation["toEntityId"]
+            adjacency.setdefault(source, set()).add(target)
+            adjacency.setdefault(target, set()).add(source)
+        frontier = set(roots)
+        for _ in range(max_depth):
+            next_frontier = {
+                neighbor
+                for entity_id in frontier
+                for neighbor in adjacency.get(entity_id, set())
+                if neighbor not in selected_ids
+            }
+            selected_ids.update(next_frontier)
+            frontier = next_frontier
+            if not frontier:
+                break
+    else:
+        selected_ids = endpoint_ids
+
+    if len(selected_ids) > max_nodes:
+        raise PanoramaViewIRError(
+            "dependency_dataflow 节点数 "
+            f"{len(selected_ids)} 超过 max_nodes={max_nodes}；请提供精确 root entity。"
+        )
+    selected_entities = sorted(
+        (entities_by_id[entity_id] for entity_id in selected_ids),
+        key=lambda item: item["id"],
+    )
+    selected_relations = sorted(
+        (
+            relation
+            for relation in eligible_relations
+            if relation["fromEntityId"] in selected_ids
+            and relation["toEntityId"] in selected_ids
+        ),
+        key=lambda item: item["id"],
+    )
+
+    source_kinds = sorted(
+        {
+            str(entity["attributes"].get("sourceKind"))
+            for entity in selected_entities
+            if entity["kind"] == "source_element"
+            and entity["attributes"].get("sourceKind")
+        }
+    )
+    source_kind_labels = {
+        "source_file": "源码文件",
+        "manifest": "Manifest",
+        "configuration": "配置",
+        "external_package": "外部依赖",
+        "unresolved_target": "未解析目标",
+    }
+    group_by_source_kind: dict[str, str] = {}
+    groups: list[dict[str, Any]] = []
+    for order, source_kind in enumerate(source_kinds):
+        group_id = _stable_derived_id(
+            "GROUP", {"groupType": "source_kind", "groupRef": source_kind}, 20
+        )
+        group_by_source_kind[source_kind] = group_id
+        groups.append(
+            {
+                "id": group_id,
+                "groupType": "source_kind",
+                "groupRef": source_kind,
+                "layerId": None,
+                "label": source_kind_labels.get(source_kind, source_kind),
+                "order": order,
+            }
+        )
+    nodes = [
+        _view_node(
+            entity,
+            group_id=group_by_source_kind.get(
+                str(entity["attributes"].get("sourceKind"))
+            ),
+        )
+        for entity in selected_entities
+    ]
+    node_by_entity = {
+        node["entityRef"]["id"]: node["id"] for node in nodes
+    }
+    edges = [
+        _view_edge(relation, node_by_entity=node_by_entity)
+        for relation in selected_relations
+    ]
+    information_gaps = set(model["informationGaps"])
+    if not any(item["kind"] == "dependency" for item in selected_relations):
+        information_gaps.add("dependency_relations_not_available")
+    if not any(item["kind"] == "data_flow" for item in selected_relations):
+        information_gaps.add("data_flow_relations_not_available")
+    model_binding = {
+        "modelId": model["modelId"],
+        "modelSemanticHash": model["integrity"]["semanticHash"],
+        "projectId": model["projectBinding"]["projectId"],
+        "panoramaDataHash": model["projectBinding"]["dataHash"],
+        "asOf": model["asOf"]["value"],
+    }
+    view: dict[str, Any] = {
+        "formatVersion": "panorama-view-ir.v0.1",
+        "viewId": _stable_derived_id(
+            "VIEW",
+            {
+                "compiler": DEPENDENCY_VIEW_COMPILER,
+                "modelSemanticHash": model_binding["modelSemanticHash"],
+                "profile": "dependency_dataflow",
+                "architectureScopes": scopes,
+                "roots": sorted(roots),
+                "maxDepth": max_depth,
+                "maxNodes": max_nodes,
+            },
+        ),
+        "generatedAt": model["compiledAt"],
+        "compiler": DEPENDENCY_VIEW_COMPILER,
+        "modelBinding": model_binding,
+        "viewType": "dataflow",
+        "profile": "dependency_dataflow",
+        "title": f"{model['projectBinding']['projectName']} 依赖与数据流",
+        "description": "只投影已有 dependency/data_flow 关系；静态依赖不是运行调用。",
+        "filters": {
+            "architectureScopes": scopes,
+            "factStatuses": [
+                "observed",
+                "declared",
+                "derived",
+                "unknown",
+                "conflict",
+            ],
+        },
+        "groups": groups,
+        "nodes": nodes,
+        "edges": edges,
+        "informationGaps": sorted(information_gaps),
+        "layout": {"strategy": "auto_layered", "positions": []},
+        "extensions": {
+            "focus": {
+                "rootEntityIds": sorted(roots),
+                "maxDepth": max_depth,
+                "maxNodes": max_nodes,
+            }
+        },
+    }
+    view["integrity"] = {
+        "hashAlgorithm": "sha256",
+        "semanticHash": compute_view_semantic_hash(view),
+        "semanticHashScope": "view_without_layout_or_integrity",
+        "layoutHash": compute_view_layout_hash(view),
+        "layoutHashScope": "layout_only",
+    }
+    errors = validate_view_ir(view, model)
+    if errors:
+        raise PanoramaViewIRError(
+            "Dependency/Data Flow View IR 编译结果无效：" + "; ".join(errors[:10])
+        )
+    return view
+
+
+def compile_deployment_runtime_view_ir(
+    model: dict[str, Any],
+    *,
+    architecture_scopes: list[str] | None = None,
+    environments: list[str] | None = None,
+) -> dict[str, Any]:
+    model_errors = validate_model_ir(model)
+    if model_errors:
+        raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:10]))
+    scopes = _checked_single_scope(
+        architecture_scopes, profile="deployment_runtime"
+    )
+    selected_environments = sorted(set(environments or []))
+    if environments and len(environments) != len(selected_environments):
+        raise PanoramaViewIRError("environments 不能重复。")
+    eligible_relations = [
+        relation
+        for relation in model["relations"]
+        if relation["kind"] == "deployment"
+        and set(relation["architectureScopes"]) & set(scopes)
+        and (
+            not selected_environments
+            or relation["attributes"].get("environment")
+            in selected_environments
+        )
+    ]
+    selected_ids = {
+        entity_id
+        for relation in eligible_relations
+        for entity_id in (relation["fromEntityId"], relation["toEntityId"])
+    }
+    entities_by_id = {item["id"]: item for item in model["entities"]}
+    selected_entities = sorted(
+        (entities_by_id[entity_id] for entity_id in selected_ids),
+        key=lambda item: item["id"],
+    )
+    environment_values = sorted(
+        {
+            str(entity["attributes"].get("environment"))
+            for entity in selected_entities
+            if entity["kind"] in {"deployment", "resource", "data_store"}
+            and entity["attributes"].get("environment")
+        }
+    )
+    group_by_environment: dict[str, str] = {}
+    groups: list[dict[str, Any]] = []
+    for order, environment in enumerate(environment_values):
+        group_id = _stable_derived_id(
+            "GROUP", {"groupType": "environment", "groupRef": environment}, 20
+        )
+        group_by_environment[environment] = group_id
+        groups.append(
+            {
+                "id": group_id,
+                "groupType": "environment",
+                "groupRef": environment,
+                "layerId": None,
+                "label": environment,
+                "order": order,
+            }
+        )
+    nodes = [
+        _view_node(
+            entity,
+            group_id=group_by_environment.get(
+                str(entity["attributes"].get("environment"))
+            ),
+        )
+        for entity in selected_entities
+    ]
+    node_by_entity = {
+        node["entityRef"]["id"]: node["id"] for node in nodes
+    }
+    edges = [
+        _view_edge(relation, node_by_entity=node_by_entity)
+        for relation in sorted(eligible_relations, key=lambda item: item["id"])
+    ]
+    information_gaps = set(model["informationGaps"])
+    if not edges:
+        information_gaps.add("deployment_relations_not_available")
+    if any(
+        relation["attributes"].get("runtimeObserved") is not True
+        for relation in eligible_relations
+    ):
+        information_gaps.add("deployment_runtime_observation_not_verified")
+    model_binding = {
+        "modelId": model["modelId"],
+        "modelSemanticHash": model["integrity"]["semanticHash"],
+        "projectId": model["projectBinding"]["projectId"],
+        "panoramaDataHash": model["projectBinding"]["dataHash"],
+        "asOf": model["asOf"]["value"],
+    }
+    filters: dict[str, Any] = {
+        "architectureScopes": scopes,
+        "factStatuses": [
+            "observed",
+            "declared",
+            "derived",
+            "unknown",
+            "conflict",
+        ],
+    }
+    if selected_environments:
+        filters["environments"] = selected_environments
+    view: dict[str, Any] = {
+        "formatVersion": "panorama-view-ir.v0.1",
+        "viewId": _stable_derived_id(
+            "VIEW",
+            {
+                "compiler": DEPLOYMENT_VIEW_COMPILER,
+                "modelSemanticHash": model_binding["modelSemanticHash"],
+                "profile": "deployment_runtime",
+                "architectureScopes": scopes,
+                "environments": selected_environments,
+            },
+        ),
+        "generatedAt": model["compiledAt"],
+        "compiler": DEPLOYMENT_VIEW_COMPILER,
+        "modelBinding": model_binding,
+        "viewType": "deployment",
+        "profile": "deployment_runtime",
+        "title": f"{model['projectBinding']['projectName']} 部署与运行",
+        "description": "投影正式 Deployment/Release/Resource；Declared 与 Observed Runtime 分层。",
+        "filters": filters,
+        "groups": groups,
+        "nodes": nodes,
+        "edges": edges,
+        "informationGaps": sorted(information_gaps),
+        "layout": {"strategy": "auto_layered", "positions": []},
+        "extensions": {},
+    }
+    view["integrity"] = {
+        "hashAlgorithm": "sha256",
+        "semanticHash": compute_view_semantic_hash(view),
+        "semanticHashScope": "view_without_layout_or_integrity",
+        "layoutHash": compute_view_layout_hash(view),
+        "layoutHashScope": "layout_only",
+    }
+    errors = validate_view_ir(view, model)
+    if errors:
+        raise PanoramaViewIRError(
+            "Deployment/Runtime View IR 编译结果无效：" + "; ".join(errors[:10])
+        )
+    return view
+
+
 def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     errors = _schema_errors(view, VIEW_SCHEMA)
     if errors:
@@ -686,6 +1389,26 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     if binding != expected_binding:
         errors.append("/modelBinding: 与输入 Model IR 不匹配")
 
+    expected_view_types = {
+        "system_context": "architecture",
+        "module": "architecture",
+        "dependency_dataflow": "dataflow",
+        "deployment_runtime": "deployment",
+        "sequence": "sequence",
+        "lifecycle": "lifecycle",
+        "evolution_risk": "evolution",
+    }
+    if expected_view_types.get(view["profile"]) != view["viewType"]:
+        errors.append("/viewType: 与 profile 不匹配")
+    expected_compilers = {
+        "module": VIEW_COMPILER,
+        "dependency_dataflow": DEPENDENCY_VIEW_COMPILER,
+        "deployment_runtime": DEPLOYMENT_VIEW_COMPILER,
+    }
+    expected_compiler = expected_compilers.get(view["profile"])
+    if expected_compiler is not None and view["compiler"] != expected_compiler:
+        errors.append("/compiler: 与 profile 编译器不匹配")
+
     group_ids = [item["id"] for item in view["groups"]]
     node_ids = [item["id"] for item in view["nodes"]]
     edge_ids = [item["id"] for item in view["edges"]]
@@ -704,8 +1427,15 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     node_set = set(node_ids)
     node_by_entity: dict[str, str] = {}
     for group in view["groups"]:
-        if group["layerId"] not in model_layers:
-            errors.append(f"/groups/{group['id']}: 未知 layerId {group['layerId']}")
+        if group["groupType"] == "layer":
+            if group["layerId"] not in model_layers:
+                errors.append(
+                    f"/groups/{group['id']}: 未知 layerId {group['layerId']}"
+                )
+            if group["groupRef"] != group["layerId"]:
+                errors.append(f"/groups/{group['id']}: layer groupRef 不匹配")
+        elif group["layerId"] is not None:
+            errors.append(f"/groups/{group['id']}: 非 layer group 不能绑定 layerId")
     for node in view["nodes"]:
         entity_id = node["entityRef"]["id"]
         entity = model_entities.get(entity_id)
@@ -717,6 +1447,12 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
         node_by_entity[entity_id] = node["id"]
         if node["groupId"] is not None and node["groupId"] not in group_set:
             errors.append(f"/nodes/{node['id']}: 未知 groupId {node['groupId']}")
+        for field in ("name", "kind", "factStatus", "authority", "confidence"):
+            node_field = "label" if field == "name" else field
+            if node[node_field] != entity[field]:
+                errors.append(
+                    f"/nodes/{node['id']}: {node_field} 与绑定 Entity 不匹配"
+                )
         evidence_ids = {pin["evidenceId"] for pin in entity["evidencePins"]}
         if not set(node["evidencePinIds"]) <= evidence_ids:
             errors.append(f"/nodes/{node['id']}: Evidence Pin 不属于绑定 Entity")
@@ -732,9 +1468,49 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
         expected_to = node_by_entity.get(relation["toEntityId"])
         if edge["fromNodeId"] != expected_from or edge["toNodeId"] != expected_to:
             errors.append(f"/edges/{edge['id']}: 端点与 Relation 不匹配")
+        expected_edge_fields = {
+            "label": relation["name"],
+            "kind": relation["kind"],
+            "direction": relation["direction"],
+            "order": relation["semantics"]["order"],
+        }
+        for field, expected_value in expected_edge_fields.items():
+            if edge[field] != expected_value:
+                errors.append(
+                    f"/edges/{edge['id']}: {field} 与绑定 Relation 不匹配"
+                )
         evidence_ids = {pin["evidenceId"] for pin in relation["evidencePins"]}
         if not set(edge["evidencePinIds"]) <= evidence_ids:
             errors.append(f"/edges/{edge['id']}: Evidence Pin 不属于绑定 Relation")
+    allowed_relation_kinds = {
+        "module": {"communication"},
+        "dependency_dataflow": {"dependency", "data_flow"},
+        "deployment_runtime": {"deployment"},
+        "sequence": {"sequence_message"},
+        "lifecycle": {"state_transition"},
+        "evolution_risk": {"trace"},
+    }
+    allowed_kinds = allowed_relation_kinds.get(view["profile"])
+    if allowed_kinds is not None:
+        for edge in view["edges"]:
+            if edge["kind"] not in allowed_kinds:
+                errors.append(
+                    f"/edges/{edge['id']}: relation kind 不属于 {view['profile']}"
+                )
+    scopes = set(view["filters"]["architectureScopes"])
+    for edge in view["edges"]:
+        relation = model_relations.get(edge["relationRef"]["id"])
+        if relation is not None and not scopes & set(
+            relation["architectureScopes"]
+        ):
+            errors.append(f"/edges/{edge['id']}: Relation 不属于所选 scope")
+    if view["profile"] in {"module", "dependency_dataflow"}:
+        for node in view["nodes"]:
+            entity = model_entities.get(node["entityRef"]["id"])
+            if entity is not None and not scopes & set(
+                entity["architectureScopes"]
+            ):
+                errors.append(f"/nodes/{node['id']}: Entity 不属于所选 scope")
     for position in view["layout"]["positions"]:
         if position["nodeId"] not in node_set:
             errors.append(

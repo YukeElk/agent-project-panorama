@@ -482,3 +482,30 @@
 - Source Observation 可合并进 Model IR，但始终使用 `source_element` 与 dependency candidate，不改变正式
   Module Architecture View；
 - Source Extraction 仍不是多图 Renderer、完整 JS/TS parser、runtime trace、Sequence 或正式架构采纳。
+
+## SF-46 View Group 不能继续等同于 Architecture Layer
+
+- 证据：Dependency/Data Flow 需要按 source kind 辅助阅读，Deployment/Runtime 需要按 environment 辅助阅读；
+  两者都不是正式 Architecture Layer。
+- 影响：若继续复用 `layerId`，视觉分组会伪造架构分层；若完全不表达分组，Renderer 只能按标签猜容器语义。
+- V0.6 决策：View Group 显式携带 `groupType + groupRef`；`layer` 组必须精确绑定 Model Layer，
+  `environment/source_kind` 组的 `layerId` 必须为 null。Group 只属于阅读投影，不建立 ownership、security 或
+  deployment boundary 事实。
+
+## SF-47 Declared Deployment 不能冒充 Observed Runtime
+
+- 证据：Panorama Core 的 Release/Deployment/Resource 是正式声明记录，但 deployment status、artifact version、
+  resource association 本身不能证明进程、网络、调用或健康状态已被运行观察。
+- 影响：若 Deployment View 直接命名为 Runtime Truth，会把配置与部署记录提升为实时事实，也会掩盖观察缺失。
+- V0.6 决策：Model IR 投影 Release、Deployment、Resource 与三类 deployment relation，同时保留 Fact
+  Provenance；默认 `declared`，只有 exact provenance 为 observed 才允许 `runtimeObserved=true`。View 只显示
+  已有关系，并在任一关系未被运行观察时增加 `deployment_runtime_observation_not_verified`。
+- 安全边界：Resource 只投影类型、环境、状态、provider/location；不复制 Access、Credential 或 Endpoint 正文。
+
+## V0.6 WP3 Slice A/B 结论
+
+- Dependency/Data Flow Compiler 只消费 `dependency|data_flow`，支持精确 root、深度与节点预算，超限 fail closed；
+- Deployment/Runtime Compiler 只消费正式 deployment relation，按 single scope 和 deployment environment 过滤，
+  保留 shared resource 的真实端点闭包；
+- 跨视图 Node/Edge ID 继续由 Model Entity/Relation ID 派生，坐标仍不进入 Semantic Hash；
+- Sequence、Lifecycle、Evolution/Risk 和 Renderer 仍未完成，不得从静态关系推断顺序或运行因果。

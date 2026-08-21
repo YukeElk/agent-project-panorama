@@ -160,8 +160,9 @@ Policy 创建、变更、续期、替换和撤销仍要求准确 Hash 的人工�
 
 ## V0.6 Multi-View Foundation（开发中）
 
-V0.6 已实现共享 Model/View IR 与首个 Source Extraction Foundation。可以先生成有界源码拓扑、Receipt 与
-Loss Report，再将它作为可选候选输入合并到 Model IR：
+V0.6 已实现共享 Model/View IR、Source Extraction Foundation，以及 Module、Dependency/Data Flow、
+Deployment/Runtime 三种只读 View Compiler。可以先生成有界源码拓扑、Receipt 与 Loss Report，再将它作为
+可选候选输入合并到 Model IR：
 
 ```powershell
 python scripts/extract_source_topology.py path/to/project `
@@ -177,6 +178,12 @@ python scripts/compile_panorama_model_ir.py project-panorama.json `
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile module --scope current `
   --output .panorama-work/views/project.current.module.view-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile dependency_dataflow --max-nodes 100 `
+  --output .panorama-work/views/project.dependency.view-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile deployment_runtime --scope current `
+  --output .panorama-work/views/project.current.deployment.view-ir.json
 ```
 
 Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evidence Pin 与 Semantic Hash；View
@@ -184,13 +191,14 @@ Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evid
 Source Element 保持候选身份，不自动变成正式 Module，import/dependency 不变成运行调用或时序。它们是可删除、
 可重算的候选，不能反向 Apply 到正式 Panorama。
 
-当前尚未实现完整 JS/TS parser、Data Flow/Deployment/Sequence/Lifecycle/Evolution 编译器、互动 Renderer、
-HTML Delivery 或 Event Capture。设计闭合与精确边界见
+当前尚未实现完整 JS/TS parser、Event-backed Sequence/Lifecycle/Evolution 编译器、互动 Renderer、HTML
+Delivery 或 Event Capture。Deployment View 只证明正式声明关系，不能冒充 Observed Runtime。设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
 [`docs/panorama-model-ir-contract.md`](docs/panorama-model-ir-contract.md) 和
 [`docs/panorama-view-ir-contract.md`](docs/panorama-view-ir-contract.md)。验证见
 [`docs/v0.6-model-view-ir-validation.md`](docs/v0.6-model-view-ir-validation.md) 和
-[`docs/v0.6-source-extraction-validation.md`](docs/v0.6-source-extraction-validation.md)。
+[`docs/v0.6-source-extraction-validation.md`](docs/v0.6-source-extraction-validation.md) 和
+[`docs/v0.6-multiview-compiler-validation.md`](docs/v0.6-multiview-compiler-validation.md)。
 
 为普通 Studio Proposal 启用事件双写：
 

@@ -122,6 +122,12 @@
           "maxItems": 5,
           "uniqueItems": true,
           "items": {"enum": ["observed", "declared", "derived", "unknown", "conflict"]}
+        },
+        "environments": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
         }
       }
     },
@@ -146,10 +152,14 @@
     "group": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "layerId", "label", "order"],
+      "required": ["id", "groupType", "groupRef", "layerId", "label", "order"],
       "properties": {
         "id": {"$ref": "#/$defs/stableId"},
-        "layerId": {"$ref": "#/$defs/stableId"},
+        "groupType": {"enum": ["layer", "environment", "source_kind"]},
+        "groupRef": {"$ref": "#/$defs/stableId"},
+        "layerId": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
         "label": {"type": "string", "minLength": 1, "maxLength": 512},
         "order": {"type": "integer"}
       }

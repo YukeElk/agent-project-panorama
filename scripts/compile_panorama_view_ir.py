@@ -9,21 +9,52 @@ import sys
 
 from panorama_cli import ChineseArgumentParser
 from panorama_io import atomic_write
-from panorama_view_ir import PanoramaViewIRError, compile_module_view_ir
+from panorama_view_ir import (
+    PanoramaViewIRError,
+    compile_dependency_dataflow_view_ir,
+    compile_deployment_runtime_view_ir,
+    compile_module_view_ir,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = ChineseArgumentParser(
-        description="将 Model IR 确定性编译为只读 Architecture View IR。"
+        description="将 Model IR 确定性编译为有界、只读的 View IR。"
     )
     parser.add_argument("input", type=Path, help="Panorama Model IR JSON")
-    parser.add_argument("--profile", choices=["module"], default="module")
+    parser.add_argument(
+        "--profile",
+        choices=["module", "dependency_dataflow", "deployment_runtime"],
+        default="module",
+    )
     parser.add_argument(
         "--scope",
-        choices=["current", "target", "historical"],
+        choices=["current", "target", "transition", "historical"],
         action="append",
         dest="scopes",
         help="可重复指定；默认 current",
+    )
+    parser.add_argument(
+        "--root-entity",
+        action="append",
+        dest="root_entity_ids",
+        help="Dependency/Data Flow 精确根实体；可重复指定",
+    )
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        help="Dependency/Data Flow 根实体遍历深度；默认 2",
+    )
+    parser.add_argument(
+        "--max-nodes",
+        type=int,
+        help="Dependency/Data Flow 最大节点数；默认 30",
+    )
+    parser.add_argument(
+        "--environment",
+        action="append",
+        dest="environments",
+        help="Deployment/Runtime 环境过滤；可重复指定",
     )
     parser.add_argument("--output", type=Path, required=True, help="新 View IR JSON")
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖既有候选文件")
@@ -41,9 +72,42 @@ def main(argv: list[str] | None = None) -> int:
         model = json.loads(args.input.read_text(encoding="utf-8"))
         if not isinstance(model, dict):
             raise PanoramaViewIRError("Model IR 输入必须是 JSON 对象。")
-        view = compile_module_view_ir(
-            model, architecture_scopes=args.scopes or ["current"]
-        )
+        common = {"architecture_scopes": args.scopes or ["current"]}
+        if args.profile == "module":
+            if (
+                args.root_entity_ids
+                or args.max_depth is not None
+                or args.max_nodes is not None
+                or args.environments
+            ):
+                raise PanoramaViewIRError("module profile 不接受 focus/environment 参数。")
+            view = compile_module_view_ir(model, **common)
+        elif args.profile == "dependency_dataflow":
+            if args.environments:
+                raise PanoramaViewIRError(
+                    "dependency_dataflow profile 不接受 environment 参数。"
+                )
+            view = compile_dependency_dataflow_view_ir(
+                model,
+                **common,
+                root_entity_ids=args.root_entity_ids,
+                max_depth=args.max_depth if args.max_depth is not None else 2,
+                max_nodes=args.max_nodes if args.max_nodes is not None else 30,
+            )
+        else:
+            if (
+                args.root_entity_ids
+                or args.max_depth is not None
+                or args.max_nodes is not None
+            ):
+                raise PanoramaViewIRError(
+                    "deployment_runtime profile 不接受 dependency focus 参数。"
+                )
+            view = compile_deployment_runtime_view_ir(
+                model,
+                **common,
+                environments=args.environments,
+            )
         atomic_write(
             args.output,
             json.dumps(view, ensure_ascii=False, indent=2) + "\n",

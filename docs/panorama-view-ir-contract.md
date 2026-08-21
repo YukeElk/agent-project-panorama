@@ -1,8 +1,8 @@
 # Panorama View IR Contract v0.1
 
-状态：Implementation Slice A；当前只实现 `architecture/module`
+状态：Implementation Slice C；已实现 Module、Dependency/Data Flow、Deployment/Runtime
 
-对应 Finding：SF-34～SF-36、SF-41～SF-43
+对应 Finding：SF-34～SF-36、SF-41～SF-43、SF-46、SF-47
 
 ## 1. 定位
 
@@ -25,12 +25,19 @@ Evolution/Risk 共享同一 Model Identity 和 Evidence，不建立独立事实 
 - Node 只通过 `entityRef.type + entityRef.id` 引用 Model Entity；
 - Edge 只通过 `relationRef.type + relationRef.id` 引用 Model Relation；
 - Edge 端点必须与 Relation 端点投影出的 Node 精确一致；
-- Group 只引用 Model Layer，不能用视觉容器制造 ownership/security/deployment boundary；
+- `layer` Group 必须引用 Model Layer；`environment/source_kind` Group 只表达阅读分组且 `layerId=null`，
+  不能用视觉容器制造 ownership/security/deployment boundary；
 - Node/Edge Evidence Pin ID 必须属于其绑定的 Entity/Relation；
 - Search、Focus、Trace、Reach 和 Deep Link 只能遍历这些现有引用。
 
-Slice A 的 module profile 每次只接受 `current|target|historical` 中一个 Scope。只有端点 Node 都在 View 中且
+三个已实现 profile 每次只接受 `current|target|transition|historical` 中一个 Scope。只有端点 Node 都在 View 中且
 Relation Scope 匹配时才投影 Edge；不得为保持画面连通而增加代理边。
+
+- `module` 只投影正式 Module 与 `communication`；
+- `dependency_dataflow` 只投影 `dependency|data_flow`，可用 exact root、`maxDepth`、`maxNodes` 有界聚焦；
+- `deployment_runtime` 只投影 `deployment`，environment 过滤基于 Deployment 关系，shared resource 端点仍保留；
+- View Validator 除 Schema/Hash 外，还必须验证 profile/compiler、Node/Entity 字段、Edge/Relation 字段、端点、
+  relation kind 与 scope；攻击者重算 Semantic Hash 也不能绕过绑定。
 
 ## 4. Semantic 与 Layout 分离
 
@@ -52,6 +59,14 @@ View Semantic Hash 覆盖删除 `layout` 和 `integrity` 后的完整 View。Lay
 python scripts/compile_panorama_view_ir.py project.model-ir.json `
   --profile module --scope current `
   --output .panorama-work/views/project.current.module.view-ir.json
+
+python scripts/compile_panorama_view_ir.py project.source-bound.model-ir.json `
+  --profile dependency_dataflow --max-nodes 100 `
+  --output .panorama-work/views/project.dependency.view-ir.json
+
+python scripts/compile_panorama_view_ir.py project.model-ir.json `
+  --profile deployment_runtime --scope transition --environment development `
+  --output .panorama-work/views/project.transition.deployment.view-ir.json
 ```
 
-输出已存在时默认停止。当前命令只生成 JSON Candidate，不生成 HTML、不替换 last-good，也不表示人工视觉通过。
+输出已存在时默认停止。当前命令仍只生成 JSON Candidate，不生成 HTML、不替换 last-good，也不表示人工视觉通过。

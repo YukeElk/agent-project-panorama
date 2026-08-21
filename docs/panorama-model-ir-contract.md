@@ -1,8 +1,8 @@
 # Panorama Model IR Contract v0.1
 
-状态：Implementation Slice B；Core + optional Source Observation
+状态：Implementation Slice C；Core Deployment + optional Source Observation
 
-对应 Finding：SF-34、SF-35、SF-39、SF-40
+对应 Finding：SF-34、SF-35、SF-39、SF-40、SF-47
 
 ## 1. 定位
 
@@ -15,6 +15,7 @@
 
 - `project`、`meta` 和 Schema Version；
 - `architecture.layers/modules/connections`；
+- `releases/deployments/resources`，但不读取 Resource Access/Credential 正文；
 - exact-path `factProvenance`；
 - recorded `sourceBinding`。
 
@@ -30,6 +31,10 @@ Digest、Endpoint 与 Project ID 绑定检查的 Observation。不得从页面�
 - import/dependency/data flow/runtime call/sequence message 是不同 Relation Kind，不允许扁平化；
 - Core 生成 `communication` Relation；Source Observation 元素固定投影为 `source_element`，typed import/
   declared dependency 固定投影为 `dependency` Relation，不得提升为 Module、runtime call 或 sequence message；
+- Release、Deployment、Resource/Data Store 形成独立 Entity；Deployment → Release、Module → Deployment、
+  Deployment → Resource 形成 `deployment` Relation，不创建无来源的 Module → Resource 捷径；
+- Deployment status 映射到 current/transition/target/historical，但默认仍是 declared；只有 exact provenance
+  明确 observed 时 `runtimeObserved=true`，不得将配置状态提升为实际运行健康或调用事实；
 - Core Connection 与 Source Dependency 的 `semantics.order` 均固定为 null。
 
 Layer 对 Current、Target、Historical 分别绑定。Target 使用 `targetLayerId`，缺失时才回退到正式 `layerId`；
@@ -41,7 +46,7 @@ Layer 对 Current、Target、Historical 分别绑定。Target 使用 `targetLaye
 
 ```text
 kind=json_pointer
-ref=/architecture/...
+ref=/architecture/... | /releases/... | /deployments/... | /resources/...
 revision=<Panorama Data Hash>
 digest=<bound object canonical hash>
 accessClass=PROJECT_OPERATIONAL_METADATA

@@ -12,9 +12,11 @@ import pytest
 import source_topology
 from panorama_view_ir import (
     PanoramaViewIRError,
+    compile_dependency_dataflow_view_ir,
     compile_model_ir,
     compile_module_view_ir,
     validate_model_ir,
+    validate_view_ir,
 )
 from source_topology import (
     LOSS_SCHEMA,
@@ -268,6 +270,54 @@ def test_v060_source_observation_merges_as_candidates_not_modules(
     assert all(node["kind"] == "module" for node in module_view["nodes"])
 
 
+def test_v060_dependency_view_projects_only_source_dependencies(
+    project_root, tmp_path
+):
+    observation = extract_source_topology(
+        _source_project(tmp_path),
+        project_id="PRJ-MARW",
+        observed_at=OBSERVED_AT,
+    )["observation"]
+    model = compile_model_ir(
+        _reference(project_root), source_observation=observation
+    )
+    view = compile_dependency_dataflow_view_ir(model, max_nodes=100)
+
+    assert validate_view_ir(view, model) == []
+    assert {edge["kind"] for edge in view["edges"]} == {"dependency"}
+    assert {edge["relationRef"]["id"] for edge in view["edges"]} == {
+        item["id"]
+        for item in model["relations"]
+        if item["kind"] == "dependency"
+    }
+    assert all(edge["order"] is None for edge in view["edges"])
+    assert "data_flow_relations_not_available" in view["informationGaps"]
+
+
+def test_v060_dependency_focus_and_node_budget_fail_closed(project_root, tmp_path):
+    observation = extract_source_topology(
+        _source_project(tmp_path),
+        project_id="PRJ-MARW",
+        observed_at=OBSERVED_AT,
+    )["observation"]
+    model = compile_model_ir(
+        _reference(project_root), source_observation=observation
+    )
+    root_id = next(
+        item["id"]
+        for item in model["entities"]
+        if item["kind"] == "source_element"
+    )
+    focused = compile_dependency_dataflow_view_ir(
+        model, root_entity_ids=[root_id], max_depth=0, max_nodes=1
+    )
+    assert [item["entityRef"]["id"] for item in focused["nodes"]] == [root_id]
+    assert focused["edges"] == []
+
+    with pytest.raises(PanoramaViewIRError, match="max_nodes"):
+        compile_dependency_dataflow_view_ir(model, max_nodes=1)
+
+
 def test_v060_source_observation_project_mismatch_is_rejected(
     project_root, tmp_path
 ):
@@ -315,8 +365,10 @@ def test_v060_source_extraction_cli_and_model_cli_end_to_end(
     receipt_path = tmp_path / "extraction-receipt.json"
     loss_path = tmp_path / "loss-report.json"
     model_path = tmp_path / "source-bound-model.json"
+    dependency_view_path = tmp_path / "dependency.view-ir.json"
     extract_script = project_root / "scripts" / "extract_source_topology.py"
     model_script = project_root / "scripts" / "compile_panorama_model_ir.py"
+    view_script = project_root / "scripts" / "compile_panorama_view_ir.py"
 
     extracted = subprocess.run(
         [
@@ -362,6 +414,31 @@ def test_v060_source_extraction_cli_and_model_cli_end_to_end(
     assert compiled.returncode == 0, compiled.stderr
     model = json.loads(model_path.read_text(encoding="utf-8"))
     assert validate_model_ir(model) == []
+
+    view_run = subprocess.run(
+        [
+            sys.executable,
+            str(view_script),
+            str(model_path),
+            "--profile",
+            "dependency_dataflow",
+            "--max-nodes",
+            "100",
+            "--output",
+            str(dependency_view_path),
+        ],
+        cwd=project_root,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        check=False,
+    )
+    assert view_run.returncode == 0, view_run.stderr
+    dependency_view = json.loads(
+        dependency_view_path.read_text(encoding="utf-8")
+    )
+    assert dependency_view["profile"] == "dependency_dataflow"
+    assert validate_view_ir(dependency_view, model) == []
 
     overwrite_refused = subprocess.run(
         [
