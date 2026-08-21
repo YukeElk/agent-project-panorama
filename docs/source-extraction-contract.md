@@ -81,7 +81,9 @@ Receipt 的安全陈述必须区分：有支持的输入时 `sourceBodiesReadTra
 `sourceBodyPersisted=false`、`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed` 保持固定。
 发现 Java/Kotlin/Go/Rust/C/C++/C#/Ruby/PHP/Swift/Scala 等 source-like 文件但没有对应 Adapter 时，
 `coverage/status/lossReport` 必须为 `partial` 并披露 `unsupported_source_languages_present`，不得以 0 files
-报告 completed。
+报告 completed。若 Project Root 不是精确 Git checkout，未支持语言正文不进入 Content Digest，
+`currentness=unknown` 并披露 `unsupported_source_snapshot_not_content_bound`；固定外部 Source Inventory 只能作为
+Proof Lab 旁证，不能被 Extractor 冒充自身 Binding。
 
 ## 8. 命令
 

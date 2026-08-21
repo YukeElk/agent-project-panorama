@@ -1086,7 +1086,9 @@ def extract_source_topology(
         "gitHead": git_head,
         "contentDigest": content_digest,
         "coverage": "partial" if excluded["unsupportedSource"] else "complete",
-        "currentness": "current",
+        "currentness": (
+            "unknown" if excluded["unsupportedSource"] and git_head is None else "current"
+        ),
         "includedFileCount": len(inventory),
         "includedByteCount": sum(item["size"] for item in inventory),
     }
@@ -1176,6 +1178,8 @@ def extract_source_topology(
         information_gaps.append("source_parse_failures_present")
     if excluded["unsupportedSource"]:
         information_gaps.append("unsupported_source_languages_present")
+        if git_head is None:
+            information_gaps.append("unsupported_source_snapshot_not_content_bound")
         losses.append(
             {
                 "kind": "source_language.unsupported",

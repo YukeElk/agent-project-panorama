@@ -216,8 +216,10 @@ def test_v060_unsupported_source_language_is_partial_not_empty_success(tmp_path)
     observation = bundle["observation"]
     receipt = bundle["receipt"]
     assert observation["sourceBinding"]["coverage"] == "partial"
+    assert observation["sourceBinding"]["currentness"] == "unknown"
     assert observation["inventory"]["excluded"]["unsupported"] == 2
     assert "unsupported_source_languages_present" in observation["informationGaps"]
+    assert "unsupported_source_snapshot_not_content_bound" in observation["informationGaps"]
     assert receipt["status"] == "partial"
     assert receipt["counts"]["filesRead"] == 0
     assert receipt["safety"]["sourceBodiesReadTransiently"] is False

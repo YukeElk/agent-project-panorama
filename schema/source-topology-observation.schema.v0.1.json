@@ -123,7 +123,7 @@
         },
         "contentDigest": {"$ref": "#/$defs/sha256"},
         "coverage": {"enum": ["complete", "partial"]},
-        "currentness": {"const": "current"},
+        "currentness": {"enum": ["current", "unknown"]},
         "includedFileCount": {"type": "integer", "minimum": 0},
         "includedByteCount": {"type": "integer", "minimum": 0}
       }
