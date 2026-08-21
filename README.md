@@ -60,8 +60,9 @@ Governance Outbox；V0.5.1 内部里程碑增加首个真实 Delegated Operation
 不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT 事务尚未接入 Event Capture。
 
 V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。V0.5.1 只接入
-`event_head.recover`，已通过本地验证但不单独公开发布；其余 Delegated Policy Operation Adapter、View IR、
-Renderer 改版、Dataset/RAG/Eval Export 与后训练不能由当前能力外推为已经实现。下一次公开发布目标调整为
+`event_head.recover`，已通过本地验证但不单独公开发布；其余 Delegated Policy Operation Adapter、
+Dataset/RAG/Eval Export 与后训练不能由当前能力外推为已经实现。V0.6 Model/View/Renderer 仍是未发布的
+Development Candidate。下一次公开发布目标调整为
 V0.6.0 多视图架构全景，完整规划见
 [`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
 
@@ -99,7 +100,8 @@ python scripts/validate_event_store.py `
 - Secret、敏感字段、本机绝对路径、路径逃逸、Project Content 和 `trainingEligibility` 的边界。
 
 详细规范见 [`docs/engineering-event-contract.md`](docs/engineering-event-contract.md)。当前未实现的其他
-Capture Adapter、Redaction 执行器、View IR、Renderer 改版和 Dataset Export 不得被描述为可用能力。
+Capture Adapter、Redaction 执行器和 Dataset Export 不得被描述为可用能力；V0.6 View/Renderer 只能描述为
+本地 Development Candidate，不能描述为已发布能力。
 
 ### V0.5 Approval Policy Core
 
@@ -188,6 +190,15 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile sequence --correlation-id CORR-ID `
   --output .panorama-work/views/project.sequence.view-ir.json
+
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --output .panorama-work/views/project.multi-view.html
 ```
 
 Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evidence Pin 与 Semantic Hash；View
@@ -195,8 +206,11 @@ Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evid
 Source Element 保持候选身份，不自动变成正式 Module，import/dependency 不变成运行调用或时序。它们是可删除、
 可重算的候选，不能反向 Apply 到正式 Panorama。
 
-当前尚未实现完整 JS/TS parser、互动 Renderer、HTML Delivery、Verified Delivery 或通用 Event Capture
-Adapter。Deployment View 只证明正式声明关系，Event Sequence 也不冒充 Runtime Call。设计闭合与精确边界见
+当前已实现 hash-bound Single HTML Renderer Candidate、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
+统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径。完整 JS/TS parser、层级聚合/展开、Verified Delivery、
+last-good 与通用 Event Capture Adapter 仍未实现。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+Runtime Call。Renderer 验证见
+[`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
 [`docs/panorama-model-ir-contract.md`](docs/panorama-model-ir-contract.md) 和
 [`docs/panorama-view-ir-contract.md`](docs/panorama-view-ir-contract.md)。验证见

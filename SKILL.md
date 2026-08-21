@@ -7,7 +7,7 @@ description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/V
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑只接入首个真实 Delegated Operation Adapter：`event_head.recover`，已本地验证但延迟公开发布；其他 Operation Adapter、View IR、Renderer 改版与 Export 尚未成为已发布能力。
+V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑只接入首个真实 Delegated Operation Adapter：`event_head.recover`，已本地验证但延迟公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer 只能作为本地 Development Candidate 使用。
 
 ## 不变量
 
@@ -271,7 +271,8 @@ python scripts/validate_event_store.py `
 - Proposal/Apply 只有显式提供 `--event-store` 时才接入 Governance Outbox；Observation、Receipt、Studio
   Session 或 INIT 尚未自动记录；
 - Approval Policy Core 已实现；V0.5.1 只接入 `event_head.recover`，其他 Operation Adapter 必须逐个通过
-  fail-closed 门禁。View IR、Renderer 和 Dataset Export 仍按合同分阶段实现，不得用实验转换脚本冒充正式能力。
+  fail-closed 门禁。V0.6 View IR/Renderer 是未发布 Development Candidate；Dataset Export 尚未实现，不得把
+  候选或实验转换脚本冒充正式发布能力。
 
 ### Event Head Recovery Policy Adapter（V0.5.1 Internal Milestone）
 
@@ -370,6 +371,24 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile sequence --correlation-id CORR-ID `
   --output .panorama-work/views/project.sequence.view-ir.json
+
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --output .panorama-work/views/project.multi-view.html
+
+python scripts/validate_panorama_renderer_geometry.py `
+  .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json
 ```
 
 - Model/View Compile、Validate 与新 Candidate 输出不修改正式 Panorama，不要求人工批准；覆盖候选必须显式
@@ -389,10 +408,17 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
-- 完整 JS/TS parser、Renderer、HTML/Verified Delivery 与通用 Event Capture Adapter 尚未实现，不得由当前切片外推。
+- Renderer Candidate 必须先验证 Model/View Binding，输出 hash-bound、无框架、无 CDN、默认无网络请求的
+  Single HTML；支持六图切换、Search/Focus、上/下游 Trace、事实/Scope/Freshness/Risk/Evidence 筛选、跨 View
+  稳定选择、实体/关系/Event/Trace Deep Link、统一 Drawer、Pan/Zoom/Fit、主题与键盘路径；
+- Geometry Validator 的 machine status、浏览器截图/矩阵和人工视觉状态必须分开记录；自动门禁不得写成人工
+  `accepted`；
+- 完整 JS/TS parser、层级聚合/展开、HTML Verified Delivery、last-good、通用 Event Capture Adapter 与公开发布
+  尚未完成，不得由当前 Development Candidate 外推。
 
 将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
-实现时再读取各自合同。
+不能反向修改正式 Panorama；Renderer 验证见
+[V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md)。
 
 ## CONTINUOUS OBSERVATION
 

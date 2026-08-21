@@ -520,3 +520,24 @@
   经受约束 Adapter 显式提供的 before/after state；缺失时输出 Information Gap，不猜 transition。
 - 身份边界：Actor 和未进入正式 Model 的 Subject 使用 Event-derived Entity；若 Subject ID 精确匹配正式 Entity，
   则复用正式 Entity。Checkpoint 绑定 Project、Stream、Epoch、Tail ID/Hash、Sequence 与 canonical hash。
+
+## SF-49 Renderer Machine Pass 不能冒充独立人工视觉 Acceptance 或 Verified Delivery
+
+- 证据：WP4 首次真实浏览器截图在 Schema、JavaScript 和交互可运行时仍暴露直线穿节点、Dense Label 干扰、
+  Fit 非真实、长文本横向溢出和 Empty 遮罩误显；这些问题不能由 View IR Schema 捕获。
+- 影响：若把 DOM/Geometry/截图自动检查直接写成 `visualReview=accepted`，会混淆机器状态与人工判断；若把
+  Candidate 直接当 last-good，失败渲染可能覆盖仍可用制品。
+- V0.6 决策：Renderer 输出固定为 `visualReview=pending`；Geometry、Browser、Agent Visual Review 和独立人工
+  Visual Acceptance 分栏记录。只有 WP6 Candidate/last-good 原子事务、Machine Receipt、故障测试和精确
+  Artifact Hash 人工 Acceptance 全部通过后，才允许 Promote/公开发布。
+- 实现结果：WP4 Candidate 使用分层布局、正交路由、真实 Fit、长文本约束、六图共享交互与独立 Geometry
+  Validator；四档 Desktop 和两档窄屏机器矩阵通过，但独立人工 Acceptance 继续保持 pending。
+
+## V0.6 WP4 Machine Candidate 结论
+
+- 同一 Model 绑定六个 View 后生成 hash-bound Single HTML，不依赖框架、CDN、远程字体或默认网络；
+- Search/Focus、Scope/Freshness/Risk/Evidence Filter、上下游 Trace、稳定选择、Entity/Relation/Event/Trace
+  Deep Link、Evidence Drawer、Pan/Zoom/Fit、Theme 和键盘路径已进入真实浏览器验证；
+- `385 passed, 2 skipped`、20 Schema、Skill Validator、URL Sanitizer、JS Syntax、Geometry 与 Browser Console
+  门禁通过；
+- 层级聚合/展开、Verified Delivery、last-good、Proof Lab 和独立人工视觉 Acceptance 仍属于后续工作包。
