@@ -30,7 +30,7 @@ OBSERVATION_SCHEMA = (
 )
 RECEIPT_SCHEMA = ROOT / "schema" / "extraction-receipt.schema.v0.1.json"
 LOSS_SCHEMA = ROOT / "schema" / "transformation-loss-report.schema.v0.1.json"
-PRODUCER = {"id": "panorama-source-extractor", "version": "0.1.0"}
+PRODUCER = {"id": "panorama-source-extractor", "version": "0.2.0"}
 
 MAX_FILES = 20_000
 MAX_FILE_BYTES = 1 * 1024 * 1024
@@ -65,9 +65,10 @@ SOURCE_SUFFIXES = {
     ".cjs": ("source", "javascript"),
     ".ts": ("source", "typescript"),
     ".tsx": ("source", "typescript"),
+    ".java": ("source", "java"),
 }
 SOURCE_LIKE_UNSUPPORTED_SUFFIXES = {
-    ".c", ".cc", ".cpp", ".cs", ".go", ".h", ".hpp", ".java", ".kt",
+    ".c", ".cc", ".cpp", ".cs", ".go", ".h", ".hpp", ".kt",
     ".kts", ".php", ".rb", ".rs", ".scala", ".swift",
 }
 MANIFEST_NAMES = {
@@ -838,6 +839,270 @@ def _parse_javascript(
     return relations
 
 
+JAVA_PACKAGE_PATTERN = re.compile(
+    r"(?m)^\s*package\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*;"
+)
+JAVA_IMPORT_PATTERN = re.compile(
+    r"(?m)^\s*import\s+(static\s+)?"
+    r"([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:\.\*)?)\s*;"
+)
+
+
+def _strip_java_non_code(text: str) -> str:
+    """Preserve line positions while blanking comments, strings and text blocks."""
+
+    chars = list(text)
+    index = 0
+    state = "code"
+    while index < len(chars):
+        char = chars[index]
+        following = chars[index + 1] if index + 1 < len(chars) else ""
+        triple = "".join(chars[index : index + 3])
+        if state == "code":
+            if char == "/" and following == "/":
+                chars[index] = chars[index + 1] = " "
+                index += 2
+                state = "line_comment"
+                continue
+            if char == "/" and following == "*":
+                chars[index] = chars[index + 1] = " "
+                index += 2
+                state = "block_comment"
+                continue
+            if triple == '\"\"\"':
+                chars[index : index + 3] = [" ", " ", " "]
+                index += 3
+                state = "text_block"
+                continue
+            if char == '"':
+                chars[index] = " "
+                index += 1
+                state = "string"
+                continue
+            if char == "'":
+                chars[index] = " "
+                index += 1
+                state = "char"
+                continue
+            index += 1
+            continue
+        if state == "line_comment":
+            if char in {"\r", "\n"}:
+                state = "code"
+            else:
+                chars[index] = " "
+            index += 1
+            continue
+        if state == "block_comment":
+            if char == "*" and following == "/":
+                chars[index] = chars[index + 1] = " "
+                index += 2
+                state = "code"
+                continue
+            if char not in {"\r", "\n"}:
+                chars[index] = " "
+            index += 1
+            continue
+        if state == "text_block":
+            if triple == '\"\"\"':
+                chars[index : index + 3] = [" ", " ", " "]
+                index += 3
+                state = "code"
+                continue
+            if char not in {"\r", "\n"}:
+                chars[index] = " "
+            index += 1
+            continue
+        if char == "\\":
+            chars[index] = " "
+            if index + 1 < len(chars):
+                if chars[index + 1] not in {"\r", "\n"}:
+                    chars[index + 1] = " "
+                index += 2
+            else:
+                index += 1
+            continue
+        terminator = '"' if state == "string" else "'"
+        if char == terminator:
+            chars[index] = " "
+            index += 1
+            state = "code"
+            continue
+        if char not in {"\r", "\n"}:
+            chars[index] = " "
+        index += 1
+    return "".join(chars)
+
+
+def _java_type_index(
+    inventory: list[dict[str, Any]], file_elements: dict[str, dict[str, Any]]
+) -> tuple[dict[str, str], set[str]]:
+    index: dict[str, str] = {}
+    packages: set[str] = set()
+    for item in inventory:
+        if item["language"] != "java":
+            continue
+        try:
+            cleaned = _strip_java_non_code(item["_body"].decode("utf-8"))
+        except UnicodeDecodeError:
+            continue
+        package_match = JAVA_PACKAGE_PATTERN.search(cleaned)
+        package = package_match.group(1) if package_match else ""
+        if package:
+            packages.add(package)
+        type_name = Path(item["path"]).stem
+        qualified = f"{package}.{type_name}" if package else type_name
+        index[qualified] = file_elements[item["path"]]["id"]
+    return index, packages
+
+
+def _external_java_symbol(specifier: str, *, static_import: bool) -> str:
+    parts = specifier.removesuffix(".*").split(".")
+    if static_import:
+        for index, part in enumerate(parts):
+            if part and (part[0].isupper() or "$" in part):
+                return ".".join(parts[: index + 1])
+        if len(parts) > 1:
+            return ".".join(parts[:-1])
+    return ".".join(parts)
+
+
+def _resolve_java_import(
+    specifier: str,
+    *,
+    static_import: bool,
+    type_index: dict[str, str],
+    packages: set[str],
+) -> tuple[str | None, str]:
+    if specifier.endswith(".*"):
+        package = specifier[:-2]
+        matches = [target for name, target in type_index.items() if name.rpartition(".")[0] == package]
+        return (matches[0], "resolved") if len(matches) == 1 else (None, "unresolved" if package in packages else "external")
+    if specifier in type_index:
+        return type_index[specifier], "resolved"
+    if static_import:
+        parts = specifier.split(".")
+        for end in range(len(parts) - 1, 0, -1):
+            candidate = ".".join(parts[:end])
+            if candidate in type_index:
+                return type_index[candidate], "resolved"
+    package = specifier.rpartition(".")[0]
+    if package in packages or any(specifier.startswith(item + ".") for item in packages):
+        return None, "unresolved"
+    return None, "external"
+
+
+def _parse_java(
+    item: dict[str, Any],
+    *,
+    file_elements: dict[str, dict[str, Any]],
+    elements: dict[str, dict[str, Any]],
+    type_index: dict[str, str],
+    packages: set[str],
+    revision: str,
+    losses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    source_element = file_elements[item["path"]]
+    try:
+        cleaned = _strip_java_non_code(item["_body"].decode("utf-8"))
+    except UnicodeDecodeError as exc:
+        item["parseStatus"] = "failed"
+        source_element["parseStatus"] = "failed"
+        losses.append(
+            {
+                "kind": "source_file.parse_failed",
+                "sourceRef": item["path"],
+                "severity": "partial",
+                "reason": f"Java decoder failed: {type(exc).__name__}",
+                "preservedAs": f"inventory:{item['path']}",
+            }
+        )
+        return []
+    item["parseStatus"] = "partial"
+    source_element["parseStatus"] = "partial"
+    relations: list[dict[str, Any]] = []
+    for match in JAVA_IMPORT_PATTERN.finditer(cleaned):
+        static_import = bool(match.group(1))
+        specifier = match.group(2)
+        line = cleaned.count("\n", 0, match.start()) + 1
+        pin = _evidence_pin(item, line=line, column=None, revision=revision)
+        local_id, resolution = _resolve_java_import(
+            specifier,
+            static_import=static_import,
+            type_index=type_index,
+            packages=packages,
+        )
+        if local_id is not None:
+            target = elements[local_id]
+        elif resolution == "unresolved":
+            target = _target_element(
+                elements,
+                kind="unresolved_target",
+                name=specifier,
+                pin=pin,
+                reason=(
+                    "java_wildcard_import_not_single_target"
+                    if specifier.endswith(".*")
+                    else "java_local_import_target_not_found"
+                ),
+            )
+        else:
+            target = _target_element(
+                elements,
+                kind="external_package",
+                name=_external_java_symbol(
+                    specifier, static_import=static_import
+                ),
+                pin=pin,
+            )
+        relations.append(
+            _relation(
+                kind="import",
+                name=f"import: {specifier}",
+                source_id=source_element["id"],
+                target_id=target["id"],
+                resolution=resolution,
+                pin=pin,
+                fact_status="derived",
+                authority="inferred",
+                confidence="medium",
+                attributes={
+                    "adapterId": "java-static-imports",
+                    "parser": "bounded_regex",
+                    "specifier": specifier,
+                    "typeOnly": False,
+                    "dynamic": False,
+                    "dependencyClass": "static_import" if static_import else "import",
+                    "runtimeObserved": False,
+                    "sequenceOrder": None,
+                },
+            )
+        )
+        if resolution == "unresolved":
+            losses.append(
+                {
+                    "kind": "source_relation.dynamic_or_unresolved",
+                    "sourceRef": f"{item['path']}:{line}",
+                    "severity": "partial",
+                    "reason": "Bounded Java extraction cannot resolve this import to one source file.",
+                    "preservedAs": f"relation:{relations[-1]['id']}",
+                }
+            )
+    losses.append(
+        {
+            "kind": "parser.java_bounded_static_imports",
+            "sourceRef": item["path"],
+            "severity": "informational",
+            "reason": (
+                "The built-in Java adapter recognizes package/import declarations; "
+                "it is not a full parser and does not infer calls, reflection or generated code."
+            ),
+            "preservedAs": f"element:{source_element['id']}",
+        }
+    )
+    return relations
+
+
 def _dependency_name(value: str) -> str | None:
     match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9_.-]*)", value)
     return match.group(1) if match else None
@@ -1008,6 +1273,7 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
     if len(relation_ids) != len(set(relation_ids)):
         errors.append("/relations: 存在重复稳定 ID")
     element_set = set(element_ids)
+    element_by_id = {item["id"]: item for item in observation["elements"]}
     revision = observation["sourceBinding"]["gitHead"] or expected_digest
     for owner in observation["elements"] + observation["relations"]:
         for pin in owner["evidencePins"]:
@@ -1025,6 +1291,32 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
         if relation["toElementId"] not in element_set:
             errors.append(f"/relations/{relation['id']}: 未知 toElementId")
         attributes = relation["attributes"]
+        source = element_by_id.get(relation["fromElementId"])
+        expected_adapter: tuple[str, str] | None = None
+        if source is not None:
+            if source["kind"] == "manifest":
+                expected_adapter = (
+                    "manifest-dependencies",
+                    "json" if source["language"] == "json" else "toml",
+                )
+            else:
+                expected_adapter = {
+                    "python": ("python-ast-imports", "python_ast"),
+                    "javascript": ("javascript-static-imports", "bounded_regex"),
+                    "typescript": ("javascript-static-imports", "bounded_regex"),
+                    "java": ("java-static-imports", "bounded_regex"),
+                }.get(source["language"])
+        if expected_adapter is None:
+            errors.append(
+                f"/relations/{relation['id']}: 来源 Element 没有受支持的 Adapter Binding"
+            )
+        elif (
+            attributes["adapterId"],
+            attributes["parser"],
+        ) != expected_adapter:
+            errors.append(
+                f"/relations/{relation['id']}: Adapter/Parser 与来源 Element 不匹配"
+            )
         if relation["kind"] == "type_import" and not attributes.get("typeOnly"):
             errors.append(f"/relations/{relation['id']}: type_import 缺少 typeOnly=true")
         if relation["kind"] == "dynamic_import" and not attributes.get("dynamic"):
@@ -1098,11 +1390,12 @@ def extract_source_topology(
     }
     elements = {item["id"]: item for item in file_elements.values()}
     module_index = _python_module_index(inventory, file_elements)
+    java_type_index, java_packages = _java_type_index(inventory, file_elements)
     losses: list[dict[str, Any]] = []
     relations: list[dict[str, Any]] = []
-    adapter_inputs = {"python": 0, "javascript": 0, "manifest": 0}
-    adapter_outputs = {"python": 0, "javascript": 0, "manifest": 0}
-    adapter_errors = {"python": 0, "javascript": 0, "manifest": 0}
+    adapter_inputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
+    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
+    adapter_errors = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
 
     for item in inventory:
         before = len(relations)
@@ -1131,6 +1424,20 @@ def extract_source_topology(
                     losses=losses,
                 )
             )
+        elif item["language"] == "java":
+            adapter = "java"
+            adapter_inputs[adapter] += 1
+            relations.extend(
+                _parse_java(
+                    item,
+                    file_elements=file_elements,
+                    elements=elements,
+                    type_index=java_type_index,
+                    packages=java_packages,
+                    revision=revision,
+                    losses=losses,
+                )
+            )
         elif item["kind"] == "manifest":
             adapter = "manifest"
             adapter_inputs[adapter] += 1
@@ -1155,9 +1462,10 @@ def extract_source_topology(
     adapter_key_by_id = {
         "python-ast-imports": "python",
         "javascript-static-imports": "javascript",
+        "java-static-imports": "java",
         "manifest-dependencies": "manifest",
     }
-    adapter_outputs = {"python": 0, "javascript": 0, "manifest": 0}
+    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
     for relation in relations:
         key = adapter_key_by_id.get(relation["attributes"].get("adapterId"))
         if key is not None:
@@ -1174,6 +1482,13 @@ def extract_source_topology(
         information_gaps.append("dynamic_or_unresolved_dependencies_present")
     if adapter_inputs["javascript"]:
         information_gaps.append("javascript_typescript_full_parser_not_used")
+    if adapter_inputs["java"]:
+        information_gaps.extend(
+            [
+                "java_full_parser_not_used",
+                "java_reflection_generated_sources_and_calls_not_resolved",
+            ]
+        )
     if any(item["parseStatus"] == "failed" for item in inventory):
         information_gaps.append("source_parse_failures_present")
     if excluded["unsupportedSource"]:
@@ -1304,6 +1619,7 @@ def extract_source_topology(
     for key, adapter_id, version in (
         ("python", "python-ast-imports", "0.1.0"),
         ("javascript", "javascript-static-imports", "0.1.0"),
+        ("java", "java-static-imports", "0.1.0"),
         ("manifest", "manifest-dependencies", "0.1.0"),
     ):
         count = adapter_inputs[key]
@@ -1316,7 +1632,7 @@ def extract_source_topology(
                     "not_applicable"
                     if count == 0
                     else "partial"
-                    if errors or key == "javascript"
+                    if errors or key in {"javascript", "java"}
                     else "completed"
                 ),
                 "inputCount": count,

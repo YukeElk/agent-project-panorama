@@ -421,8 +421,10 @@ python scripts/validate_panorama_renderer_geometry.py `
 - 离线 Source 固定为 recorded_as_of，未提供 Event Checkpoint 保留 Information Gap；不得宣称实时源码一致；
 - Source Extractor 只读取 project root 内有界普通源码；已分类 Secret 路径与 in-scope link/reparse path 拒绝，
   普通源码正文仅瞬时解析且不持久化；当前未执行 embedded Secret scan，必须如实披露；
-- Python AST、JS/TS 有界静态 import 与 manifest dependency 只生成 `source_element`/dependency candidate；
+- Python AST、JS/TS/Java 有界静态 import 与 manifest dependency 只生成 `source_element`/dependency candidate；
   文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
+- Java Adapter 只解析 package/import，固定披露 full parser、反射、生成源码、调用和资源配置缺口；不得据此
+  宣称 Spring Component、Controller→Repository 注入、数据库激活或测试通过；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
 - View Set 只组织最多 24 个已验证 single-scope View，必须精确覆盖输入集合；允许同 Profile 的
@@ -440,8 +442,10 @@ python scripts/validate_panorama_renderer_geometry.py `
 不能反向修改正式 Panorama；Renderer 验证见
 [V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md) 与
 [Verified Delivery Contract](docs/verified-delivery-contract.md)。固定六 Profile Tab 的 Current/Target 缺口已由
-[Guided View Set Validation](docs/v0.6-guided-view-set-validation.md) 关闭；Panorama × Archify Proof Lab 仍证明
-当前没有 Java Adapter，且无正式 Conflict Fact 时不能生成 Conflict Story；在
+[Guided View Set Validation](docs/v0.6-guided-view-set-validation.md) 关闭；有界 Java import Adapter 也已进入
+公开项目机器验证，但尚未达到 PetClinic 语义 Oracle/Module Mapping 覆盖，且无正式 Conflict Fact 时不能生成
+Conflict Story；在
+[Java Source Adapter Validation](docs/v0.6-java-source-adapter-validation.md) 与
 [Proof Lab](docs/v0.6-panorama-archify-proof-lab.md) 的阻塞项关闭前，不得描述为通用源码架构生成或公开发布就绪。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：

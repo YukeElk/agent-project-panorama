@@ -1,0 +1,89 @@
+{
+  "formatVersion": "panorama-java-public-source-validation.v0.1",
+  "generatedAt": "2026-08-21T17:15:01Z",
+  "caseBinding": {
+    "caseId": "spring-petclinic-88e37c1",
+    "upstreamCommit": "88e37c15cf6fc8490b01bc3e8e2c800cec1ac272",
+    "inventoryFileCount": 63,
+    "inventorySha256": "098e45cb309d7c85eb7d3e78651c0a78c9275bc073f878d5eb7b77194cab99a9"
+  },
+  "extraction": {
+    "producer": {"id": "panorama-source-extractor", "version": "0.2.0"},
+    "contentDigest": "cd3987477ae4bb297d31a0e6abf8a8b7afe52fd6caa1e021744a0f368d39c4e3",
+    "coverage": "complete_for_supported_java_files",
+    "currentness": "current_by_content_digest",
+    "includedJavaFiles": 49,
+    "elements": 221,
+    "relations": 468,
+    "resolvedProjectRelations": 24,
+    "externalRelations": 444,
+    "unresolvedRelations": 0,
+    "parseFailures": 0,
+    "observationId": "SRCOBS-150C1666E10007FF813A09F9",
+    "observationHash": "9059adc35b394f330889a1dcbf07dc6a6ee7daf059a092eeda911ca6f2928149",
+    "receiptId": "SRCREC-D48C8728BC747B93FDBD5112",
+    "receiptHash": "3f1e558e31a5d8d9ce66ae84c8d16a0e2e061570d125f363fedf133aeae135a9",
+    "lossReportId": "LOSS-F336D466E4D2BFA000043E97",
+    "lossReportHash": "5d027e6793e98cdb31027944e2a2103f9b7d928ad6710bf259152ed966b55970",
+    "informationGaps": [
+      "java_full_parser_not_used",
+      "java_reflection_generated_sources_and_calls_not_resolved",
+      "static_dependencies_do_not_prove_runtime_calls_or_sequence_order"
+    ]
+  },
+  "projection": {
+    "modelId": "MODEL-95D75C6D6742F897B42A40F2",
+    "modelHash": "ea5c47f5bfabe837972ead693a306452d7eaeb77dfe9a80dce1f737b87f204b9",
+    "modelEntities": 221,
+    "modelRelations": 468,
+    "viewId": "VIEW-DA5FE677D4B7AF298D75659E",
+    "viewHash": "afea63ae8367fd4b8bec30da6cb40b34ff5502a7b3609313eeae7a2dcd8e16c6",
+    "focusRoot": "SRCEL-75352064BA3F91B51C9EC3FB",
+    "maxDepth": 1,
+    "maxNodes": 20,
+    "viewNodes": 4,
+    "viewEdges": 3,
+    "viewSetId": "PVS-BDF06F28CA97A0164C2A77A5",
+    "viewSetHash": "5eb93e5465a1ab4ef599456e1d1bc138c5bc3244485263d125323dc28bdc1208"
+  },
+  "browser": {
+    "desktopViewportsPassed": 4,
+    "narrowViewportsPassedWithExpectedVerticalScroll": 2,
+    "maxNodeOverlap": 0,
+    "maxEdgeThroughNode": 0,
+    "maxSideOverflow": 0,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "evidenceId": "PBE-1A7B355DCBBA4D7D5624AE31",
+    "evidenceHash": "c84a25e52963cd9741a81900290bec7cd9fbb3fbf8622e2236b0a745ab40f448",
+    "visualReview": "pending"
+  },
+  "verifiedDelivery": {
+    "deliveryId": "PVD-7144D067CD87CB2DB756F322",
+    "receiptHash": "cae01d5513576242c5bcddcec24c2501392e2efb350163096098598617e0aa7e",
+    "artifactSha256": "84d4efbc395cd5bd776b6a43f7d018d5ac41d3edf67bb27635e09397a0d494b2",
+    "artifactBytes": 914647,
+    "lastGoodModified": false
+  },
+  "oracleAssessment": {
+    "normalizedClaimsProduced": false,
+    "supportedFactRecall": "not_scored",
+    "forbiddenClaimAvoidance": "not_scored",
+    "reason": "The adapter emits evidence-bound import topology, not normalized architecture claims; file/relation counts cannot substitute for the 10-fact semantic oracle."
+  },
+  "releaseGate": {
+    "status": "partial",
+    "closed": ["SUPPORTED_LANGUAGE_EXTRACTION", "PUBLIC_SOURCE_VIEW_AND_BROWSER_DELIVERY"],
+    "open": [
+      "PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING",
+      "INDEPENDENT_HUMAN_VISUAL_ACCEPTANCE_FOR_EXACT_V060_HASH",
+      "CURRENT_PROOF_LAB_ON_FINAL_COMMIT"
+    ]
+  },
+  "validation": {
+    "pytest": {"passed": 402, "skipped": 2, "failed": 0},
+    "v060Focused": {"passed": 53, "failed": 0},
+    "runtimePreflight": {"readyForCore": true, "schemaCount": 24, "schemaErrors": 0},
+    "skillValidator": "passed"
+  }
+}

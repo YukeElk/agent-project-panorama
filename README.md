@@ -219,14 +219,14 @@ python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.js
 ```
 
 Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evidence Pin 与 Semantic Hash；View
-另外分离 Layout Hash。Extractor 支持 Python AST、JS/TS 有界静态 import 与 package/pyproject 声明依赖；
+另外分离 Layout Hash。Extractor 支持 Python AST、JS/TS/Java 有界静态 import 与 package/pyproject 声明依赖；
 Source Element 保持候选身份，不自动变成正式 Module，import/dependency 不变成运行调用或时序。它们是可删除、
 可重算的候选，不能反向 Apply 到正式 Panorama。
 
 当前已实现 hash-bound Single HTML Renderer Candidate、Guided Current/Target/Transition/Historical Variant、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
 统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
 Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
-展开、通用 Event Capture Adapter、Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+展开、完整 Java parser/配置解析、通用 Event Capture Adapter、最终 Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
 Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
@@ -238,6 +238,7 @@ Runtime Call。Renderer 验证见
 [`docs/v0.6-multiview-compiler-validation.md`](docs/v0.6-multiview-compiler-validation.md) 和
 [`docs/v0.6-event-projection-validation.md`](docs/v0.6-event-projection-validation.md) 和
 [`docs/v0.6-guided-view-set-validation.md`](docs/v0.6-guided-view-set-validation.md) 和
+[`docs/v0.6-java-source-adapter-validation.md`](docs/v0.6-java-source-adapter-validation.md) 和
 [`docs/v0.6-verified-delivery-validation.md`](docs/v0.6-verified-delivery-validation.md)。
 
 Verified Delivery 准备不修改 last-good；晋升 Preview 不消耗 Policy Use，正式晋升必须绑定精确批准的

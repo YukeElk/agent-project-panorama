@@ -205,8 +205,8 @@ def test_v060_javascript_parent_relative_imports_resolve_lexically(tmp_path):
 
 
 def test_v060_unsupported_source_language_is_partial_not_empty_success(tmp_path):
-    root = tmp_path / "java-project"
-    _write(root / "src" / "Main.java", "class Main {}\n")
+    root = tmp_path / "kotlin-project"
+    _write(root / "src" / "Main.kt", "class Main\n")
     _write(root / "README.md", "documentation is not a source adapter input\n")
 
     bundle = extract_source_topology(
@@ -228,6 +228,79 @@ def test_v060_unsupported_source_language_is_partial_not_empty_success(tmp_path)
         item["kind"] == "source_language.unsupported"
         for item in bundle["lossReport"]["losses"]
     )
+
+
+def test_v060_java_static_import_adapter_is_bounded_and_evidence_bound(tmp_path):
+    root = tmp_path / "java-project"
+    _write(
+        root / "src/main/java/com/acme/util/Helper.java",
+        """package com.acme.util;
+public class Helper { public static final int VALUE = 1; }
+""",
+    )
+    _write(
+        root / "src/main/java/com/acme/app/Main.java",
+        '''package com.acme.app;
+// import comment.only.Fake;
+import com.acme.util.Helper;
+import static com.acme.util.Helper.VALUE;
+import java.util.List;
+import com.acme.missing.*;
+class Main {
+  String ignored = "import string.only.Fake;";
+  List<Helper> values;
+}
+''',
+    )
+
+    bundle = extract_source_topology(
+        root, project_id="PRJ-JAVA", observed_at=OBSERVED_AT
+    )
+    observation = bundle["observation"]
+    receipt = bundle["receipt"]
+    relations = observation["relations"]
+
+    assert observation["sourceBinding"]["coverage"] == "complete"
+    assert observation["sourceBinding"]["currentness"] == "current"
+    assert receipt["counts"]["filesRead"] == 2
+    java_adapter = next(item for item in receipt["adapters"] if item["id"] == "java-static-imports")
+    assert java_adapter == {
+        "id": "java-static-imports",
+        "version": "0.1.0",
+        "status": "partial",
+        "inputCount": 2,
+        "outputCount": 4,
+        "errorCount": 0,
+    }
+    helper_imports = [
+        item for item in relations if item["attributes"]["specifier"].startswith("com.acme.util.Helper")
+    ]
+    assert len(helper_imports) == 2
+    assert all(item["resolution"] == "resolved" for item in helper_imports)
+    assert any(
+        item["attributes"]["specifier"] == "java.util.List"
+        and item["resolution"] == "external"
+        for item in relations
+    )
+    list_relation = next(
+        item for item in relations if item["attributes"]["specifier"] == "java.util.List"
+    )
+    list_target = next(
+        item for item in observation["elements"] if item["id"] == list_relation["toElementId"]
+    )
+    assert list_target["name"] == "java.util.List"
+    assert any(
+        item["attributes"]["specifier"] == "com.acme.missing.*"
+        and item["resolution"] == "external"
+        for item in relations
+    )
+    assert not any("comment.only" in (item["attributes"]["specifier"] or "") for item in relations)
+    assert not any("string.only" in (item["attributes"]["specifier"] or "") for item in relations)
+    assert all(item["attributes"]["runtimeObserved"] is False for item in relations)
+    assert all(item["attributes"]["sequenceOrder"] is None for item in relations)
+    assert "java_full_parser_not_used" in observation["informationGaps"]
+    assert "java_reflection_generated_sources_and_calls_not_resolved" in observation["informationGaps"]
+    assert bundle["lossReport"]["status"] == "lossless"
 
 
 def test_v060_extraction_does_not_persist_source_or_secret_bodies(tmp_path):
@@ -269,6 +342,17 @@ def test_v060_source_observation_tamper_fails_closed(tmp_path):
     assert any(
         "False was expected" in error
         for error in validate_source_observation(false_runtime)
+    )
+
+    rebound_adapter = deepcopy(observation)
+    rebound_adapter["relations"][0]["attributes"]["adapterId"] = "java-static-imports"
+    rebound_adapter["relations"][0]["attributes"]["parser"] = "bounded_regex"
+    rebound_adapter["integrity"]["semanticHash"] = compute_observation_semantic_hash(
+        rebound_adapter
+    )
+    assert any(
+        "Adapter/Parser" in error
+        for error in validate_source_observation(rebound_adapter)
     )
 
     broken_receipt = deepcopy(bundle["receipt"])

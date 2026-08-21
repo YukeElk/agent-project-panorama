@@ -1,6 +1,6 @@
 # Source Extraction Contract v0.1
 
-状态：WP2 Slice A Implemented；Python/JS/TS/Manifest Foundation；未进入公开发布
+状态：WP2 Slice B Implemented；Python/JS/TS/Java/Manifest Foundation；未进入公开发布
 
 对应 Finding：SF-24、SF-30、SF-39、SF-40
 
@@ -58,6 +58,8 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 - Repository Inventory：Git tracked + 非忽略 untracked，或非 Git 有界目录清单；
 - Python：标准库 AST 的静态 import、type-only import、相对 import 与 dynamic import candidate；
 - JavaScript/TypeScript：有界 comment-aware 静态模式，保留 `import type`、`require` 与 dynamic import；
+- Java：有界 comment/string-aware `package` / `import` 模式，精确解析项目内公开类型文件和外部符号；
+  static import 只定位到可证明的类型前缀；
 - Manifest：`package.json` 与 `pyproject.toml` 声明依赖；`pyproject.toml` 使用 Python 3.11+ 标准库
   `tomllib`，Python 3.10 无 TOML parser 时保留 parse failure/Loss，不静默猜测；
 - 每个文件、元素和关系绑定 Source Location、文件 SHA-256、Git HEAD 或完整 Content Digest；
@@ -67,6 +69,10 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 JS/TS 当前不是完整 parser，Receipt 固定披露 `javascript_typescript_full_parser_not_used`。import/dependency
 始终保持 `runtimeObserved=false`、`sequenceOrder=null`。缺失相对目标、动态表达式与解析失败进入 Loss/Unknown，
 不得删除以制造“完整”拓扑。
+
+Java 当前也不是完整 parser，Receipt Adapter 固定为 `partial`，Observation 披露 `java_full_parser_not_used` 与
+`java_reflection_generated_sources_and_calls_not_resolved`。它不解析方法调用、同包隐式类型引用、反射、注解
+处理、生成源码、资源配置或运行状态；Java import 始终只是 derived dependency candidate。
 
 ## 7. 安全与容量
 
@@ -79,7 +85,7 @@ JS/TS 当前不是完整 parser，Receipt 固定披露 `javascript_typescript_fu
 
 Receipt 的安全陈述必须区分：有支持的输入时 `sourceBodiesReadTransiently=true`，零个受支持输入时为 `false`；
 `sourceBodyPersisted=false`、`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed` 保持固定。
-发现 Java/Kotlin/Go/Rust/C/C++/C#/Ruby/PHP/Swift/Scala 等 source-like 文件但没有对应 Adapter 时，
+发现 Kotlin/Go/Rust/C/C++/C#/Ruby/PHP/Swift/Scala 等 source-like 文件但没有对应 Adapter 时，
 `coverage/status/lossReport` 必须为 `partial` 并披露 `unsupported_source_languages_present`，不得以 0 files
 报告 completed。若 Project Root 不是精确 Git checkout，未支持语言正文不进入 Content Digest，
 `currentness=unknown` 并披露 `unsupported_source_snapshot_not_content_bound`；固定外部 Source Inventory 只能作为

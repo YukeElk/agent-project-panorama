@@ -144,7 +144,7 @@
         "path": {"type": "string", "minLength": 1, "maxLength": 2048},
         "kind": {"enum": ["source", "manifest", "configuration"]},
         "language": {
-          "enum": ["python", "javascript", "typescript", "json", "toml", "unknown"]
+          "enum": ["python", "javascript", "typescript", "java", "json", "toml", "unknown"]
         },
         "size": {"type": "integer", "minimum": 0},
         "sha256": {"$ref": "#/$defs/sha256"},
@@ -203,7 +203,7 @@
         "path": {"type": ["string", "null"], "maxLength": 2048},
         "language": {
           "oneOf": [
-            {"enum": ["python", "javascript", "typescript", "json", "toml", "unknown"]},
+            {"enum": ["python", "javascript", "typescript", "java", "json", "toml", "unknown"]},
             {"type": "null"}
           ]
         },

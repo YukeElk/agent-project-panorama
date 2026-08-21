@@ -575,7 +575,7 @@
 
 ## SF-52 零个受支持输入不能报告 Source Extraction completed
 
-- 证据：固定 Spring PetClinic 快照包含 63 个 Java 源文件；V0.6 Extractor 没有 Java Adapter，旧逻辑返回
+- 证据：固定 Spring PetClinic 切片包含 63 个文件，其中 49 个 Java 源文件；当时 V0.6 Extractor 没有 Java Adapter，旧逻辑返回
   0 files / 0 elements / 0 relations 且 status=completed。
 - 影响：空图会被误读为“项目没有架构关系”而不是“工具不支持该语言”，直接违反 Loss/Unknown 边界，并让
   公开项目门禁产生假阳性。
@@ -584,8 +584,8 @@
   `sourceBodiesReadTransiently=false`；Extraction Receipt Schema 允许该布尔值如实表达。非 Git 输入无法用
   included-content digest 绑定未读取正文，故 `currentness=unknown` 并披露
   `unsupported_source_snapshot_not_content_bound`。
-- 发布影响：Spring PetClinic 仍是明确的 unsupported/partial 案例；在 Java Adapter 或另一个受支持语言的固定
-  公开项目通过之前，V0.6 “基于源码生成架构”公开门禁不满足。
+- 后续结果：有界 Java `package/import` Adapter 已读取全部 49 个 Java 文件并用完整 Content Digest 绑定，
+  不再产生 unsupported-language 假空图；但它仍不是语义架构生成器，完整发布影响见 SF-54。
 
 ## SF-53 固定六 Profile Tab 不能表达同 Profile 的 Current/Target/Conflict Guided Views
 
@@ -597,5 +597,19 @@
 - V0.6 设计调整：新增 View Set / Guided View Contract，允许同一 profile 的命名 scope variant 与 Story；
   Renderer 顶层选择 Guided View，再显示 profile/scope/evidence。所有 variant 继续精确绑定同一 Model 和
   Evidence，不复制或编辑事实。
-- 发布影响：在 Current/Target/Conflict 可于同一 Artifact 到达且 Deep Link 可恢复之前，多图 UI 仍是内部
-  Development Candidate。
+- 实现结果：Renderer 0.2 已在同一 Artifact 提供 Current/Target Module，Deep Link、跨 Variant 选择和六档
+  viewport 通过；Conflict 仍必须来自正式 Fact Status，不能由 View Set 文案制造。
+
+## SF-54 Java import coverage 不等于源码架构语义覆盖
+
+- 证据：有界 Adapter 在固定 PetClinic 切片读取 49 个 Java 文件，形成 221 个 Source Element 与 468 条静态
+  import，其中 24 条精确解析到项目内文件；但 10 条 Oracle 还包含 Controller Annotation、直接 Repository
+  注入、Thymeleaf/数据库配置、冲突、运行未知与测试未知，均不由 import 关系单独证明。
+- 影响：把“语言已支持”宣传成“源码架构已生成”会再次形成假阳性；外部符号和文件依赖也不能自动成为
+  Panorama Module、Layer、Runtime Call 或 Sequence。
+- V0.6 决策：Java Adapter 固定为 partial parser，披露反射/生成源码/调用/资源配置缺口；公开代表视图必须使用
+  exact root/depth/node budget，并显示 Information Gap。Oracle Fact Recall 在没有 Normalized Claim Adapter 前
+  记录为 `not_scored`，不得用文件/关系数量替代。
+- 发布影响：`SUPPORTED_LANGUAGE_EXTRACTION` 已关闭；`PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING`
+  仍为发布阻塞项。可以通过增加有证据的 Annotation/Configuration Adapter，或在正式 Mapping Proposal 中由
+  人工采纳 Source Element → Module，而不能让 View Set/LLM 自动晋升。
