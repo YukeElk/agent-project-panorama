@@ -1,6 +1,6 @@
 # Verified Projection Delivery Contract v0.1
 
-状态：Behavioral Design Closed；WP6 Machine Schema/Implementation Pending
+状态：WP6 Machine Contract Implemented；独立人工视觉 Acceptance 与公开发布仍 Pending
 
 对应 Finding：SF-32、SF-36、SF-38、SF-43
 
@@ -38,8 +38,23 @@ fix、输入/制品 Hash、Compiler/Renderer Version、Source/Event/`asOf` Bindi
 
 ## 4. Policy 与恢复
 
-未来 `verified_delivery.promote` Adapter 必须使用单 Operation Policy，并在替换前绑定 Candidate/last-good
+`verified_delivery.promote` Adapter 使用单 Operation Policy，并在替换前绑定 Candidate/last-good
 Before/Expected Hash。post-effect/pre-receipt 中断必须使用独立 Operation Transaction 确定性 resume；不得把
 Policy Pending 当作效果证明，也不得自动重渲染或 rebase。
 
-只有 Candidate/Receipt/Transaction 故障注入通过后才冻结 Delivery Receipt Schema。
+机器合同已经冻结为：
+
+- `panorama-renderer-browser-evidence.v0.1`：绑定精确 HTML 字节、四档 Desktop 与可选窄屏截图 Hash、DOM/
+  Geometry/Console 测量，视觉状态固定为 `pending`；
+- `panorama-verified-delivery-receipt.v0.1`：绑定 Project/Model/Bundle/六 View/Artifact 与机器门禁；
+- `panorama-verified-delivery-promotion-transaction.v0.1`：绑定 Policy Use、Receipt/Candidate、last-good
+  Before/Expected、Effect/Receipt/Event 与每状态 `stateHash`。
+
+Candidate 生成只写 immutable `candidates/receipts/evidence`，绝不触碰 last-good。Promotion 以
+`.panorama-work/verified-delivery/v0.1/last-good/index.html` 为唯一效果目标，使用原子文件替换；若观察到 Before、
+Expected 之外的第三状态，保留现场并 fail closed。`effect_observed` 可以恢复 Audit Event/Execution Receipt/
+Ledger，但不能重渲染或重复覆盖。Core Receipt 已 durable 而 Ledger 未推进时，只能复用精确 Use Receipt。
+
+Candidate/Receipt/Browser Evidence/Transaction 篡改、缺失 viewport、overflow、几何失败、控制台错误、过期/
+错配 Policy、并发 Writer、第三状态和 post-effect 中断均为负向门禁。当前独立人工视觉 Acceptance 仍为
+`pending`，因此本地 last-good 可以在精确 Policy 下使用，但不得据此宣称人工视觉通过或公开发布完成。

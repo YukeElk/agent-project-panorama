@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-project-panorama.local/schema/verified-delivery-promotion-transaction.schema.v0.1.json",
+  "title": "Verified Delivery Promotion Transaction v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "transactionId", "status", "policyBinding", "projectBinding", "deliveryBinding", "lastGood", "inputHash", "outputHash", "result", "receiptBinding", "eventBinding", "timestamps", "integrity"],
+  "properties": {
+    "formatVersion": {"const": "panorama-verified-delivery-promotion-transaction.v0.1"},
+    "transactionId": {"type": "string", "pattern": "^VDP-[A-F0-9]{32}$"},
+    "status": {"enum": ["prepared", "allocated", "effect_observed", "finalized", "failed", "conflict"]},
+    "policyBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policyId", "policyHash", "useNumber"],
+      "properties": {
+        "policyId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "policyHash": {"$ref": "#/$defs/sha256"},
+        "useNumber": {"oneOf": [{"type": "null"}, {"type": "integer", "minimum": 1}]}
+      }
+    },
+    "projectBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["projectId", "panoramaSchemaVersion", "revision", "dataHash"],
+      "properties": {
+        "projectId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "panoramaSchemaVersion": {"enum": ["0.1", "0.2"]},
+        "revision": {"type": "integer", "minimum": 0},
+        "dataHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "deliveryBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["deliveryId", "receiptHash", "artifactSha256", "artifactBytes", "visualReview"],
+      "properties": {
+        "deliveryId": {"type": "string", "pattern": "^PVD-[A-F0-9]{24}$"},
+        "receiptHash": {"$ref": "#/$defs/sha256"},
+        "artifactSha256": {"$ref": "#/$defs/sha256"},
+        "artifactBytes": {"type": "integer", "minimum": 1},
+        "visualReview": {"enum": ["pending", "accepted", "skipped"]}
+      }
+    },
+    "lastGood": {
+      "type": "object", "additionalProperties": false,
+      "required": ["ref", "before", "expected"],
+      "properties": {
+        "ref": {"const": ".panorama-work/verified-delivery/v0.1/last-good/index.html"},
+        "before": {"$ref": "#/$defs/artifactState"},
+        "expected": {"$ref": "#/$defs/artifactState"}
+      }
+    },
+    "inputHash": {"$ref": "#/$defs/sha256"},
+    "outputHash": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+    "result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "errorCode", "summary"],
+      "properties": {
+        "status": {"enum": ["pending", "succeeded", "failed", "conflict"]},
+        "errorCode": {"oneOf": [{"type": "null"}, {"type": "string", "minLength": 1, "maxLength": 80}]},
+        "summary": {"type": "string", "maxLength": 500}
+      }
+    },
+    "receiptBinding": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/receiptBinding"}]},
+    "eventBinding": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/eventBinding"}]},
+    "timestamps": {
+      "type": "object", "additionalProperties": false,
+      "required": ["preparedAt", "updatedAt", "effectObservedAt", "finalizedAt"],
+      "properties": {
+        "preparedAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"},
+        "effectObservedAt": {"oneOf": [{"type": "null"}, {"type": "string", "format": "date-time"}]},
+        "finalizedAt": {"oneOf": [{"type": "null"}, {"type": "string", "format": "date-time"}]}
+      }
+    },
+    "integrity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hashAlgorithm", "stateHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "stateHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "transaction_without_integrity.stateHash"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "artifactState": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["status"], "properties": {"status": {"const": "missing"}}},
+        {"type": "object", "additionalProperties": false, "required": ["status", "sha256", "bytes"], "properties": {"status": {"const": "present"}, "sha256": {"$ref": "#/$defs/sha256"}, "bytes": {"type": "integer", "minimum": 1}}}
+      ]
+    },
+    "receiptBinding": {
+      "type": "object", "additionalProperties": false, "required": ["receiptId", "receiptHash"],
+      "properties": {"receiptId": {"type": "string", "pattern": "^PEX-[A-F0-9]{32}$"}, "receiptHash": {"$ref": "#/$defs/sha256"}}
+    },
+    "eventBinding": {
+      "type": "object", "additionalProperties": false, "required": ["eventId", "eventHash"],
+      "properties": {"eventId": {"type": "string", "minLength": 1, "maxLength": 128}, "eventHash": {"$ref": "#/$defs/sha256"}}
+    }
+  }
+}

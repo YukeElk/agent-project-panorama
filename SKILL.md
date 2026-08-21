@@ -7,7 +7,7 @@ description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/V
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑只接入首个真实 Delegated Operation Adapter：`event_head.recover`，已本地验证但延迟公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer 只能作为本地 Development Candidate 使用。
+V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑接入首个真实 Delegated Operation Adapter：`event_head.recover`；V0.6 WP6 Machine Slice 接入第二个 Adapter：`verified_delivery.promote`。两者均已本地验证但未随 V0.6 公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer/Delivery 只能作为本地 Development Candidate 使用。
 
 ## 不变量
 
@@ -413,12 +413,37 @@ python scripts/validate_panorama_renderer_geometry.py `
   稳定选择、实体/关系/Event/Trace Deep Link、统一 Drawer、Pan/Zoom/Fit、主题与键盘路径；
 - Geometry Validator 的 machine status、浏览器截图/矩阵和人工视觉状态必须分开记录；自动门禁不得写成人工
   `accepted`；
-- 完整 JS/TS parser、层级聚合/展开、HTML Verified Delivery、last-good、通用 Event Capture Adapter 与公开发布
-  尚未完成，不得由当前 Development Candidate 外推。
+- 完整 JS/TS parser、层级聚合/展开、通用 Event Capture Adapter 与公开发布尚未完成；Verified Delivery 的
+  Candidate/Receipt/Browser Evidence 与 `verified_delivery.promote` Adapter 已实现，但没有精确 Policy 时只能
+  PREPARE/Preview，不能替换 last-good；独立人工视觉状态仍不得由机器写成 `accepted`。
 
 将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
 不能反向修改正式 Panorama；Renderer 验证见
-[V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md)。
+[V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md) 与
+[Verified Delivery Contract](docs/verified-delivery-contract.md)。
+
+Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：
+
+```powershell
+python scripts/record_renderer_browser_evidence.py candidate.html browser-measurement.json `
+  --output .panorama-work/views/browser-evidence.json
+python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --project-root path/to/project --browser-evidence .panorama-work/views/browser-evidence.json
+```
+
+last-good 晋升必须使用已批准的精确 `verified_delivery.promote` Policy；`--preview` 不分配 Use，正式执行在
+副作用前分配 Use，并写 Promotion Transaction、Engineering Event 与 Execution Receipt：
+
+```powershell
+python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID> --preview
+python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
+```
 
 ## CONTINUOUS OBSERVATION
 

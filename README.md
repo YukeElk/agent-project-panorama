@@ -59,8 +59,9 @@ V0.5 增加 Project-local Engineering Event Sidecar、Approval Policy Core，以
 Governance Outbox；V0.5.1 内部里程碑增加首个真实 Delegated Operation Adapter：`event_head.recover`。
 不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT 事务尚未接入 Event Capture。
 
-V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。V0.5.1 只接入
-`event_head.recover`，已通过本地验证但不单独公开发布；其余 Delegated Policy Operation Adapter、
+V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。V0.5.1 接入
+`event_head.recover`；V0.6 WP6 Machine Slice 接入 `verified_delivery.promote`。两者均通过本地验证但尚未随
+V0.6 公开发布；其余 Delegated Policy Operation Adapter、
 Dataset/RAG/Eval Export 与后训练不能由当前能力外推为已经实现。V0.6 Model/View/Renderer 仍是未发布的
 Development Candidate。下一次公开发布目标调整为
 V0.6.0 多视图架构全景，完整规划见
@@ -132,7 +133,8 @@ python scripts/validate_approval_policy_store.py `
 形成带 Use Number 和 Previous Receipt Hash 的审计链，撤销使用
 [`schema/approval-policy-revocation.schema.v0.1.json`](schema/approval-policy-revocation.schema.v0.1.json)。示例见
 [`examples/approval-policy.verification-receipt.v0.1.json`](examples/approval-policy.verification-receipt.v0.1.json)。
-Core 不等于所有 Operation Adapter 已实现；V0.5.1 只接入 `event_head.recover`，尚未接入的 Operation 继续
+Core 不等于所有 Operation Adapter 已实现；当前接入 `event_head.recover` 与 V0.6 Development Candidate 的
+`verified_delivery.promote`，尚未接入的 Operation 继续
 沿用现有逐次门禁。
 
 Head Inspect/Preview 不消耗 Policy Use。只有完整且唯一的 Chain 与 `head_missing|head_behind` 可以执行；
@@ -207,8 +209,9 @@ Source Element 保持候选身份，不自动变成正式 Module，import/depend
 可重算的候选，不能反向 Apply 到正式 Panorama。
 
 当前已实现 hash-bound Single HTML Renderer Candidate、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
-统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径。完整 JS/TS parser、层级聚合/展开、Verified Delivery、
-last-good 与通用 Event Capture Adapter 仍未实现。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
+Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
+展开、通用 Event Capture Adapter、Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
 Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
@@ -217,7 +220,26 @@ Runtime Call。Renderer 验证见
 [`docs/v0.6-model-view-ir-validation.md`](docs/v0.6-model-view-ir-validation.md) 和
 [`docs/v0.6-source-extraction-validation.md`](docs/v0.6-source-extraction-validation.md) 和
 [`docs/v0.6-multiview-compiler-validation.md`](docs/v0.6-multiview-compiler-validation.md) 和
-[`docs/v0.6-event-projection-validation.md`](docs/v0.6-event-projection-validation.md)。
+[`docs/v0.6-event-projection-validation.md`](docs/v0.6-event-projection-validation.md) 和
+[`docs/v0.6-verified-delivery-validation.md`](docs/v0.6-verified-delivery-validation.md)。
+
+Verified Delivery 准备不修改 last-good；晋升 Preview 不消耗 Policy Use，正式晋升必须绑定精确批准的
+`verified_delivery.promote` Policy：
+
+```powershell
+python scripts/record_renderer_browser_evidence.py candidate.html browser-measurement.json `
+  --output .panorama-work/views/browser-evidence.json
+python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --project-root path/to/project --browser-evidence .panorama-work/views/browser-evidence.json
+python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID> --preview
+python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
+```
 
 为普通 Studio Proposal 启用事件双写：
 

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-project-panorama.local/schema/panorama-renderer-browser-evidence.schema.v0.1.json",
+  "title": "Panorama Renderer Browser Evidence v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "evidenceId", "checkedAt", "artifact", "status", "viewports", "console", "visualReview", "limitations", "integrity"],
+  "properties": {
+    "formatVersion": {"const": "panorama-renderer-browser-evidence.v0.1"},
+    "evidenceId": {"type": "string", "pattern": "^PBE-[A-F0-9]{24}$"},
+    "checkedAt": {"type": "string", "format": "date-time"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "bytes"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "bytes": {"type": "integer", "minimum": 1}
+      }
+    },
+    "status": {"enum": ["passed", "failed", "skipped"]},
+    "viewports": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["width", "height", "documentOverflowX", "documentOverflowY", "nodeOverlapCount", "edgeThroughNodeCount", "sideOverflowCount", "captured", "screenshotSha256", "screenshotBytes"],
+        "properties": {
+          "width": {"type": "integer", "minimum": 320, "maximum": 4096},
+          "height": {"type": "integer", "minimum": 480, "maximum": 2160},
+          "documentOverflowX": {"type": "boolean"},
+          "documentOverflowY": {"type": "boolean"},
+          "nodeOverlapCount": {"type": "integer", "minimum": 0},
+          "edgeThroughNodeCount": {"type": "integer", "minimum": 0},
+          "sideOverflowCount": {"type": "integer", "minimum": 0},
+          "captured": {"type": "boolean"},
+          "screenshotSha256": {"$ref": "#/$defs/sha256"},
+          "screenshotBytes": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "console": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["errorCount", "warningCount"],
+      "properties": {
+        "errorCount": {"type": "integer", "minimum": 0},
+        "warningCount": {"type": "integer", "minimum": 0}
+      }
+    },
+    "visualReview": {"const": "pending"},
+    "limitations": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 500}},
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceHash"],
+      "properties": {"evidenceHash": {"$ref": "#/$defs/sha256"}}
+    }
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+}

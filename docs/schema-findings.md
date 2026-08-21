@@ -540,4 +540,25 @@
   Deep Link、Evidence Drawer、Pan/Zoom/Fit、Theme 和键盘路径已进入真实浏览器验证；
 - `385 passed, 2 skipped`、20 Schema、Skill Validator、URL Sanitizer、JS Syntax、Geometry 与 Browser Console
   门禁通过；
-- 层级聚合/展开、Verified Delivery、last-good、Proof Lab 和独立人工视觉 Acceptance 仍属于后续工作包。
+- 层级聚合/展开、Proof Lab 和独立人工视觉 Acceptance 仍属于后续工作包。
+
+## SF-50 last-good 晋升必须把效果事实与 Policy Receipt 分离
+
+- 证据：单独写 Candidate Receipt 不能证明 last-good 已替换；Policy Pending Use 也不能证明文件副作用发生。
+  进程可能在原子替换后、Audit Event/Execution Receipt 前中断。
+- 影响：若以 Pending 或重跑 Renderer 作为恢复手段，可能重复覆盖、消费不同输入，或把第三方修改误判为本次
+  效果；若先写成功 Receipt，则可能产生“审计成功但 last-good 未变化”。
+- V0.6 决策：新增独立 Promotion Transaction，输入绑定 Policy Hash、Delivery Receipt/Candidate、last-good
+  Before/Expected；状态限定为 prepared → allocated → effect_observed → finalized，每态带 `stateHash`。恢复只
+  接受 Before 或 Expected；第三状态保留现场并 fail closed。成功必须绑定 Engineering Event、Execution Receipt
+  与 Ledger，Core durable Receipt 只能按精确 Use 恢复。
+- 实现结果：候选生成不触碰 last-good；相同字节 no-op 不消耗 Use；post-effect 中断只补审计；候选/事务篡改、
+  第三状态和并发 Writer 均有负向测试。人工视觉继续是独立事实，机器证据固定为 pending。
+
+## V0.6 WP6 Machine Slice 结论
+
+- 冻结 Browser Evidence、Verified Delivery Receipt、Promotion Transaction 三个独立 v0.1 Schema；
+- self-host 六视图候选完成四档 Desktop 与两档窄屏 hash-bound 证据，机器门禁通过，人工视觉 pending；
+- `verified_delivery.promote` 成为第二个真实 Approval Policy Operation Adapter，沿用单 Operation、Use-before-
+  effect、Event/Receipt/Ledger 与确定性 resume 边界；
+- 该结论只允许内部 Candidate/last-good，不代表 Proof Lab、人工视觉、安装、Tag、Push 或公开 Release 完成。
