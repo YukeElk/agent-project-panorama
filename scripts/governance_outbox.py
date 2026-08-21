@@ -233,7 +233,19 @@ def build_event_request(outbox: dict[str, Any]) -> dict[str, Any]:
             "redactionState": "none",
             "retentionPolicyId": None,
         },
-        "extensions": {},
+        "extensions": {
+            "panoramaProjection": {
+                "lifecycleTransitions": [
+                    {
+                        "subjectType": "studio_proposal",
+                        "subjectId": extensions["proposalHash"],
+                        "fromState": "approved_candidate",
+                        "toState": "applied",
+                        "trigger": "governance.proposal_applied",
+                    }
+                ]
+            }
+        },
     }
 
 

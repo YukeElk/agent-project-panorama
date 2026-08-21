@@ -74,6 +74,14 @@ def test_opt_in_governance_apply_finalizes_event_and_outbox(
     event_report = validate_store(event_store)
     assert event_report["valid"] is True
     assert event_report["eventCount"] == 1
+    event_path = next((event_store / "events").glob("*.json"))
+    event = json.loads(event_path.read_text(encoding="utf-8"))
+    transition = event["extensions"]["panoramaProjection"][
+        "lifecycleTransitions"
+    ][0]
+    assert transition["fromState"] == "approved_candidate"
+    assert transition["toState"] == "applied"
+    assert transition["subjectId"] == _package(reference_data)["proposalHash"]
     outbox = next(outbox_store.glob("*.json")).read_text(encoding="utf-8")
     assert _package(reference_data)["operations"][0]["value"] not in outbox
 

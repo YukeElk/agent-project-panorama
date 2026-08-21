@@ -13,7 +13,10 @@ from panorama_view_ir import (
     PanoramaViewIRError,
     compile_dependency_dataflow_view_ir,
     compile_deployment_runtime_view_ir,
+    compile_evolution_risk_view_ir,
+    compile_lifecycle_view_ir,
     compile_module_view_ir,
+    compile_sequence_view_ir,
 )
 
 
@@ -24,7 +27,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("input", type=Path, help="Panorama Model IR JSON")
     parser.add_argument(
         "--profile",
-        choices=["module", "dependency_dataflow", "deployment_runtime"],
+        choices=[
+            "module",
+            "dependency_dataflow",
+            "deployment_runtime",
+            "sequence",
+            "lifecycle",
+            "evolution_risk",
+        ],
         default="module",
     )
     parser.add_argument(
@@ -56,6 +66,12 @@ def build_parser() -> argparse.ArgumentParser:
         dest="environments",
         help="Deployment/Runtime 环境过滤；可重复指定",
     )
+    parser.add_argument(
+        "--correlation-id",
+        action="append",
+        dest="correlation_ids",
+        help="Sequence Event correlation 过滤；可重复指定",
+    )
     parser.add_argument("--output", type=Path, required=True, help="新 View IR JSON")
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖既有候选文件")
     return parser
@@ -72,13 +88,19 @@ def main(argv: list[str] | None = None) -> int:
         model = json.loads(args.input.read_text(encoding="utf-8"))
         if not isinstance(model, dict):
             raise PanoramaViewIRError("Model IR 输入必须是 JSON 对象。")
-        common = {"architecture_scopes": args.scopes or ["current"]}
+        default_scope = (
+            "historical"
+            if args.profile in {"sequence", "lifecycle", "evolution_risk"}
+            else "current"
+        )
+        common = {"architecture_scopes": args.scopes or [default_scope]}
         if args.profile == "module":
             if (
                 args.root_entity_ids
                 or args.max_depth is not None
                 or args.max_nodes is not None
                 or args.environments
+                or args.correlation_ids
             ):
                 raise PanoramaViewIRError("module profile 不接受 focus/environment 参数。")
             view = compile_module_view_ir(model, **common)
@@ -87,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
                 raise PanoramaViewIRError(
                     "dependency_dataflow profile 不接受 environment 参数。"
                 )
+            if args.correlation_ids:
+                raise PanoramaViewIRError(
+                    "dependency_dataflow profile 不接受 correlation 参数。"
+                )
             view = compile_dependency_dataflow_view_ir(
                 model,
                 **common,
@@ -94,11 +120,12 @@ def main(argv: list[str] | None = None) -> int:
                 max_depth=args.max_depth if args.max_depth is not None else 2,
                 max_nodes=args.max_nodes if args.max_nodes is not None else 30,
             )
-        else:
+        elif args.profile == "deployment_runtime":
             if (
                 args.root_entity_ids
                 or args.max_depth is not None
                 or args.max_nodes is not None
+                or args.correlation_ids
             ):
                 raise PanoramaViewIRError(
                     "deployment_runtime profile 不接受 dependency focus 参数。"
@@ -107,6 +134,24 @@ def main(argv: list[str] | None = None) -> int:
                 model,
                 **common,
                 environments=args.environments,
+            )
+        else:
+            if (
+                args.root_entity_ids
+                or args.max_depth is not None
+                or args.max_nodes is not None
+                or args.environments
+            ):
+                raise PanoramaViewIRError(
+                    f"{args.profile} profile 不接受 dependency/environment 参数。"
+                )
+            event_compilers = {
+                "sequence": compile_sequence_view_ir,
+                "lifecycle": compile_lifecycle_view_ir,
+                "evolution_risk": compile_evolution_risk_view_ir,
+            }
+            view = event_compilers[args.profile](
+                model, **common, correlation_ids=args.correlation_ids
             )
         atomic_write(
             args.output,

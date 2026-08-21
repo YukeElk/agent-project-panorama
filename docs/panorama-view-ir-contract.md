@@ -1,8 +1,8 @@
 # Panorama View IR Contract v0.1
 
-状态：Implementation Slice C；已实现 Module、Dependency/Data Flow、Deployment/Runtime
+状态：Implementation Slice D；已实现 Module、Dependency/Data Flow、Deployment/Runtime、Event Views
 
-对应 Finding：SF-34～SF-36、SF-41～SF-43、SF-46、SF-47
+对应 Finding：SF-34～SF-36、SF-41～SF-43、SF-46～SF-48
 
 ## 1. 定位
 
@@ -36,6 +36,9 @@ Relation Scope 匹配时才投影 Edge；不得为保持画面连通而增加代
 - `module` 只投影正式 Module 与 `communication`；
 - `dependency_dataflow` 只投影 `dependency|data_flow`，可用 exact root、`maxDepth`、`maxNodes` 有界聚焦；
 - `deployment_runtime` 只投影 `deployment`，environment 过滤基于 Deployment 关系，shared resource 端点仍保留；
+- `sequence` 只投影有序 Engineering Event Action，不提升为 Runtime Call；
+- `lifecycle` 只投影 Adapter 显式 before/after state transition；
+- `evolution_risk` 只投影 Event Hash Chain，失败强调不是 Formal Finding 或 blast radius；
 - View Validator 除 Schema/Hash 外，还必须验证 profile/compiler、Node/Entity 字段、Edge/Relation 字段、端点、
   relation kind 与 scope；攻击者重算 Semantic Hash 也不能绕过绑定。
 
@@ -47,11 +50,10 @@ View Semantic Hash 覆盖删除 `layout` 和 `integrity` 后的完整 View。Lay
 - Label、Entity/Relation Binding、Filter、Evidence 或 Scope 变化必须改变 Semantic Hash；
 - Theme、Zoom、Selection、Filter UI 展开状态不进入 View IR。
 
-## 5. Sequence 预留门禁
+## 5. Event View 门禁
 
-`sequence` Profile 虽已列入 Schema，但当前没有 Compiler。未来只有 Event/trace、作者 Dynamic View、可验证
-控制流或用户批准的 Declared/Target 流程可以形成 Message Order。Module Connection、import graph、文件相邻
-和自然语言不能单独形成 `observed_sequence`。
+Sequence、Lifecycle 与 Evolution/Risk 已接入受验证 Event Checkpoint。Module Connection、import graph、文件相邻
+和自然语言不能形成 Event Sequence；Outcome 不能单独形成 Lifecycle；Risk emphasis 不能成为 Formal Finding。
 
 ## 6. 当前命令
 
@@ -67,6 +69,10 @@ python scripts/compile_panorama_view_ir.py project.source-bound.model-ir.json `
 python scripts/compile_panorama_view_ir.py project.model-ir.json `
   --profile deployment_runtime --scope transition --environment development `
   --output .panorama-work/views/project.transition.deployment.view-ir.json
+
+python scripts/compile_panorama_view_ir.py project.event.model-ir.json `
+  --profile sequence --correlation-id CORR-ID `
+  --output .panorama-work/views/project.sequence.view-ir.json
 ```
 
 输出已存在时默认停止。当前命令仍只生成 JSON Candidate，不生成 HTML、不替换 last-good，也不表示人工视觉通过。

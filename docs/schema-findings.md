@@ -509,3 +509,14 @@
   保留 shared resource 的真实端点闭包；
 - 跨视图 Node/Edge ID 继续由 Model Entity/Relation ID 派生，坐标仍不进入 Semantic Hash；
 - Sequence、Lifecycle、Evolution/Risk 和 Renderer 仍未完成，不得从静态关系推断顺序或运行因果。
+
+## SF-48 Engineering Event 顺序不能自动提升为 Runtime Message 或 Lifecycle Transition
+
+- 证据：Engineering Event 已证明 Stream Sequence、Actor、Subject、Correlation 与 Outcome，但通用 Event 并未
+  声明网络参与者、同步/异步协议、return/retry，也通常没有 lifecycle 的 before/after state。
+- 影响：把每条 Event 直接画成运行调用会制造系统因果；把 succeeded/failed 当状态终点会虚构前态和恢复边。
+- V0.6 决策：Event Checkpoint 只接受完整有效且 Head=current 的 Event Chain。Sequence 可将 Actor → Subject
+  投影为 `engineering_event_action`，顺序只来自 `stream.sequence`，并明确不是 runtime call。Lifecycle 仅消费
+  经受约束 Adapter 显式提供的 before/after state；缺失时输出 Information Gap，不猜 transition。
+- 身份边界：Actor 和未进入正式 Model 的 Subject 使用 Event-derived Entity；若 Subject ID 精确匹配正式 Entity，
+  则复用正式 Entity。Checkpoint 绑定 Project、Stream、Epoch、Tail ID/Hash、Sequence 与 canonical hash。

@@ -1,8 +1,8 @@
 # Panorama Model IR Contract v0.1
 
-状态：Implementation Slice C；Core Deployment + optional Source Observation
+状态：Implementation Slice D；Core Deployment + optional Source/Event inputs
 
-对应 Finding：SF-34、SF-35、SF-39、SF-40、SF-47
+对应 Finding：SF-34、SF-35、SF-39、SF-40、SF-47、SF-48
 
 ## 1. 定位
 
@@ -21,7 +21,8 @@
 
 可选 Source 输入只接受通过 `source-topology-observation.v0.1` Schema、Semantic Hash、Evidence/Inventory
 Digest、Endpoint 与 Project ID 绑定检查的 Observation。不得从页面文案、DOM、文件相邻、名称相似、目录
-结构或 LLM 输出补实体和关系。Event 输入在相应 Adapter 完成前固定为未提供，不能冒充运行观察。
+结构或 LLM 输出补实体和关系。可选 Event 输入只接受 Head=current、完整有效、Project 精确匹配的 Event
+Checkpoint；Checkpoint/事件链合同见 [Event Projection Contract](event-projection-contract.md)。
 
 ## 3. 身份与关系
 
@@ -36,6 +37,8 @@ Digest、Endpoint 与 Project ID 绑定检查的 Observation。不得从页面�
 - Deployment status 映射到 current/transition/target/historical，但默认仍是 declared；只有 exact provenance
   明确 observed 时 `runtimeObserved=true`，不得将配置状态提升为实际运行健康或调用事实；
 - Core Connection 与 Source Dependency 的 `semantics.order` 均固定为 null。
+- Event Actor/Subject/Timeline Item 使用 Event-derived Entity；Actor → Subject 只生成 `engineering_event_action`
+  Sequence，Event Hash Chain 生成 `trace`；显式 Adapter before/after 才生成 `state_transition`。
 
 Layer 对 Current、Target、Historical 分别绑定。Target 使用 `targetLayerId`，缺失时才回退到正式 `layerId`；
 同时投影多个 Architecture Scope 会造成 Layer 归属歧义，因此 module profile v0.1 每次只允许一个 Scope。

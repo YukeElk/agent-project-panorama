@@ -16,6 +16,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+from event_projection import validate_event_checkpoint
 from panorama_io import compute_canonical_hash, compute_data_hash
 from source_topology import validate_source_observation
 from validate_panorama import load_panorama, validate_data
@@ -24,7 +25,7 @@ from validate_panorama import load_panorama, validate_data
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_SCHEMA = ROOT / "schema" / "panorama-model-ir.schema.v0.1.json"
 VIEW_SCHEMA = ROOT / "schema" / "panorama-view-ir.schema.v0.1.json"
-MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.3.0"}
+MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.4.0"}
 VIEW_COMPILER = {"id": "panorama-module-view-compiler", "version": "0.1.0"}
 DEPENDENCY_VIEW_COMPILER = {
     "id": "panorama-dependency-dataflow-view-compiler",
@@ -32,6 +33,18 @@ DEPENDENCY_VIEW_COMPILER = {
 }
 DEPLOYMENT_VIEW_COMPILER = {
     "id": "panorama-deployment-runtime-view-compiler",
+    "version": "0.1.0",
+}
+SEQUENCE_VIEW_COMPILER = {
+    "id": "panorama-event-sequence-view-compiler",
+    "version": "0.1.0",
+}
+LIFECYCLE_VIEW_COMPILER = {
+    "id": "panorama-event-lifecycle-view-compiler",
+    "version": "0.1.0",
+}
+EVOLUTION_VIEW_COMPILER = {
+    "id": "panorama-event-evolution-risk-view-compiler",
     "version": "0.1.0",
 }
 
@@ -238,6 +251,25 @@ def _model_source_pin(pin: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _event_fact(authority: str) -> str:
+    return "derived" if authority == "inferred" else authority
+
+
+def _event_pin(event: dict[str, Any]) -> dict[str, Any]:
+    event_hash = event["integrity"]["eventHash"]
+    return {
+        "evidenceId": _stable_derived_id(
+            "EVID", {"eventId": event["eventId"], "eventHash": event_hash}, 20
+        ),
+        "kind": "event_id",
+        "ref": event["eventId"],
+        "revision": event_hash,
+        "digest": event_hash,
+        "accessClass": "PROJECT_OPERATIONAL_METADATA",
+        "freshness": "current",
+    }
+
+
 def compute_model_semantic_hash(model: dict[str, Any]) -> str:
     value = deepcopy(model)
     value.pop("integrity", None)
@@ -259,6 +291,7 @@ def compile_model_ir(
     data: dict[str, Any],
     *,
     source_observation: dict[str, Any] | None = None,
+    event_checkpoint: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     report = validate_data(data)
     if report.errors:
@@ -705,14 +738,367 @@ def compile_model_ir(
         relations.sort(key=lambda item: item["id"])
     else:
         source_binding = _source_binding(data)
-    event_binding = {
-        "status": "not_provided",
-        "checkpointId": None,
-        "checkpointHash": None,
-        "asOfSequence": None,
-    }
+    event_projection_gaps: set[str] = set()
+    event_checkpoint_binding: dict[str, Any] | None = None
+    if event_checkpoint is None:
+        event_binding = {
+            "status": "not_provided",
+            "checkpointId": None,
+            "checkpointHash": None,
+            "asOfSequence": None,
+        }
+    else:
+        checkpoint_errors = validate_event_checkpoint(event_checkpoint)
+        if checkpoint_errors:
+            raise PanoramaViewIRError(
+                "Event Checkpoint 无效：" + "; ".join(checkpoint_errors[:10])
+            )
+        if event_checkpoint["projectId"] != project["id"]:
+            raise PanoramaViewIRError(
+                "Event Checkpoint projectId 与 Panorama Core 不匹配。"
+            )
+        event_binding = {
+            "status": "complete",
+            "checkpointId": event_checkpoint["checkpointId"],
+            "checkpointHash": event_checkpoint["checkpointHash"],
+            "asOfSequence": event_checkpoint["asOfSequence"],
+        }
+        event_checkpoint_binding = {
+            "streamId": event_checkpoint["streamId"],
+            "epoch": event_checkpoint["epoch"],
+            "tailEventId": event_checkpoint["tailEventId"],
+            "tailEventHash": event_checkpoint["tailEventHash"],
+        }
+        compiled_at = event_checkpoint["asOf"]
+        entity_by_id = {item["id"]: item for item in entities}
+
+        def add_event_entity(candidate: dict[str, Any]) -> None:
+            existing = entity_by_id.get(candidate["id"])
+            if existing is None:
+                entities.append(candidate)
+                entity_by_id[candidate["id"]] = candidate
+                return
+            if existing["attributes"].get("eventParticipantType") is None:
+                return
+            evidence_ids = {
+                pin["evidenceId"] for pin in existing["evidencePins"]
+            }
+            for pin in candidate["evidencePins"]:
+                if pin["evidenceId"] not in evidence_ids:
+                    existing["evidencePins"].append(pin)
+            existing["evidencePins"].sort(key=lambda item: item["evidenceId"])
+            if existing["authority"] != candidate["authority"]:
+                existing["authority"] = "conflict"
+                existing["factStatus"] = "conflict"
+                existing["confidence"] = "unknown"
+            elif existing["confidence"] != candidate["confidence"]:
+                existing["confidence"] = "unknown"
+
+        previous_event_entity_id: str | None = None
+        lifecycle_transition_count = 0
+        for event in event_checkpoint["events"]:
+            pin = _event_pin(event)
+            actor = event["actor"]
+            event_entity_id = _stable_derived_id(
+                "EVEVENT", {"eventId": event["eventId"]}, 20
+            )
+            add_event_entity(
+                {
+                    "id": event_entity_id,
+                    "kind": "unknown",
+                    "name": event["eventType"],
+                    "layerBindings": {
+                        "current": None,
+                        "target": None,
+                        "historical": None,
+                    },
+                    "architectureScopes": ["historical"],
+                    "purpose": "Engineering Event Timeline Item；不是架构 Module。",
+                    "factStatus": _event_fact(event["authority"]),
+                    "authority": event["authority"],
+                    "confidence": event["confidence"],
+                    "evidencePins": [pin],
+                    "attributes": {
+                        "eventParticipantType": "event",
+                        "eventId": event["eventId"],
+                        "eventType": event["eventType"],
+                        "recordedAt": event["recordedAt"],
+                        "occurredAt": event["occurredAt"],
+                        "correlationId": event["correlation"]["correlationId"],
+                        "outcomeStatus": event["outcome"]["status"],
+                        "labelStrength": event["outcome"]["labelStrength"],
+                        "streamSequence": event["stream"]["sequence"],
+                    },
+                }
+            )
+            if previous_event_entity_id is not None:
+                relations.append(
+                    {
+                        "id": _stable_derived_id(
+                            "REL",
+                            {
+                                "kind": "event_chain_trace",
+                                "eventId": event["eventId"],
+                            },
+                        ),
+                        "kind": "trace",
+                        "name": "event_chain_next",
+                        "fromEntityId": previous_event_entity_id,
+                        "toEntityId": event_entity_id,
+                        "direction": "one_way",
+                        "architectureScopes": ["historical"],
+                        "factStatus": "observed",
+                        "authority": "observed",
+                        "confidence": "high",
+                        "evidencePins": [pin],
+                        "semantics": {
+                            "protocol": None,
+                            "mode": "engineering_event_hash_chain",
+                            "dataSummary": None,
+                            "order": event["stream"]["sequence"],
+                            "asynchronous": None,
+                        },
+                        "attributes": {
+                            "eventId": event["eventId"],
+                            "correlationId": event["correlation"]["correlationId"],
+                            "previousEventHash": event["stream"][
+                                "previousEventHash"
+                            ],
+                            "outcomeStatus": event["outcome"]["status"],
+                        },
+                    }
+                )
+            previous_event_entity_id = event_entity_id
+            actor_id = _stable_derived_id(
+                "EVACT",
+                {
+                    "kind": actor["kind"],
+                    "id": actor["id"],
+                    "version": actor["version"],
+                },
+                20,
+            )
+            add_event_entity(
+                {
+                    "id": actor_id,
+                    "kind": "actor",
+                    "name": actor["id"],
+                    "layerBindings": {
+                        "current": None,
+                        "target": None,
+                        "historical": None,
+                    },
+                    "architectureScopes": ["historical"],
+                    "purpose": "Engineering Event Actor；不是 Runtime Service。",
+                    "factStatus": _event_fact(event["authority"]),
+                    "authority": event["authority"],
+                    "confidence": event["confidence"],
+                    "evidencePins": [pin],
+                    "attributes": {
+                        "eventParticipantType": "actor",
+                        "actorKind": actor["kind"],
+                        "actorId": actor["id"],
+                        "actorVersion": actor["version"],
+                    },
+                }
+            )
+            if not event["subjectRefs"]:
+                event_projection_gaps.add("event_subject_not_provided")
+            for subject_index, subject in enumerate(event["subjectRefs"]):
+                subject_id = subject["id"]
+                if subject_id not in entity_by_id:
+                    subject_id = _stable_derived_id(
+                        "EVSUB",
+                        {"type": subject["type"], "id": subject["id"]},
+                        20,
+                    )
+                    add_event_entity(
+                        {
+                            "id": subject_id,
+                            "kind": "unknown",
+                            "name": subject["id"],
+                            "layerBindings": {
+                                "current": None,
+                                "target": None,
+                                "historical": None,
+                            },
+                            "architectureScopes": ["historical"],
+                            "purpose": "Event Subject Candidate；未自动提升为正式实体。",
+                            "factStatus": _event_fact(event["authority"]),
+                            "authority": event["authority"],
+                            "confidence": event["confidence"],
+                            "evidencePins": [pin],
+                            "attributes": {
+                                "eventParticipantType": "subject",
+                                "subjectType": subject["type"],
+                                "subjectId": subject["id"],
+                            },
+                        }
+                    )
+                relations.append(
+                    {
+                        "id": _stable_derived_id(
+                            "REL",
+                            {
+                                "eventId": event["eventId"],
+                                "subjectIndex": subject_index,
+                                "subjectType": subject["type"],
+                                "subjectId": subject["id"],
+                            },
+                        ),
+                        "kind": "sequence_message",
+                        "name": event["eventType"],
+                        "fromEntityId": actor_id,
+                        "toEntityId": subject_id,
+                        "direction": "one_way",
+                        "architectureScopes": ["historical"],
+                        "factStatus": _event_fact(event["authority"]),
+                        "authority": event["authority"],
+                        "confidence": event["confidence"],
+                        "evidencePins": [pin],
+                        "semantics": {
+                            "protocol": None,
+                            "mode": "engineering_event_action",
+                            "dataSummary": None,
+                            "order": event["stream"]["sequence"],
+                            "asynchronous": None,
+                        },
+                        "attributes": {
+                            "eventId": event["eventId"],
+                            "eventType": event["eventType"],
+                            "recordedAt": event["recordedAt"],
+                            "occurredAt": event["occurredAt"],
+                            "correlationId": event["correlation"]["correlationId"],
+                            "subjectType": subject["type"],
+                            "subjectRelationship": subject["relationship"],
+                            "outcomeStatus": event["outcome"]["status"],
+                            "labelStrength": event["outcome"]["labelStrength"],
+                            "runtimeCallObserved": False,
+                        },
+                    }
+                )
+            projection = event["extensions"].get("panoramaProjection", {})
+            if not isinstance(projection, dict):
+                raise PanoramaViewIRError(
+                    f"Event {event['eventId']} panoramaProjection 无效。"
+                )
+            transitions = projection.get("lifecycleTransitions", [])
+            if not isinstance(transitions, list):
+                raise PanoramaViewIRError(
+                    f"Event {event['eventId']} lifecycleTransitions 无效。"
+                )
+            valid_subjects = {
+                (item["type"], item["id"]) for item in event["subjectRefs"]
+            }
+            for transition_index, transition in enumerate(transitions):
+                required_transition = {
+                    "subjectType",
+                    "subjectId",
+                    "fromState",
+                    "toState",
+                    "trigger",
+                }
+                if (
+                    not isinstance(transition, dict)
+                    or set(transition) != required_transition
+                    or not all(
+                        isinstance(transition[field], str)
+                        and 0 < len(transition[field]) <= 128
+                        for field in required_transition
+                    )
+                    or (transition["subjectType"], transition["subjectId"])
+                    not in valid_subjects
+                ):
+                    raise PanoramaViewIRError(
+                        f"Event {event['eventId']} lifecycleTransitions/{transition_index} 无效。"
+                    )
+                state_entity_ids: list[str] = []
+                for state_role in ("fromState", "toState"):
+                    state_entity_id = _stable_derived_id(
+                        "EVSTATE",
+                        {
+                            "subjectType": transition["subjectType"],
+                            "subjectId": transition["subjectId"],
+                            "state": transition[state_role],
+                        },
+                        20,
+                    )
+                    state_entity_ids.append(state_entity_id)
+                    add_event_entity(
+                        {
+                            "id": state_entity_id,
+                            "kind": "unknown",
+                            "name": transition[state_role],
+                            "layerBindings": {
+                                "current": None,
+                                "target": None,
+                                "historical": None,
+                            },
+                            "architectureScopes": ["historical"],
+                            "purpose": "显式 Event Lifecycle State；不是推断状态。",
+                            "factStatus": _event_fact(event["authority"]),
+                            "authority": event["authority"],
+                            "confidence": event["confidence"],
+                            "evidencePins": [pin],
+                            "attributes": {
+                                "eventParticipantType": "lifecycle_state",
+                                "subjectType": transition["subjectType"],
+                                "subjectId": transition["subjectId"],
+                                "state": transition[state_role],
+                            },
+                        }
+                    )
+                relations.append(
+                    {
+                        "id": _stable_derived_id(
+                            "REL",
+                            {
+                                "kind": "event_state_transition",
+                                "eventId": event["eventId"],
+                                "transitionIndex": transition_index,
+                            },
+                        ),
+                        "kind": "state_transition",
+                        "name": transition["trigger"],
+                        "fromEntityId": state_entity_ids[0],
+                        "toEntityId": state_entity_ids[1],
+                        "direction": "one_way",
+                        "architectureScopes": ["historical"],
+                        "factStatus": _event_fact(event["authority"]),
+                        "authority": event["authority"],
+                        "confidence": event["confidence"],
+                        "evidencePins": [pin],
+                        "semantics": {
+                            "protocol": None,
+                            "mode": "explicit_event_state_transition",
+                            "dataSummary": None,
+                            "order": event["stream"]["sequence"],
+                            "asynchronous": None,
+                        },
+                        "attributes": {
+                            "eventId": event["eventId"],
+                            "correlationId": event["correlation"]["correlationId"],
+                            "subjectType": transition["subjectType"],
+                            "subjectId": transition["subjectId"],
+                            "fromState": transition["fromState"],
+                            "toState": transition["toState"],
+                            "trigger": transition["trigger"],
+                        },
+                    }
+                )
+                lifecycle_transition_count += 1
+        if lifecycle_transition_count == 0:
+            event_projection_gaps.add("event_lifecycle_transition_not_provided")
+        entities.sort(key=lambda item: item["id"])
+        relations.sort(key=lambda item: item["id"])
     as_of = {
-        "mode": "explicit_time" if source_observation is not None else "recorded_as_of",
+        "mode": (
+            "event_checkpoint"
+            if event_checkpoint is not None
+            else "explicit_time"
+            if source_observation is not None
+            else "recorded_as_of"
+        ),
         "value": compiled_at,
     }
     model_id = _stable_derived_id(
@@ -725,7 +1111,11 @@ def compile_model_ir(
             "asOf": as_of,
         },
     )
-    information_gaps = ["event_checkpoint_not_provided"]
+    information_gaps = (
+        ["event_checkpoint_not_provided"]
+        if event_checkpoint is None
+        else sorted(event_projection_gaps)
+    )
     if source_binding["currentness"] != "current":
         information_gaps.append("source_currentness_not_verified")
     if source_observation is not None:
@@ -744,11 +1134,18 @@ def compile_model_ir(
         "entities": entities,
         "relations": relations,
         "informationGaps": sorted(information_gaps),
-        "extensions": (
-            {"sourceObservationBinding": source_observation_binding}
-            if source_observation_binding is not None
-            else {}
-        ),
+        "extensions": {
+            **(
+                {"sourceObservationBinding": source_observation_binding}
+                if source_observation_binding is not None
+                else {}
+            ),
+            **(
+                {"eventCheckpointBinding": event_checkpoint_binding}
+                if event_checkpoint_binding is not None
+                else {}
+            ),
+        },
     }
     model["integrity"] = {
         "hashAlgorithm": "sha256",
@@ -1369,6 +1766,294 @@ def compile_deployment_runtime_view_ir(
     return view
 
 
+def compile_sequence_view_ir(
+    model: dict[str, Any],
+    *,
+    architecture_scopes: list[str] | None = None,
+    correlation_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    model_errors = validate_model_ir(model)
+    if model_errors:
+        raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:10]))
+    scopes = _checked_single_scope(
+        architecture_scopes or ["historical"], profile="sequence"
+    )
+    correlations = sorted(set(correlation_ids or []))
+    if correlation_ids and len(correlation_ids) != len(correlations):
+        raise PanoramaViewIRError("correlation_ids 不能重复。")
+    selected_relations = [
+        relation
+        for relation in model["relations"]
+        if relation["kind"] == "sequence_message"
+        and set(relation["architectureScopes"]) & set(scopes)
+        and (
+            not correlations
+            or relation["attributes"].get("correlationId") in correlations
+        )
+    ]
+    selected_relations.sort(
+        key=lambda item: (
+            item["semantics"]["order"],
+            item["attributes"].get("eventId", ""),
+            item["id"],
+        )
+    )
+    selected_ids = {
+        entity_id
+        for relation in selected_relations
+        for entity_id in (relation["fromEntityId"], relation["toEntityId"])
+    }
+    entities_by_id = {item["id"]: item for item in model["entities"]}
+    nodes = [
+        _view_node(entities_by_id[entity_id], group_id=None)
+        for entity_id in sorted(selected_ids)
+    ]
+    node_by_entity = {
+        node["entityRef"]["id"]: node["id"] for node in nodes
+    }
+    edges = [
+        _view_edge(relation, node_by_entity=node_by_entity)
+        for relation in selected_relations
+    ]
+    information_gaps = set(model["informationGaps"])
+    if not edges:
+        information_gaps.add("sequence_messages_not_available")
+    if any(
+        relation["semantics"]["asynchronous"] is None
+        for relation in selected_relations
+    ):
+        information_gaps.add("sequence_async_semantics_unknown")
+    if any(
+        relation["attributes"].get("occurredAt") is None
+        for relation in selected_relations
+    ):
+        information_gaps.add("sequence_occurrence_time_not_provided")
+    model_binding = {
+        "modelId": model["modelId"],
+        "modelSemanticHash": model["integrity"]["semanticHash"],
+        "projectId": model["projectBinding"]["projectId"],
+        "panoramaDataHash": model["projectBinding"]["dataHash"],
+        "asOf": model["asOf"]["value"],
+    }
+    view: dict[str, Any] = {
+        "formatVersion": "panorama-view-ir.v0.1",
+        "viewId": _stable_derived_id(
+            "VIEW",
+            {
+                "compiler": SEQUENCE_VIEW_COMPILER,
+                "modelSemanticHash": model_binding["modelSemanticHash"],
+                "profile": "sequence",
+                "architectureScopes": scopes,
+                "correlationIds": correlations,
+            },
+        ),
+        "generatedAt": model["compiledAt"],
+        "compiler": SEQUENCE_VIEW_COMPILER,
+        "modelBinding": model_binding,
+        "viewType": "sequence",
+        "profile": "sequence",
+        "title": f"{model['projectBinding']['projectName']} 工程事件时序",
+        "description": "按 Event Stream Sequence 投影 Actor → Subject 工程动作；不是 Runtime Call。",
+        "filters": {
+            "architectureScopes": scopes,
+            "factStatuses": [
+                "observed",
+                "declared",
+                "derived",
+                "unknown",
+                "conflict",
+            ],
+        },
+        "groups": [],
+        "nodes": nodes,
+        "edges": edges,
+        "informationGaps": sorted(information_gaps),
+        "layout": {"strategy": "none", "positions": []},
+        "extensions": {"correlationIds": correlations},
+    }
+    view["integrity"] = {
+        "hashAlgorithm": "sha256",
+        "semanticHash": compute_view_semantic_hash(view),
+        "semanticHashScope": "view_without_layout_or_integrity",
+        "layoutHash": compute_view_layout_hash(view),
+        "layoutHashScope": "layout_only",
+    }
+    errors = validate_view_ir(view, model)
+    if errors:
+        raise PanoramaViewIRError(
+            "Sequence View IR 编译结果无效：" + "; ".join(errors[:10])
+        )
+    return view
+
+
+def _compile_event_projection_view(
+    model: dict[str, Any],
+    *,
+    profile: str,
+    view_type: str,
+    relation_kind: str,
+    compiler: dict[str, str],
+    title_suffix: str,
+    description: str,
+    architecture_scopes: list[str] | None,
+    correlation_ids: list[str] | None,
+) -> dict[str, Any]:
+    model_errors = validate_model_ir(model)
+    if model_errors:
+        raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:10]))
+    scopes = _checked_single_scope(
+        architecture_scopes or ["historical"], profile=profile
+    )
+    correlations = sorted(set(correlation_ids or []))
+    if correlation_ids and len(correlation_ids) != len(correlations):
+        raise PanoramaViewIRError("correlation_ids 不能重复。")
+    selected_relations = [
+        relation
+        for relation in model["relations"]
+        if relation["kind"] == relation_kind
+        and set(relation["architectureScopes"]) & set(scopes)
+        and (
+            not correlations
+            or relation["attributes"].get("correlationId") in correlations
+        )
+    ]
+    selected_relations.sort(
+        key=lambda item: (item["semantics"]["order"], item["id"])
+    )
+    selected_ids = {
+        entity_id
+        for relation in selected_relations
+        for entity_id in (relation["fromEntityId"], relation["toEntityId"])
+    }
+    if profile == "evolution_risk":
+        selected_ids.update(
+            entity["id"]
+            for entity in model["entities"]
+            if entity["attributes"].get("eventParticipantType") == "event"
+            and set(entity["architectureScopes"]) & set(scopes)
+            and (
+                not correlations
+                or entity["attributes"].get("correlationId") in correlations
+            )
+        )
+    entities_by_id = {item["id"]: item for item in model["entities"]}
+    nodes = [
+        _view_node(entities_by_id[entity_id], group_id=None)
+        for entity_id in sorted(selected_ids)
+    ]
+    if profile == "evolution_risk":
+        for node in nodes:
+            entity = entities_by_id[node["entityRef"]["id"]]
+            if entity["attributes"].get("outcomeStatus") in {"failed", "rejected"}:
+                node["emphasis"] = "risk"
+    node_by_entity = {
+        node["entityRef"]["id"]: node["id"] for node in nodes
+    }
+    edges = [
+        _view_edge(relation, node_by_entity=node_by_entity)
+        for relation in selected_relations
+    ]
+    information_gaps = set(model["informationGaps"])
+    if not edges and profile == "lifecycle":
+        information_gaps.add("lifecycle_transitions_not_available")
+    if not nodes and profile == "evolution_risk":
+        information_gaps.add("evolution_events_not_available")
+    model_binding = {
+        "modelId": model["modelId"],
+        "modelSemanticHash": model["integrity"]["semanticHash"],
+        "projectId": model["projectBinding"]["projectId"],
+        "panoramaDataHash": model["projectBinding"]["dataHash"],
+        "asOf": model["asOf"]["value"],
+    }
+    view: dict[str, Any] = {
+        "formatVersion": "panorama-view-ir.v0.1",
+        "viewId": _stable_derived_id(
+            "VIEW",
+            {
+                "compiler": compiler,
+                "modelSemanticHash": model_binding["modelSemanticHash"],
+                "profile": profile,
+                "architectureScopes": scopes,
+                "correlationIds": correlations,
+            },
+        ),
+        "generatedAt": model["compiledAt"],
+        "compiler": compiler,
+        "modelBinding": model_binding,
+        "viewType": view_type,
+        "profile": profile,
+        "title": f"{model['projectBinding']['projectName']} {title_suffix}",
+        "description": description,
+        "filters": {
+            "architectureScopes": scopes,
+            "factStatuses": [
+                "observed",
+                "declared",
+                "derived",
+                "unknown",
+                "conflict",
+            ],
+        },
+        "groups": [],
+        "nodes": nodes,
+        "edges": edges,
+        "informationGaps": sorted(information_gaps),
+        "layout": {"strategy": "none", "positions": []},
+        "extensions": {"correlationIds": correlations},
+    }
+    view["integrity"] = {
+        "hashAlgorithm": "sha256",
+        "semanticHash": compute_view_semantic_hash(view),
+        "semanticHashScope": "view_without_layout_or_integrity",
+        "layoutHash": compute_view_layout_hash(view),
+        "layoutHashScope": "layout_only",
+    }
+    errors = validate_view_ir(view, model)
+    if errors:
+        raise PanoramaViewIRError(
+            f"{profile} View IR 编译结果无效：" + "; ".join(errors[:10])
+        )
+    return view
+
+
+def compile_lifecycle_view_ir(
+    model: dict[str, Any],
+    *,
+    architecture_scopes: list[str] | None = None,
+    correlation_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    return _compile_event_projection_view(
+        model,
+        profile="lifecycle",
+        view_type="lifecycle",
+        relation_kind="state_transition",
+        compiler=LIFECYCLE_VIEW_COMPILER,
+        title_suffix="事件生命周期",
+        description="只投影 Event Adapter 显式声明的 before/after state，不从 Outcome 猜状态。",
+        architecture_scopes=architecture_scopes,
+        correlation_ids=correlation_ids,
+    )
+
+
+def compile_evolution_risk_view_ir(
+    model: dict[str, Any],
+    *,
+    architecture_scopes: list[str] | None = None,
+    correlation_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    return _compile_event_projection_view(
+        model,
+        profile="evolution_risk",
+        view_type="evolution",
+        relation_kind="trace",
+        compiler=EVOLUTION_VIEW_COMPILER,
+        title_suffix="工程演进与风险",
+        description="按已验证 Event Hash Chain 投影演进；失败仅作风险强调，不推断 blast radius。",
+        architecture_scopes=architecture_scopes,
+        correlation_ids=correlation_ids,
+    )
+
+
 def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     errors = _schema_errors(view, VIEW_SCHEMA)
     if errors:
@@ -1404,6 +2089,9 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
         "module": VIEW_COMPILER,
         "dependency_dataflow": DEPENDENCY_VIEW_COMPILER,
         "deployment_runtime": DEPLOYMENT_VIEW_COMPILER,
+        "sequence": SEQUENCE_VIEW_COMPILER,
+        "lifecycle": LIFECYCLE_VIEW_COMPILER,
+        "evolution_risk": EVOLUTION_VIEW_COMPILER,
     }
     expected_compiler = expected_compilers.get(view["profile"])
     if expected_compiler is not None and view["compiler"] != expected_compiler:
@@ -1497,6 +2185,10 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
                 errors.append(
                     f"/edges/{edge['id']}: relation kind 不属于 {view['profile']}"
                 )
+    if view["profile"] in {"sequence", "lifecycle", "evolution_risk"}:
+        for edge in view["edges"]:
+            if edge["order"] is None:
+                errors.append(f"/edges/{edge['id']}: Event projection order 不能为空")
     scopes = set(view["filters"]["architectureScopes"])
     for edge in view["edges"]:
         relation = model_relations.get(edge["relationRef"]["id"])
@@ -1520,7 +2212,10 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
 
 
 def load_and_compile_model_ir(
-    path: Path, *, source_observation_path: Path | None = None
+    path: Path,
+    *,
+    source_observation_path: Path | None = None,
+    event_store_path: Path | None = None,
 ) -> dict[str, Any]:
     data, _ = load_panorama(path)
     source_observation = None
@@ -1530,4 +2225,18 @@ def load_and_compile_model_ir(
         )
         if not isinstance(source_observation, dict):
             raise PanoramaViewIRError("Source Observation 根必须是 JSON object。")
-    return compile_model_ir(data, source_observation=source_observation)
+    event_checkpoint = None
+    if event_store_path is not None:
+        from event_projection import EventProjectionError, load_event_checkpoint
+
+        try:
+            event_checkpoint = load_event_checkpoint(
+                event_store_path, project_id=data["project"]["id"]
+            )
+        except EventProjectionError as exc:
+            raise PanoramaViewIRError(str(exc)) from exc
+    return compile_model_ir(
+        data,
+        source_observation=source_observation,
+        event_checkpoint=event_checkpoint,
+    )

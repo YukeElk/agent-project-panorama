@@ -181,6 +181,23 @@ def test_install_begin_success_event_receipt_and_chain(project_root, tmp_path):
     assert receipt["execution"]["status"] == "succeeded"
     assert receipt["eventBinding"]["eventId"].startswith("EVT-")
     assert validate_store(engineering_store)["valid"] is True
+    event = json.loads(
+        (
+            engineering_store
+            / "events"
+            / f"{receipt['eventBinding']['eventId']}.json"
+        ).read_text(encoding="utf-8")
+    )
+    transition = event["extensions"]["panoramaProjection"][
+        "lifecycleTransitions"
+    ][0]
+    assert transition == {
+        "subjectType": "approval_policy",
+        "subjectId": active["policyId"],
+        "fromState": "allocated",
+        "toState": "succeeded",
+        "trigger": active["operation"],
+    }
     report = validate_policy_store(policy_store)
     assert report["valid"] is True
     assert report["receiptCount"] == 1

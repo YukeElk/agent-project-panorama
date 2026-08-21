@@ -342,8 +342,9 @@ python scripts/validate_approval_policy_store.py `
 
 需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
 [Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
-当前实现 Formal Panorama Core + optional Source Observation → Model IR → Module、Dependency/Data Flow、
-Deployment/Runtime 三种 single-scope View IR。
+当前实现 Formal Panorama Core + optional Source Observation/Event Checkpoint → Model IR → Module、Dependency/
+Data Flow、Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种 single-scope View IR。使用 Event 输入时
+先完整读取 [Event Projection Contract](docs/event-projection-contract.md)。
 需要源码输入时先完整读取 [Source Extraction Contract](docs/source-extraction-contract.md)：
 
 ```powershell
@@ -355,6 +356,7 @@ python scripts/extract_source_topology.py path/to/project `
 
 python scripts/compile_panorama_model_ir.py path/to/project-panorama.json `
   --source-observation .panorama-work/views/source-observation.json `
+  --event-store .panorama-work/event-store/v0.1 `
   --output .panorama-work/views/project.model-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile module --scope current `
@@ -365,16 +367,21 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile deployment_runtime --scope current `
   --output .panorama-work/views/project.current.deployment.view-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile sequence --correlation-id CORR-ID `
+  --output .panorama-work/views/project.sequence.view-ir.json
 ```
 
 - Model/View Compile、Validate 与新 Candidate 输出不修改正式 Panorama，不要求人工批准；覆盖候选必须显式
   使用 `--overwrite`；
 - Model IR 必须绑定 Project/Data/Source/Event/`asOf`、Compiler 和 Evidence Pin；View 必须精确绑定 Model；
 - authored Module/Connection ID 原样保留；View Node/Edge/Group 使用确定性 derived ID；
-- 三个 profile 每次只接受一个 current/target/transition/historical Scope；module 只投影 communication，
+- 六个 profile 每次只接受一个 current/target/transition/historical Scope；module 只投影 communication，
   dependency_dataflow 只投影 dependency/data_flow，deployment_runtime 只投影 deployment；
 - Dependency/Data Flow 使用 exact root、depth、node budget 有界，超限 fail closed；Deployment 默认是 declared，
   未经 exact observed provenance 不得宣称 Observed Runtime；
+- Event Store 必须完整有效且 Head=current；Sequence 只表示 Actor → Subject 工程动作；Lifecycle 只接受
+  Adapter 显式 before/after；Evolution/Risk 只使用 Event Hash Chain 与有界 outcome 强调；
 - 离线 Source 固定为 recorded_as_of，未提供 Event Checkpoint 保留 Information Gap；不得宣称实时源码一致；
 - Source Extractor 只读取 project root 内有界普通源码；已分类 Secret 路径与 in-scope link/reparse path 拒绝，
   普通源码正文仅瞬时解析且不持久化；当前未执行 embedded Secret scan，必须如实披露；
@@ -382,8 +389,7 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
-- 完整 JS/TS parser、Sequence/Lifecycle/Evolution/Risk、Renderer、HTML Delivery 与 Event Capture 尚未实现，
-  不得由当前切片外推。
+- 完整 JS/TS parser、Renderer、HTML/Verified Delivery 与通用 Event Capture Adapter 尚未实现，不得由当前切片外推。
 
 将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
 实现时再读取各自合同。

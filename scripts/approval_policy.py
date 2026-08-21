@@ -878,7 +878,19 @@ def _event_request(
             "redactionState": "none",
             "retentionPolicyId": None,
         },
-        "extensions": {},
+        "extensions": {
+            "panoramaProjection": {
+                "lifecycleTransitions": [
+                    {
+                        "subjectType": "approval_policy",
+                        "subjectId": policy["policyId"],
+                        "fromState": "allocated",
+                        "toState": status,
+                        "trigger": policy["operation"],
+                    }
+                ]
+            }
+        },
     }
 
 
