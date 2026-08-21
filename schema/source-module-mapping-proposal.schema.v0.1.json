@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/source-module-mapping-proposal.schema.v0.1.json",
+  "title": "Panorama Source Element to Module Mapping Proposal v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "proposalId", "generatedAt", "compiler", "projectBinding", "sourceBinding", "status", "promotionPolicy", "candidates", "unmappedSourceElementIds", "informationGaps", "integrity", "extensions"],
+  "properties": {
+    "formatVersion": {"const": "panorama-source-module-mapping-proposal.v0.1"},
+    "proposalId": {"type": "string", "pattern": "^MAP-[A-F0-9]{24}$"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "compiler": {"$ref": "#/$defs/producer"},
+    "projectBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["projectId", "rootName"],
+      "properties": {"projectId": {"$ref": "#/$defs/id"}, "rootName": {"type": "string", "minLength": 1, "maxLength": 512}}
+    },
+    "sourceBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["observationId", "observationHash", "contentDigest", "gitHead"],
+      "properties": {
+        "observationId": {"type": "string", "pattern": "^SRCOBS-[A-F0-9]{24}$"},
+        "observationHash": {"$ref": "#/$defs/sha256"},
+        "contentDigest": {"$ref": "#/$defs/sha256"},
+        "gitHead": {"type": ["string", "null"], "pattern": "^[a-fA-F0-9]{40}([a-fA-F0-9]{24})?$"}
+      }
+    },
+    "status": {"const": "pending_review"},
+    "promotionPolicy": {"const": "exact_approved_mapping_proposal_required"},
+    "candidates": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/candidate"}},
+    "unmappedSourceElementIds": {"type": "array", "maxItems": 100000, "uniqueItems": true, "items": {"type": "string", "pattern": "^SRCEL-[A-F0-9]{24}$"}},
+    "informationGaps": {"type": "array", "maxItems": 10000, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 1024}},
+    "integrity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hashAlgorithm", "mappingProposalHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "mappingProposalHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "proposal_without_integrity"}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "producer": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "version": {"type": "string", "minLength": 1, "maxLength": 128}}
+    },
+    "candidate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["candidateId", "name", "groupingBasis", "groupingKey", "sourceElementIds", "evidencePinIds", "signals", "rationale", "confidence", "reviewStatus", "suggestedModuleId"],
+      "properties": {
+        "candidateId": {"type": "string", "pattern": "^MODCAND-[A-F0-9]{24}$"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "groupingBasis": {"const": "java_main_package"},
+        "groupingKey": {"type": "string", "minLength": 1, "maxLength": 512},
+        "sourceElementIds": {"type": "array", "minItems": 1, "maxItems": 10000, "uniqueItems": true, "items": {"type": "string", "pattern": "^SRCEL-[A-F0-9]{24}$"}},
+        "evidencePinIds": {"type": "array", "minItems": 1, "maxItems": 10000, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+        "signals": {"type": "array", "maxItems": 1000, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 512}},
+        "rationale": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "confidence": {"enum": ["medium", "low", "unknown"]},
+        "reviewStatus": {"const": "pending"},
+        "suggestedModuleId": {"type": "null"}
+      }
+    }
+  }
+}

@@ -219,14 +219,19 @@ python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.js
 ```
 
 Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evidence Pin 与 Semantic Hash；View
-另外分离 Layout Hash。Extractor 支持 Python AST、JS/TS/Java 有界静态 import 与 package/pyproject 声明依赖；
+另外分离 Layout Hash。Extractor 支持 Python AST、JS/TS/Java 有界静态 import、package/pyproject/Maven 声明依赖、
+Java 顶层声明/type annotation/构造参数元数据，以及脱敏 Java Properties 声明；
 Source Element 保持候选身份，不自动变成正式 Module，import/dependency 不变成运行调用或时序。它们是可删除、
 可重算的候选，不能反向 Apply 到正式 Panorama。
+
+`compile_source_module_mapping.py` 可生成 hash-bound、`pending_review` 的 main-source Java package 候选；它不会
+写正式 Module，test/config/manifest 保持 unmapped。PetClinic 固定切片机器验证达到 0.80 supported fact recall、
+1.00 forbidden-claim avoidance；Thymeleaf 仍为 partial evidence，Service comment conflict 仍未映射。
 
 当前已实现 hash-bound Single HTML Renderer Candidate、Guided Current/Target/Transition/Historical Variant、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
 统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
 Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
-展开、完整 Java parser/配置解析、通用 Event Capture Adapter、最终 Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+展开、完整 Java parser/模板解析、通用 Event Capture Adapter、最终 Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
 Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、

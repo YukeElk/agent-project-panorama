@@ -1,6 +1,6 @@
 # Source Extraction Contract v0.1
 
-状态：WP2 Slice B Implemented；Python/JS/TS/Java/Manifest Foundation；未进入公开发布
+状态：WP2 Slice C Implemented；Python/JS/TS/Java/Manifest/Properties Foundation；未进入公开发布
 
 对应 Finding：SF-24、SF-30、SF-39、SF-40
 
@@ -58,10 +58,15 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 - Repository Inventory：Git tracked + 非忽略 untracked，或非 Git 有界目录清单；
 - Python：标准库 AST 的静态 import、type-only import、相对 import 与 dynamic import candidate；
 - JavaScript/TypeScript：有界 comment-aware 静态模式，保留 `import type`、`require` 与 dynamic import；
-- Java：有界 comment/string-aware `package` / `import` 模式，精确解析项目内公开类型文件和外部符号；
-  static import 只定位到可证明的类型前缀；
-- Manifest：`package.json` 与 `pyproject.toml` 声明依赖；`pyproject.toml` 使用 Python 3.11+ 标准库
+- Java：有界 comment/string-aware `package` / `import` 模式，精确解析项目内唯一类型和外部符号；
+  static import 只定位到可证明的类型前缀；重复 FQCN、wildcard 多目标保持 unresolved；另记录顶层声明、
+  type-level annotation 与构造函数参数的行级元数据，但不推断框架行为；
+- Manifest：`package.json`、`pyproject.toml` 与 Maven `pom.xml` 声明依赖；Maven 使用标准库 XML parser，
+  dependency 坐标保持 declared；`pyproject.toml` 使用 Python 3.11+ 标准库
   `tomllib`，Python 3.10 无 TOML parser 时保留 parse failure/Loss，不静默猜测；
+- Java Properties：只持久化 key、line、Evidence Pin 和白名单安全值；`database`、Thymeleaf mode、Actuator
+  exposure 可记录安全标量，datasource URL 只记录 `jdbc:<driver>` scheme。密码、用户名、token、任意自定义值
+  一律 `omitted_by_policy`；配置声明不等于 active runtime；
 - 每个文件、元素和关系绑定 Source Location、文件 SHA-256、Git HEAD 或完整 Content Digest；
 - Observation 可选合并进 Model IR，但实体保持 `source_element`，关系保持 derived/declared dependency，
   不进入 module profile，也不生成 Sequence Order。
@@ -71,10 +76,26 @@ JS/TS 当前不是完整 parser，Receipt 固定披露 `javascript_typescript_fu
 不得删除以制造“完整”拓扑。
 
 Java 当前也不是完整 parser，Receipt Adapter 固定为 `partial`，Observation 披露 `java_full_parser_not_used` 与
-`java_reflection_generated_sources_and_calls_not_resolved`。它不解析方法调用、同包隐式类型引用、反射、注解
-处理、生成源码、资源配置或运行状态；Java import 始终只是 derived dependency candidate。
+`java_reflection_generated_sources_and_calls_not_resolved`。声明/注解/构造参数只是 bounded syntax metadata；
+它不解析方法调用、同包隐式类型引用、反射、注解处理、生成源码或运行状态；Java import 始终只是 derived
+dependency candidate。Properties Adapter 只读取声明，不推断 profile 激活、数据库连接或部署暴露。
 
-## 7. 安全与容量
+## 7. Source Element → Module Mapping Proposal
+
+`compile_source_module_mapping.py` 可以把 main-source Java package 编译成待评审候选。它精确绑定 Source
+Observation ID/Hash/Content Digest、Source Element 与 Evidence Pin；test、configuration、manifest 和非 Java
+元素保持 unmapped。输出固定为 `pending_review`、`suggestedModuleId=null`，不会写正式 Panorama。
+
+package 仅是候选分组信号。正式 Module 必须继续评审职责、接口、状态所有权和部署边界，并经过精确 Proposal
+Hash 的正常 Approval/Apply；Mapping Proposal 本身不能绕过该治理流程。
+
+```powershell
+python scripts/compile_source_module_mapping.py .panorama-work/source-observation.json `
+  --generated-at 2026-08-21T12:05:00Z `
+  --output .panorama-work/source-module-mapping-proposal.json
+```
+
+## 8. 安全与容量
 
 - 拒绝 project root 或 in-scope 文件的 symlink/junction/reparse point；
 - 拒绝绝对路径、`..` 逃逸、超过 32 层的路径；
@@ -91,7 +112,7 @@ Receipt 的安全陈述必须区分：有支持的输入时 `sourceBodiesReadTra
 `currentness=unknown` 并披露 `unsupported_source_snapshot_not_content_bound`；固定外部 Source Inventory 只能作为
 Proof Lab 旁证，不能被 Extractor 冒充自身 Binding。
 
-## 8. 命令
+## 9. 命令
 
 ```powershell
 python scripts/extract_source_topology.py path/to/project `

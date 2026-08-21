@@ -610,6 +610,16 @@
 - V0.6 决策：Java Adapter 固定为 partial parser，披露反射/生成源码/调用/资源配置缺口；公开代表视图必须使用
   exact root/depth/node budget，并显示 Information Gap。Oracle Fact Recall 在没有 Normalized Claim Adapter 前
   记录为 `not_scored`，不得用文件/关系数量替代。
-- 发布影响：`SUPPORTED_LANGUAGE_EXTRACTION` 已关闭；`PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING`
-  仍为发布阻塞项。可以通过增加有证据的 Annotation/Configuration Adapter，或在正式 Mapping Proposal 中由
-  人工采纳 Source Element → Module，而不能让 View Set/LLM 自动晋升。
+- 实现结果：V0.6 Slice C 增加行级 Java declaration/type annotation/constructor metadata、Maven dependency 与
+  脱敏 Properties Adapter。固定 PetClinic 得到 0.80 supported fact recall、1.00 forbidden-claim avoidance；
+  另生成 5 个 hash-bound `pending_review` package candidate，正式 Module 新增 0。`PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING`
+  机器门禁关闭，但 Thymeleaf template resolution 和 Service comment conflict 仍为已披露限制。
+
+## SF-55 Configuration value 与 package grouping 都必须保持候选边界
+
+- 证据：Properties 同时可能包含架构声明和 credential；Java package 提供责任聚类信号，但 PetClinic 的 owner
+  package 同时含 Controller、Entity、Repository，不能直接等同一个正式 Module。
+- 影响：原样持久化配置会泄密；自动把 package 写成 Module 会伪造职责、接口、状态与部署边界。
+- V0.6 决策：Properties 只记录 key/line/Evidence Pin 和白名单安全值，datasource URL 只保留 scheme，其他值
+  `omitted_by_policy`。Mapping Artifact 固定 `pending_review`、`suggestedModuleId=null`，绑定 Observation Hash、
+  Source Element 与 Evidence Pin；正式采纳继续走精确 Hash 的 Proposal/Approval/Apply。

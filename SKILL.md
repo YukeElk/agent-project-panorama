@@ -357,6 +357,11 @@ python scripts/extract_source_topology.py path/to/project `
   --receipt-output .panorama-work/views/extraction-receipt.json `
   --loss-output .panorama-work/views/extraction-loss.json
 
+python scripts/compile_source_module_mapping.py `
+  .panorama-work/views/source-observation.json `
+  --generated-at 2026-08-21T12:05:00Z `
+  --output .panorama-work/views/source-module-mapping-proposal.json
+
 python scripts/compile_panorama_model_ir.py path/to/project-panorama.json `
   --source-observation .panorama-work/views/source-observation.json `
   --event-store .panorama-work/event-store/v0.1 `
@@ -423,8 +428,12 @@ python scripts/validate_panorama_renderer_geometry.py `
   普通源码正文仅瞬时解析且不持久化；当前未执行 embedded Secret scan，必须如实披露；
 - Python AST、JS/TS/Java 有界静态 import 与 manifest dependency 只生成 `source_element`/dependency candidate；
   文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
-- Java Adapter 只解析 package/import，固定披露 full parser、反射、生成源码、调用和资源配置缺口；不得据此
-  宣称 Spring Component、Controller→Repository 注入、数据库激活或测试通过；
+- Java Adapter 另记录有行级 Evidence 的顶层声明、type annotation、构造参数，Maven Adapter 记录 declared
+  dependency，Properties Adapter 只保存白名单安全值或 datasource scheme；这些仍是 syntax/config declaration，
+  不得据此宣称运行调用、profile/database 激活、部署暴露或测试通过；
+- Source→Module Mapping 只把 main-source Java package 编译成 `pending_review` 候选，精确绑定 Observation Hash、
+  Source Element 和 Evidence Pin；test/config/manifest 保持 unmapped，且 `suggestedModuleId=null`。package 不等于
+  Module，正式采纳仍须评审职责/接口/状态/部署边界并经过准确 Hash 的 Proposal/Approval/Apply；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
 - View Set 只组织最多 24 个已验证 single-scope View，必须精确覆盖输入集合；允许同 Profile 的
@@ -443,9 +452,11 @@ python scripts/validate_panorama_renderer_geometry.py `
 [V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md) 与
 [Verified Delivery Contract](docs/verified-delivery-contract.md)。固定六 Profile Tab 的 Current/Target 缺口已由
 [Guided View Set Validation](docs/v0.6-guided-view-set-validation.md) 关闭；有界 Java import Adapter 也已进入
-公开项目机器验证，但尚未达到 PetClinic 语义 Oracle/Module Mapping 覆盖，且无正式 Conflict Fact 时不能生成
-Conflict Story；在
+公开项目机器验证；PetClinic 固定切片现达到 0.80 supported fact recall、1.00 forbidden-claim avoidance，且生成
+5 个待评审 package 候选而未自动提升 Module。Thymeleaf 仍只有 partial evidence，Service comment conflict 未映射，
+且无正式 Conflict Fact 时不能生成 Conflict Story；在
 [Java Source Adapter Validation](docs/v0.6-java-source-adapter-validation.md) 与
+[Semantic Source and Module Mapping Validation](docs/v0.6-semantic-source-module-validation.md) 以及
 [Proof Lab](docs/v0.6-panorama-archify-proof-lab.md) 的阻塞项关闭前，不得描述为通用源码架构生成或公开发布就绪。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：

@@ -1,0 +1,85 @@
+{
+  "formatVersion": "panorama-semantic-source-module-validation.v0.1",
+  "generatedAt": "2026-08-21T19:10:00Z",
+  "caseBinding": {
+    "caseId": "spring-petclinic-88e37c1",
+    "upstreamCommit": "88e37c15cf6fc8490b01bc3e8e2c800cec1ac272",
+    "inventoryFileCount": 63,
+    "inventorySha256": "098e45cb309d7c85eb7d3e78651c0a78c9275bc073f878d5eb7b77194cab99a9"
+  },
+  "extraction": {
+    "producer": {"id": "panorama-source-extractor", "version": "0.3.0"},
+    "sourceBindingMode": "content_digest",
+    "contentDigest": "4b56c804dc59067dc4602f5583d3e32b19337e116f9e591aa05b99aa57ae6225",
+    "coverage": "complete_for_supported_java_maven_properties_files",
+    "includedFiles": 53,
+    "includedJavaFiles": 49,
+    "includedPropertiesFiles": 3,
+    "includedMavenFiles": 1,
+    "elements": 255,
+    "relations": 498,
+    "unresolvedRelations": 0,
+    "parseFailures": 0,
+    "observationId": "SRCOBS-1C7EFC8ECDD6219697250BA6",
+    "observationHash": "c1a1e9260ca27050ff221116602e2355daea882796168da26378ef1957ae449e",
+    "observationArtifactSha256": "ead8469c6963b663e217cfb2b9bb4c8153e21dbb2fa33efc9dec1d5e0be9b501",
+    "receiptId": "SRCREC-1CB753EE8DCFD79B7DBC5B59",
+    "receiptHash": "82f21156fc69d90ece99354ef3db39685b599ea1fc203195ad8e58a31deb294b",
+    "receiptArtifactSha256": "a808224c4389e6324b3d70c270e7fb70ee80a09d92d22bb7991f2564c744005c",
+    "lossReportId": "LOSS-4A9480656C275B6DD0437110",
+    "lossReportHash": "24b9298114e9dfb411cdfbae75c17ff9a3f794a3f463f73a55efac06bcbed679"
+  },
+  "moduleMapping": {
+    "proposalId": "MAP-1AE751BC39685FA27786539A",
+    "mappingProposalHash": "76efd59d8bfd33d7c98f4493ca7ec8b038e6fe42694174e0acfc13a07f16e37e",
+    "artifactSha256": "32ec5d7d819619c4383f07c6bfec273949636ce275ff1f4f6567f3441fc5c08c",
+    "status": "pending_review",
+    "promotionPolicy": "exact_approved_mapping_proposal_required",
+    "candidateCount": 5,
+    "mappedMainJavaElementCount": 30,
+    "unmappedSourceElementCount": 23,
+    "formalModulesCreated": 0,
+    "candidateGroupingKeys": [
+      "org.springframework.samples.petclinic",
+      "org.springframework.samples.petclinic.model",
+      "org.springframework.samples.petclinic.owner",
+      "org.springframework.samples.petclinic.system",
+      "org.springframework.samples.petclinic.vet"
+    ]
+  },
+  "oracleAssessment": {
+    "normalizationMethod": "tool-native",
+    "normalizedClaimCount": 9,
+    "normalizedClaimsArtifactSha256": "5ccb5cfe82b3be98579dcdf9f8c4fa1ad8a0d4c9db35158b86a958a7d418f006",
+    "scoreArtifactSha256": "ccd0c8818f9d8d934673588449bdc7f8a66e5f35f6927e796a189957b408ef92",
+    "oracleFactCount": 10,
+    "supportedFactCount": 8,
+    "partialFactCount": 1,
+    "contradictedFactCount": 0,
+    "supportedFactRecall": 0.8,
+    "forbiddenClaimCount": 6,
+    "forbiddenClaimAvoidance": 1.0,
+    "secretCanaryDetected": false,
+    "unmappedFactIds": ["PETCLINIC_SERVICE_COMMENT_CONFLICT"],
+    "partialFactIds": ["PETCLINIC_THYMELEAF"]
+  },
+  "validation": {
+    "pytest": {"passed": 408, "skipped": 2, "failed": 0},
+    "v060Focused": {"passed": 59, "failed": 0},
+    "runtimePreflight": {"readyForCore": true, "schemaCount": 25, "schemaErrors": 0},
+    "skillValidator": "passed"
+  },
+  "releaseGate": {
+    "status": "partial",
+    "closed": ["PUBLIC_SOURCE_SEMANTIC_COVERAGE_AND_MODULE_MAPPING"],
+    "open": [
+      "CURRENT_PROOF_LAB_ON_FINAL_COMMIT",
+      "INDEPENDENT_HUMAN_VISUAL_ACCEPTANCE_FOR_EXACT_V060_HASH"
+    ],
+    "nonBlockingKnownLimitations": [
+      "service_comment_conflict_not_extracted",
+      "controller_to_template_resolution_partial",
+      "java_full_parser_not_used"
+    ]
+  }
+}

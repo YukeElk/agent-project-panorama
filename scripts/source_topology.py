@@ -17,6 +17,7 @@ import posixpath
 import re
 import stat
 import subprocess
+import xml.etree.ElementTree as ET
 from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -30,7 +31,7 @@ OBSERVATION_SCHEMA = (
 )
 RECEIPT_SCHEMA = ROOT / "schema" / "extraction-receipt.schema.v0.1.json"
 LOSS_SCHEMA = ROOT / "schema" / "transformation-loss-report.schema.v0.1.json"
-PRODUCER = {"id": "panorama-source-extractor", "version": "0.2.0"}
+PRODUCER = {"id": "panorama-source-extractor", "version": "0.3.0"}
 
 MAX_FILES = 20_000
 MAX_FILE_BYTES = 1 * 1024 * 1024
@@ -74,6 +75,10 @@ SOURCE_LIKE_UNSUPPORTED_SUFFIXES = {
 MANIFEST_NAMES = {
     "package.json": ("manifest", "json"),
     "pyproject.toml": ("manifest", "toml"),
+    "pom.xml": ("manifest", "xml"),
+}
+CONFIGURATION_SUFFIXES = {
+    ".properties": ("configuration", "properties"),
 }
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 
@@ -142,6 +147,9 @@ def _supported_kind(relative: Path) -> tuple[str, str] | None:
     by_name = MANIFEST_NAMES.get(relative.name.casefold())
     if by_name is not None:
         return by_name
+    by_configuration = CONFIGURATION_SUFFIXES.get(relative.suffix.casefold())
+    if by_configuration is not None:
+        return by_configuration
     return SOURCE_SUFFIXES.get(relative.suffix.casefold())
 
 
@@ -839,6 +847,87 @@ def _parse_javascript(
     return relations
 
 
+SAFE_PROPERTY_KEYS = {
+    "database",
+    "management.endpoints.web.exposure.include",
+    "spring.thymeleaf.mode",
+    "spring.datasource.url",
+}
+
+
+def _safe_property_value(key: str, value: str) -> tuple[str | None, str]:
+    normalized = value.strip()
+    if key not in SAFE_PROPERTY_KEYS:
+        return None, "omitted_by_policy"
+    if key == "spring.datasource.url":
+        match = re.match(r"^(jdbc:[A-Za-z0-9_-]+):", normalized)
+        return (match.group(1), "scheme_only") if match else (None, "omitted_by_policy")
+    if len(normalized) <= 128 and re.fullmatch(r"[A-Za-z0-9_.*,+-]+", normalized):
+        return normalized, "recorded_safe_value"
+    return None, "omitted_by_policy"
+
+
+def _parse_properties(
+    item: dict[str, Any],
+    *,
+    file_elements: dict[str, dict[str, Any]],
+    revision: str,
+    losses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    source_element = file_elements[item["path"]]
+    try:
+        text = item["_body"].decode("utf-8")
+    except UnicodeDecodeError as exc:
+        item["parseStatus"] = "failed"
+        source_element["parseStatus"] = "failed"
+        losses.append(
+            {
+                "kind": "configuration.parse_failed",
+                "sourceRef": item["path"],
+                "severity": "partial",
+                "reason": f"Properties decoder failed: {type(exc).__name__}",
+                "preservedAs": f"inventory:{item['path']}",
+            }
+        )
+        return []
+    entries = []
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        stripped = raw_line.strip()
+        if not stripped or stripped.startswith(("#", "!")):
+            continue
+        match = re.match(r"^([^:=\s]+)\s*[:=]\s*(.*)$", stripped)
+        if not match:
+            continue
+        key = match.group(1)
+        safe_value, value_policy = _safe_property_value(key, match.group(2))
+        entry = {
+            "key": key,
+            "line": line_number,
+            "valuePolicy": value_policy,
+            "evidencePinId": _evidence_pin(
+                item, line=line_number, column=None, revision=revision
+            )["evidenceId"],
+        }
+        if safe_value is not None:
+            entry["safeValue"] = safe_value
+        entries.append(entry)
+    item["parseStatus"] = "parsed"
+    source_element["parseStatus"] = "parsed"
+    source_element["attributes"].update(
+        {
+            "configurationFormat": "java_properties",
+            "entries": entries,
+            "runtimeObserved": False,
+        }
+    )
+    for entry in entries:
+        _merge_pin(
+            source_element,
+            _evidence_pin(item, line=entry["line"], column=None, revision=revision),
+        )
+    return []
+
+
 JAVA_PACKAGE_PATTERN = re.compile(
     r"(?m)^\s*package\s+([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*;"
 )
@@ -846,6 +935,68 @@ JAVA_IMPORT_PATTERN = re.compile(
     r"(?m)^\s*import\s+(static\s+)?"
     r"([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:\.\*)?)\s*;"
 )
+JAVA_TYPE_PATTERN = re.compile(
+    r"(?m)^[ \t]*(?:public|protected|private|abstract|final|sealed|non-sealed|static|strictfp|\s)*"
+    r"\b(class|interface|enum|record)\s+([A-Za-z_$][\w$]*)"
+)
+JAVA_ANNOTATION_PATTERN = re.compile(
+    r"(?m)^[ \t]*@([A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)"
+)
+
+
+def _java_semantic_attributes(cleaned: str) -> dict[str, Any]:
+    """Return bounded declaration metadata without inferring framework behavior."""
+
+    package_match = JAVA_PACKAGE_PATTERN.search(cleaned)
+    package = package_match.group(1) if package_match else None
+    declarations = []
+    for match in JAVA_TYPE_PATTERN.finditer(cleaned):
+        declarations.append(
+            {
+                "kind": match.group(1),
+                "name": match.group(2),
+                "line": cleaned.count("\n", 0, match.start()) + 1,
+            }
+        )
+    type_annotations: list[dict[str, Any]] = []
+    if declarations:
+        first_declaration = JAVA_TYPE_PATTERN.search(cleaned)
+        prefix = cleaned[: first_declaration.start()] if first_declaration else ""
+        for match in JAVA_ANNOTATION_PATTERN.finditer(prefix):
+            type_annotations.append(
+                {
+                    "name": match.group(1),
+                    "line": cleaned.count("\n", 0, match.start()) + 1,
+                }
+            )
+
+    constructor_parameters: list[dict[str, Any]] = []
+    for declaration in declarations[:1]:
+        constructor_pattern = re.compile(
+            rf"(?m)^[ \t]*(?:public|protected|private)?[ \t]+"
+            rf"{re.escape(declaration['name'])}[ \t]*\(([^)]*)\)"
+        )
+        for constructor in constructor_pattern.finditer(cleaned):
+            types: list[str] = []
+            for parameter in constructor.group(1).split(","):
+                normalized = re.sub(r"@[A-Za-z_$][\w$]*(?:\([^)]*\))?", " ", parameter)
+                normalized = re.sub(r"\b(final|volatile|transient)\b", " ", normalized)
+                tokens = re.findall(r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:<[^>]+>)?(?:\[\])?", normalized)
+                if len(tokens) >= 2:
+                    types.append(re.sub(r"<.*>", "", tokens[-2]).removesuffix("[]"))
+            constructor_parameters.append(
+                {
+                    "line": cleaned.count("\n", 0, constructor.start()) + 1,
+                    "parameterTypes": types,
+                }
+            )
+    return {
+        "package": package,
+        "declarations": declarations,
+        "typeAnnotations": type_annotations,
+        "constructors": constructor_parameters,
+        "semanticBoundary": "declarations_only_not_framework_behavior",
+    }
 
 
 def _strip_java_non_code(text: str) -> str:
@@ -937,7 +1088,7 @@ def _strip_java_non_code(text: str) -> str:
 def _java_type_index(
     inventory: list[dict[str, Any]], file_elements: dict[str, dict[str, Any]]
 ) -> tuple[dict[str, str], set[str]]:
-    index: dict[str, str] = {}
+    candidates: dict[str, list[str]] = {}
     packages: set[str] = set()
     for item in inventory:
         if item["language"] != "java":
@@ -950,10 +1101,18 @@ def _java_type_index(
         package = package_match.group(1) if package_match else ""
         if package:
             packages.add(package)
-        type_name = Path(item["path"]).stem
-        qualified = f"{package}.{type_name}" if package else type_name
-        index[qualified] = file_elements[item["path"]]["id"]
-    return index, packages
+        if Path(item["path"]).name in {"package-info.java", "module-info.java"}:
+            continue
+        declarations = JAVA_TYPE_PATTERN.findall(cleaned)
+        type_names = [name for _, name in declarations] or [Path(item["path"]).stem]
+        for type_name in type_names:
+            qualified = f"{package}.{type_name}" if package else type_name
+            candidates.setdefault(qualified, []).append(file_elements[item["path"]]["id"])
+    return {
+        name: element_ids[0]
+        for name, element_ids in candidates.items()
+        if len(element_ids) == 1
+    }, packages
 
 
 def _external_java_symbol(specifier: str, *, static_import: bool) -> str:
@@ -1020,6 +1179,22 @@ def _parse_java(
         return []
     item["parseStatus"] = "partial"
     source_element["parseStatus"] = "partial"
+    semantic_attributes = _java_semantic_attributes(cleaned)
+    source_element["attributes"].update(semantic_attributes)
+    for semantic_item in (
+        semantic_attributes["declarations"]
+        + semantic_attributes["typeAnnotations"]
+        + semantic_attributes["constructors"]
+    ):
+        _merge_pin(
+            source_element,
+            _evidence_pin(
+                item,
+                line=semantic_item["line"],
+                column=None,
+                revision=revision,
+            ),
+        )
     relations: list[dict[str, Any]] = []
     for match in JAVA_IMPORT_PATTERN.finditer(cleaned):
         static_import = bool(match.group(1))
@@ -1116,8 +1291,9 @@ def _manifest_relation(
     file_elements: dict[str, dict[str, Any]],
     elements: dict[str, dict[str, Any]],
     revision: str,
+    line: int | None = None,
 ) -> dict[str, Any]:
-    pin = _evidence_pin(item, line=None, column=None, revision=revision)
+    pin = _evidence_pin(item, line=line, column=None, revision=revision)
     target = _target_element(
         elements,
         kind="external_package",
@@ -1181,7 +1357,7 @@ def _parse_manifest(
                             revision=revision,
                         )
                     )
-        else:
+        elif item["language"] == "toml":
             try:
                 import tomllib
             except ImportError as exc:  # Python 3.10 remains supported.
@@ -1222,7 +1398,40 @@ def _parse_manifest(
                                         revision=revision,
                                     )
                                 )
-    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+        elif item["language"] == "xml":
+            root = ET.fromstring(text)
+            namespace = ""
+            if root.tag.startswith("{"):
+                namespace = root.tag.split("}", 1)[0] + "}"
+            for dependency_node in root.findall(f".//{namespace}dependencies/{namespace}dependency"):
+                group_node = dependency_node.find(f"{namespace}groupId")
+                artifact_node = dependency_node.find(f"{namespace}artifactId")
+                scope_node = dependency_node.find(f"{namespace}scope")
+                if artifact_node is None or not (artifact_node.text or "").strip():
+                    continue
+                group = (group_node.text or "").strip() if group_node is not None else ""
+                artifact = (artifact_node.text or "").strip()
+                dependency = f"{group}:{artifact}" if group else artifact
+                scope = (scope_node.text or "compile").strip() if scope_node is not None else "compile"
+                artifact_pattern = re.compile(
+                    rf"<artifactId>\s*{re.escape(artifact)}\s*</artifactId>"
+                )
+                artifact_match = artifact_pattern.search(text)
+                line = text.count("\n", 0, artifact_match.start()) + 1 if artifact_match else None
+                relations.append(
+                    _manifest_relation(
+                        item,
+                        dependency=dependency,
+                        dependency_class=f"maven.{scope}",
+                        file_elements=file_elements,
+                        elements=elements,
+                        revision=revision,
+                        line=line,
+                    )
+                )
+        else:
+            raise ValueError(f"unsupported manifest language: {item['language']}")
+    except (UnicodeDecodeError, json.JSONDecodeError, ET.ParseError, ValueError) as exc:
         item["parseStatus"] = "failed"
         source_element["parseStatus"] = "failed"
         losses.append(
@@ -1285,6 +1494,45 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
                 errors.append(f"/{owner['id']}: Evidence digest 与 Inventory 不匹配")
             if pin["revision"] != revision:
                 errors.append(f"/{owner['id']}: Evidence revision 与 Source Binding 不匹配")
+    for element in observation["elements"]:
+        attributes = element["attributes"]
+        pin_by_id = {pin["evidenceId"]: pin for pin in element["evidencePins"]}
+        pinned_lines = {
+            (pin["ref"], pin["line"])
+            for pin in element["evidencePins"]
+            if pin["line"] is not None
+        }
+        if element["language"] == "java" and element["kind"] == "source_file":
+            if attributes.get("semanticBoundary") != "declarations_only_not_framework_behavior":
+                errors.append(f"/{element['id']}: Java semanticBoundary 不匹配")
+            for key in ("declarations", "typeAnnotations", "constructors"):
+                for semantic_item in attributes.get(key, []):
+                    if (element["path"], semantic_item.get("line")) not in pinned_lines:
+                        errors.append(f"/{element['id']}: {key} 缺少行级 Evidence Pin")
+        if element["language"] == "properties" and element["kind"] == "configuration":
+            if attributes.get("configurationFormat") != "java_properties" or attributes.get("runtimeObserved") is not False:
+                errors.append(f"/{element['id']}: Properties 边界字段不匹配")
+            seen_keys: set[str] = set()
+            for entry in attributes.get("entries", []):
+                key = entry.get("key")
+                if key in seen_keys:
+                    errors.append(f"/{element['id']}: Properties key 重复")
+                seen_keys.add(key)
+                pin = pin_by_id.get(entry.get("evidencePinId"))
+                if pin is None or pin.get("line") != entry.get("line"):
+                    errors.append(f"/{element['id']}: Properties entry Evidence Pin 不匹配")
+                safe_value = entry.get("safeValue")
+                value_policy = entry.get("valuePolicy")
+                if safe_value is None:
+                    if value_policy != "omitted_by_policy":
+                        errors.append(f"/{element['id']}: 无安全值时必须 omitted_by_policy")
+                elif key not in SAFE_PROPERTY_KEYS:
+                    errors.append(f"/{element['id']}: 非白名单 Properties key 持久化了值")
+                elif key == "spring.datasource.url":
+                    if value_policy != "scheme_only" or not re.fullmatch(r"jdbc:[A-Za-z0-9_-]+", safe_value):
+                        errors.append(f"/{element['id']}: datasource URL 只能持久化 jdbc scheme")
+                elif value_policy != "recorded_safe_value" or not re.fullmatch(r"[A-Za-z0-9_.*,+-]{1,128}", safe_value):
+                    errors.append(f"/{element['id']}: Properties safeValue 不符合白名单标量")
     for relation in observation["relations"]:
         if relation["fromElementId"] not in element_set:
             errors.append(f"/relations/{relation['id']}: 未知 fromElementId")
@@ -1297,7 +1545,7 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
             if source["kind"] == "manifest":
                 expected_adapter = (
                     "manifest-dependencies",
-                    "json" if source["language"] == "json" else "toml",
+                    source["language"],
                 )
             else:
                 expected_adapter = {
@@ -1393,9 +1641,9 @@ def extract_source_topology(
     java_type_index, java_packages = _java_type_index(inventory, file_elements)
     losses: list[dict[str, Any]] = []
     relations: list[dict[str, Any]] = []
-    adapter_inputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
-    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
-    adapter_errors = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
+    adapter_inputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
+    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
+    adapter_errors = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
 
     for item in inventory:
         before = len(relations)
@@ -1438,6 +1686,17 @@ def extract_source_topology(
                     losses=losses,
                 )
             )
+        elif item["language"] == "properties":
+            adapter = "properties"
+            adapter_inputs[adapter] += 1
+            relations.extend(
+                _parse_properties(
+                    item,
+                    file_elements=file_elements,
+                    revision=revision,
+                    losses=losses,
+                )
+            )
         elif item["kind"] == "manifest":
             adapter = "manifest"
             adapter_inputs[adapter] += 1
@@ -1465,7 +1724,7 @@ def extract_source_topology(
         "java-static-imports": "java",
         "manifest-dependencies": "manifest",
     }
-    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0}
+    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
     for relation in relations:
         key = adapter_key_by_id.get(relation["attributes"].get("adapterId"))
         if key is not None:
@@ -1620,7 +1879,8 @@ def extract_source_topology(
         ("python", "python-ast-imports", "0.1.0"),
         ("javascript", "javascript-static-imports", "0.1.0"),
         ("java", "java-static-imports", "0.1.0"),
-        ("manifest", "manifest-dependencies", "0.1.0"),
+        ("manifest", "manifest-dependencies", "0.2.0"),
+        ("properties", "java-properties-metadata", "0.1.0"),
     ):
         count = adapter_inputs[key]
         errors = adapter_errors[key]

@@ -303,6 +303,94 @@ class Main {
     assert bundle["lossReport"]["status"] == "lossless"
 
 
+def test_v060_java_declaration_metadata_is_bounded_not_framework_inference(tmp_path):
+    root = tmp_path / "java-semantics"
+    _write(
+        root / "src/main/java/com/acme/OrderController.java",
+        """package com.acme;
+import org.springframework.stereotype.Controller;
+@Controller
+final class OrderController {
+  OrderController(OrderRepository orders, Clock clock) {}
+}
+""",
+    )
+
+    observation = extract_source_topology(
+        root, project_id="PRJ-JAVA-SEM", observed_at=OBSERVED_AT
+    )["observation"]
+    element = next(item for item in observation["elements"] if item["path"])
+
+    assert element["attributes"]["package"] == "com.acme"
+    assert element["attributes"]["declarations"] == [
+        {"kind": "class", "name": "OrderController", "line": 4}
+    ]
+    assert element["attributes"]["typeAnnotations"] == [
+        {"name": "Controller", "line": 3}
+    ]
+    assert element["attributes"]["constructors"] == [
+        {"line": 5, "parameterTypes": ["OrderRepository", "Clock"]}
+    ]
+    assert element["attributes"]["semanticBoundary"] == "declarations_only_not_framework_behavior"
+
+
+def test_v060_properties_and_maven_metadata_are_safe_and_declared(tmp_path):
+    root = tmp_path / "java-config"
+    _write(
+        root / "src/main/resources/application.properties",
+        """database=h2
+spring.datasource.url=jdbc:mysql://db.example/petclinic
+spring.datasource.password=DO_NOT_EXPORT
+management.endpoints.web.exposure.include=*
+custom.message=private body text
+""",
+    )
+    _write(
+        root / "pom.xml",
+        """<project xmlns="http://maven.apache.org/POM/4.0.0">
+<dependencies><dependency><groupId>org.springframework.boot</groupId>
+<artifactId>spring-boot-starter-thymeleaf</artifactId></dependency></dependencies>
+</project>
+""",
+    )
+
+    bundle = extract_source_topology(
+        root, project_id="PRJ-JAVA-CONFIG", observed_at=OBSERVED_AT
+    )
+    observation = bundle["observation"]
+    config = next(item for item in observation["elements"] if item["kind"] == "configuration")
+    entries = {item["key"]: item for item in config["attributes"]["entries"]}
+    assert entries["database"]["safeValue"] == "h2"
+    assert entries["spring.datasource.url"]["safeValue"] == "jdbc:mysql"
+    assert entries["spring.datasource.password"]["valuePolicy"] == "omitted_by_policy"
+    assert "safeValue" not in entries["spring.datasource.password"]
+    assert "safeValue" not in entries["custom.message"]
+    rendered = json.dumps(bundle, ensure_ascii=False)
+    assert "DO_NOT_EXPORT" not in rendered
+    assert "private body text" not in rendered
+    assert any(
+        item["kind"] == "declared_dependency"
+        and item["attributes"]["specifier"] == "org.springframework.boot:spring-boot-starter-thymeleaf"
+        and item["attributes"]["parser"] == "xml"
+        for item in observation["relations"]
+    )
+
+    unsafe = deepcopy(observation)
+    unsafe_config = next(item for item in unsafe["elements"] if item["kind"] == "configuration")
+    password = next(item for item in unsafe_config["attributes"]["entries"] if item["key"] == "spring.datasource.password")
+    password["safeValue"] = "leaked"
+    password["valuePolicy"] = "recorded_safe_value"
+    unsafe["integrity"]["semanticHash"] = compute_observation_semantic_hash(unsafe)
+    assert any("非白名单" in item for item in validate_source_observation(unsafe))
+
+    unpinned = deepcopy(observation)
+    java_free = unpinned  # Properties line binding is independently enforced without Java input.
+    config = next(item for item in java_free["elements"] if item["kind"] == "configuration")
+    config["attributes"]["entries"][0]["line"] += 1
+    java_free["integrity"]["semanticHash"] = compute_observation_semantic_hash(java_free)
+    assert any("Evidence Pin" in item for item in validate_source_observation(java_free))
+
+
 def test_v060_extraction_does_not_persist_source_or_secret_bodies(tmp_path):
     bundle = extract_source_topology(
         _source_project(tmp_path),
