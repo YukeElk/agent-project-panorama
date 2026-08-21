@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.5，并试用 V0.6 Model/View IR 多视图发布候选；持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译只读多视图候选，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 升级。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound Model/View IR candidates, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.6，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑与多视图架构，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound source topology and multi-view architecture, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑接入首个真实 Delegated Operation Adapter：`event_head.recover`；V0.6 WP6 Machine Slice 接入第二个 Adapter：`verified_delivery.promote`。两者均已本地验证但未随 V0.6 公开发布；其他 Operation Adapter 与 Export 尚未成为已发布能力。V0.6 Model/View/Renderer/Delivery 已进入本地 Release Candidate，三个精确 Artifact Hash 的独立人工视觉验收关闭前不得称为已发布能力。
+V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
 
 ## 不变量
 
@@ -270,8 +270,8 @@ python scripts/validate_event_store.py `
   missing/behind 时可免逐次批准；Chain 无效、Fork、Head ahead/mismatch/invalid 或歧义仍失败；
 - Proposal/Apply 只有显式提供 `--event-store` 时才接入 Governance Outbox；Observation、Receipt、Studio
   Session 或 INIT 尚未自动记录；
-- Approval Policy Core 已实现；V0.5.1 只接入 `event_head.recover`，其他 Operation Adapter 必须逐个通过
-  fail-closed 门禁。V0.6 View IR/Renderer 是未发布 Release Candidate；Dataset Export 尚未实现，不得把
+- Approval Policy Core 已实现；已接入 `event_head.recover` 与 `verified_delivery.promote`，其他 Operation
+  Adapter 必须逐个通过 fail-closed 门禁。Dataset Export 尚未实现，不得把
   候选或实验转换脚本冒充正式发布能力。
 
 ### Event Head Recovery Policy Adapter（V0.5.1 Internal Milestone）
@@ -339,7 +339,7 @@ python scripts/validate_approval_policy_store.py `
 - 撤销使用 `revoke_approval_policy.py <STORE> <POLICY-ID> --policy-hash <HASH> --revoked-by <USER>`；
 - Core 可执行不代表 Operation Adapter 可用。尚未接入的 Operation 继续逐次审批，不得直接调用 Runtime 绕过 Adapter。
 
-## V0.6 MULTI-VIEW FOUNDATION（RELEASE CANDIDATE；HUMAN VISUAL PENDING）
+## V0.6.0 MULTI-VIEW FOUNDATION
 
 需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
 [Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
@@ -443,7 +443,7 @@ python scripts/validate_panorama_renderer_geometry.py `
   稳定选择、实体/关系/Event/Trace Deep Link、统一 Drawer、Pan/Zoom/Fit、主题与键盘路径；
 - Geometry Validator 的 machine status、浏览器截图/矩阵和人工视觉状态必须分开记录；自动门禁不得写成人工
   `accepted`；
-- 完整 JS/TS parser、层级聚合/展开、通用 Event Capture Adapter 与公开发布尚未完成；Verified Delivery 的
+- 完整 JS/TS parser、层级聚合/展开与通用 Event Capture Adapter 不属于 V0.6.0；Verified Delivery 的
   Candidate/Receipt/Browser Evidence 与 `verified_delivery.promote` Adapter 已实现，但没有精确 Policy 时只能
   PREPARE/Preview，不能替换 last-good；独立人工视觉状态仍不得由机器写成 `accepted`。
 
@@ -457,8 +457,9 @@ python scripts/validate_panorama_renderer_geometry.py `
 且无正式 Conflict Fact 时不能生成 Conflict Story；在
 [Java Source Adapter Validation](docs/v0.6-java-source-adapter-validation.md) 与
 [Semantic Source and Module Mapping Validation](docs/v0.6-semantic-source-module-validation.md) 以及
-[Final Multi-project Proof Lab](docs/v0.6-final-multi-project-proof-lab.md) 已关闭机器门禁；精确候选 Hash 的独立人工
-视觉 Acceptance 关闭前不得公开发布。即使发布后，也不得把 bounded parser 描述为通用/完整源码架构生成器。
+[Final Multi-project Proof Lab](docs/v0.6-final-multi-project-proof-lab.md) 已关闭机器门禁；三个精确候选 Hash 的
+独立人工视觉 Acceptance 记录在 [V0.6 Human Visual Acceptance](docs/v0.6-human-visual-acceptance.md)。机器
+Evidence/Receipt 的 `visualReview=pending` 不得被改写为人工状态；bounded parser 也不得描述为通用/完整源码架构生成器。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：
 

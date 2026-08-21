@@ -1,6 +1,6 @@
 # Verified Projection Delivery Contract v0.1
 
-状态：WP6 Machine Contract Implemented；独立人工视觉 Acceptance 与公开发布仍 Pending
+状态：V0.6.0 Machine Contract Implemented；独立人工视觉 Acceptance 已以外部 Hash-bound 记录完成
 
 对应 Finding：SF-32、SF-36、SF-38、SF-43
 
@@ -57,5 +57,7 @@ Expected 之外的第三状态，保留现场并 fail closed。`effect_observed`
 Ledger，但不能重渲染或重复覆盖。Core Receipt 已 durable 而 Ledger 未推进时，只能复用精确 Use Receipt。
 
 Candidate/Receipt/Browser Evidence/Transaction 篡改、缺失 viewport、overflow、几何失败、控制台错误、过期/
-错配 Policy、并发 Writer、第三状态和 post-effect 中断均为负向门禁。当前独立人工视觉 Acceptance 仍为
-`pending`，因此本地 last-good 可以在精确 Policy 下使用，但不得据此宣称人工视觉通过或公开发布完成。
+错配 Policy、并发 Writer、第三状态和 post-effect 中断均为负向门禁。V0.6.0 三份代表性制品的机器 Evidence
+继续固定为 `visualReview=pending`；独立人工接受通过
+[V0.6 Human Visual Acceptance](v0.6-human-visual-acceptance.md) 绑定精确 Artifact Hash。不得把外部接受反写进
+机器 Receipt，也不得仅凭本地 last-good 宣称外部发布完成。

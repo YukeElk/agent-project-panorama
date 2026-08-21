@@ -1,6 +1,6 @@
 # Multi-View Renderer Contract v0.1
 
-状态：Renderer 0.2 / Guided View Set Implemented；Independent Visual Pending
+状态：Renderer 0.2 / Guided View Set Implemented；V0.6.0 Representative Artifacts Human Accepted
 
 对应 Finding：SF-34～SF-36、SF-42、SF-43
 

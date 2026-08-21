@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.6 Release Candidate（V0.5 Compatible）
+# Agent Project Panorama V0.6.0（V0.5 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -60,11 +60,10 @@ Governance Outbox；V0.5.1 内部里程碑增加首个真实 Delegated Operation
 不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT 事务尚未接入 Event Capture。
 
 V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。V0.5.1 接入
-`event_head.recover`；V0.6 WP6 接入 `verified_delivery.promote`。V0.6 Model/View/Renderer/Delivery 已完成
-三项目机器 Proof Lab，并进入未发布的 Release Candidate；三个精确 HTML Hash 的独立人工视觉验收仍是
-公开发布硬门禁。其余 Delegated Policy Operation Adapter、Dataset/RAG/Eval Export 与后训练不能由当前
-能力外推为已经实现。下一次公开发布目标为
-V0.6.0 多视图架构全景，完整规划见
+`event_head.recover`；V0.6.0 接入 `verified_delivery.promote`、Evidence-bound Model/View IR、多视图编译、
+有界源码提取与离线交互 Renderer。V0.6.0 已完成三项目机器 Proof Lab；三个精确 HTML Hash 已由独立人工
+视觉验收接受。其余 Delegated Policy Operation Adapter、Dataset/RAG/Eval Export 与后训练不能由当前能力
+外推为已经实现。完整 V0.6.0 规划与边界见
 [`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
@@ -101,8 +100,8 @@ python scripts/validate_event_store.py `
 - Secret、敏感字段、本机绝对路径、路径逃逸、Project Content 和 `trainingEligibility` 的边界。
 
 详细规范见 [`docs/engineering-event-contract.md`](docs/engineering-event-contract.md)。当前未实现的其他
-Capture Adapter、Redaction 执行器和 Dataset Export 不得被描述为可用能力；V0.6 View/Renderer 只能描述为
-本地 Release Candidate，不能描述为已发布能力。
+Capture Adapter、Redaction 执行器和 Dataset Export 不得被描述为可用能力；V0.6.0 的 bounded View/Renderer
+能力也不能外推为完整语言解析、运行调用恢复或通用架构治理。
 
 ### V0.5 Approval Policy Core
 
@@ -133,7 +132,7 @@ python scripts/validate_approval_policy_store.py `
 形成带 Use Number 和 Previous Receipt Hash 的审计链，撤销使用
 [`schema/approval-policy-revocation.schema.v0.1.json`](schema/approval-policy-revocation.schema.v0.1.json)。示例见
 [`examples/approval-policy.verification-receipt.v0.1.json`](examples/approval-policy.verification-receipt.v0.1.json)。
-Core 不等于所有 Operation Adapter 已实现；当前接入 `event_head.recover` 与 V0.6 Release Candidate 的
+Core 不等于所有 Operation Adapter 已实现；当前接入 `event_head.recover` 与 V0.6.0 的
 `verified_delivery.promote`，尚未接入的 Operation 继续
 沿用现有逐次门禁。
 
@@ -162,7 +161,7 @@ python scripts/recover_event_head_with_policy.py resume `
 [`schema/event-head-recovery-transaction.schema.v0.1.json`](schema/event-head-recovery-transaction.schema.v0.1.json)。
 Policy 创建、变更、续期、替换和撤销仍要求准确 Hash 的人工批准。
 
-## V0.6 Multi-View Foundation（Release Candidate；Human Visual Pending）
+## V0.6.0 Multi-View Foundation
 
 V0.6 已实现共享 Model/View IR、Guided View Set、Source Extraction Foundation，以及 Module、Dependency/Data Flow、
 Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种只读 View Compiler。可以先生成有界源码拓扑、Receipt 与 Loss Report，再将它作为
@@ -171,8 +170,9 @@ Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种只读 View Com
 可直接离线打开机器验证过的受控示例：
 [`examples/v0.6-multi-view-orders.html`](examples/v0.6-multi-view-orders.html)。该文件绑定 Delivery
 `PVD-8B1FF4A5F25AD5FBD3B0D0C8`，SHA-256 为
-`fba3ca1493c4d7b197bf11bb79f5cc04762fc39cc8b9239c18e6b662a5c0774c`；它的独立人工视觉状态仍为
-`pending`，机器浏览器结果不等于人工接受。
+`fba3ca1493c4d7b197bf11bb79f5cc04762fc39cc8b9239c18e6b662a5c0774c`。机器 Browser Evidence 仍按合同固定
+记录 `visualReview=pending`；独立人工接受记录见
+[`docs/v0.6-human-visual-acceptance.md`](docs/v0.6-human-visual-acceptance.md)，二者不能互相冒充。
 
 ```powershell
 python scripts/extract_source_topology.py path/to/project `
@@ -238,7 +238,7 @@ Source Element 保持候选身份，不自动变成正式 Module，import/depend
 统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
 Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
 展开、完整 Java parser/模板解析与通用 Event Capture Adapter 仍未完成；最终三项目 Machine Proof Lab 已通过，
-精确候选 Hash 的独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
+精确候选 Hash 的独立人工视觉 Acceptance 已完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
 Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、

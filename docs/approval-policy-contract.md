@@ -1,6 +1,6 @@
 # Approval Gate and Delegated Policy Contract v0.1
 
-状态：V0.5.0 Core 已发布；V0.5.1 `event_head.recover` 与 V0.6 WP6 `verified_delivery.promote` Adapter 已本地验证并作为 Internal Milestone 保留，公开发布延迟；其余 Adapter 仍分阶段接入
+状态：V0.5.0 Core 已发布；V0.6.0 发布 `event_head.recover` 与 `verified_delivery.promote` Adapter；其余 Adapter 仍分阶段接入
 
 批准范围：2026-08-20 用户批准完成“减少不必要人工门禁”的设计闭合
 

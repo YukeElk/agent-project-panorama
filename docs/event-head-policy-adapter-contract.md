@@ -1,6 +1,6 @@
 # Event Head Recovery Policy Adapter 合同
 
-状态：V0.5.1 Internal Milestone；已完成本地验证，公开发布延迟
+状态：V0.5.1 Internal Milestone 实现；随 V0.6.0 发布
 
 ## 1. 目的与边界
 
