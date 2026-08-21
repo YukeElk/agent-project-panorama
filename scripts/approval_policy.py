@@ -141,6 +141,8 @@ def _validate_json_depth(value: Any, *, name: str) -> None:
 
 def _read_json(path: Path) -> dict[str, Any]:
     try:
+        if path.is_symlink():
+            raise ApprovalPolicyError(f"Policy JSON 制品不允许是符号链接：{path}")
         if path.stat().st_size > MAX_JSON_BYTES:
             raise ApprovalPolicyError(f"JSON 制品超过 {MAX_JSON_BYTES} bytes：{path}")
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -809,6 +811,23 @@ def _event_request(
             "inputHash": pending["inputHash"],
         }
     )
+    source_binding = (
+        {
+            "mode": "not_applicable",
+            "gitHead": None,
+            "sourceSnapshotHash": None,
+            "sourceContentDigest": None,
+            "coverage": "not_applicable",
+        }
+        if pending["sourceBindingStatus"] == "not_applicable"
+        else {
+            "mode": "unknown",
+            "gitHead": None,
+            "sourceSnapshotHash": pending["projectBinding"].get("sourceBindingHash"),
+            "sourceContentDigest": None,
+            "coverage": "unknown",
+        }
+    )
     return {
         "requestVersion": event_store.REQUEST_FORMAT,
         "idempotencyKey": idempotency,
@@ -824,13 +843,7 @@ def _event_request(
             "baseDataHash": pending["projectBinding"].get("baseDataHash"),
             "resultDataHash": result.get("resultDataHash"),
         },
-        "sourceBinding": {
-            "mode": "unknown",
-            "gitHead": None,
-            "sourceSnapshotHash": pending["projectBinding"].get("sourceBindingHash"),
-            "sourceContentDigest": None,
-            "coverage": "unknown",
-        },
+        "sourceBinding": source_binding,
         "correlation": {
             "correlationId": f"{policy['policyId']}-use-{pending['useNumber']}",
             "causationEventIds": [],
@@ -1061,6 +1074,51 @@ def recover_pending(store: Path, policy_id: str, *, recovered_at: str | None = N
         return {"recovered": True, "receiptId": receipt["receiptId"]}
 
 
+def inspect_policy_state(store: Path, policy_id: str) -> dict[str, Any]:
+    """Return a validated, read-only snapshot for an operation adapter."""
+
+    store = Path(store)
+    with _exclusive_policy_lock(store):
+        policy, ledger = _load_policy_and_ledger(store, policy_id)
+        return {
+            "policy": copy.deepcopy(policy),
+            "ledger": copy.deepcopy(ledger),
+            "revoked": _revocation_path(store, policy_id).exists(),
+        }
+
+
+def read_execution_receipt(
+    store: Path, policy_id: str, use_number: int
+) -> dict[str, Any] | None:
+    """Read one validated durable receipt without changing the use ledger."""
+
+    store = Path(store)
+    with _exclusive_policy_lock(store):
+        policy, _ = _load_policy_and_ledger(store, policy_id)
+        paths = sorted(_receipt_dir(store, policy_id).glob(f"{use_number:08d}-*.json"))
+        if not paths:
+            return None
+        if len(paths) != 1:
+            raise ApprovalPolicyConflictError(
+                f"Use {use_number} 存在多个 Execution Receipt。"
+            )
+        receipt = _read_json(paths[0])
+        errors = _schema_errors(receipt, RECEIPT_SCHEMA)
+        if errors or receipt["integrity"]["receiptHash"] != _receipt_hash(receipt):
+            raise ApprovalPolicyConflictError("Execution Receipt 无效或已被篡改。")
+        if (
+            receipt["policyBinding"]["policyId"] != policy_id
+            or receipt["policyBinding"]["policyHash"]
+            != policy["approvalBinding"]["policyHash"]
+            or receipt["execution"]["useNumber"] != use_number
+        ):
+            raise ApprovalPolicyConflictError("Execution Receipt 与 Policy/Use Binding 不匹配。")
+        expected_name = f"{use_number:08d}-{receipt['receiptId']}.json"
+        if paths[0].name != expected_name:
+            raise ApprovalPolicyConflictError("Execution Receipt 文件名 Binding 不匹配。")
+        return copy.deepcopy(receipt)
+
+
 def validate_policy_store(store: Path) -> dict[str, Any]:
     """Return a machine-readable audit of policies, ledgers and receipt chains."""
 
@@ -1184,11 +1242,13 @@ __all__ = [
     "complete_execution",
     "compute_policy_hash",
     "install_policy",
+    "inspect_policy_state",
     "materialize_policy",
     "pointer_matches",
     "protected_pointer_matches",
     "prepare_policy",
     "record_policy_approval",
+    "read_execution_receipt",
     "recover_pending",
     "revoke_policy",
     "validate_active_policy",

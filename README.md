@@ -56,12 +56,14 @@ AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架�
 ## V0.5 Engineering Event Foundation
 
 V0.5 增加 Project-local Engineering Event Sidecar、Approval Policy Core，以及 opt-in Proposal/Apply
-Governance Outbox；不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT
-事务尚未接入 Event Capture。
+Governance Outbox；V0.5.1 内部里程碑增加首个真实 Delegated Operation Adapter：`event_head.recover`。
+不修改 Panorama Schema `0.1/0.2`。Observation、Receipt、Studio Session 和 INIT 事务尚未接入 Event Capture。
 
-V0.5.0 发布候选范围固定为 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。
-其余 Delegated Policy Operation Adapter、View IR、Renderer 改版、Dataset/RAG/Eval Export 与后训练不属于
-本候选版本，不能由当前 Core 能力外推为已经实现。
+V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Apply Outbox`。V0.5.1 只接入
+`event_head.recover`，已通过本地验证但不单独公开发布；其余 Delegated Policy Operation Adapter、View IR、
+Renderer 改版、Dataset/RAG/Eval Export 与后训练不能由当前能力外推为已经实现。下一次公开发布目标调整为
+V0.6.0 多视图架构全景，完整规划见
+[`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
 
@@ -92,6 +94,8 @@ python scripts/validate_event_store.py `
 - Approval Policy Prepare/exact-hash Approval/Materialization、Use Ledger、Execution Receipt/Event Binding、
   Revocation/supersede、Store Validator 与 pending recovery；
 - `apply_patch.py --event-store` 的 fail-closed Governance Outbox，以及 finalized/abandoned/conflict 和显式恢复；
+- 只读 Head State Inspector，以及只接受 missing/behind 的 `event_head.recover` Policy Adapter；
+- 带 `stateHash` 的 Recovery Transaction、精确 Head CAS、Audit Event/Receipt/Ledger 对账与 Resume；
 - Secret、敏感字段、本机绝对路径、路径逃逸、Project Content 和 `trainingEligibility` 的边界。
 
 详细规范见 [`docs/engineering-event-contract.md`](docs/engineering-event-contract.md)。当前未实现的其他
@@ -126,7 +130,33 @@ python scripts/validate_approval_policy_store.py `
 形成带 Use Number 和 Previous Receipt Hash 的审计链，撤销使用
 [`schema/approval-policy-revocation.schema.v0.1.json`](schema/approval-policy-revocation.schema.v0.1.json)。示例见
 [`examples/approval-policy.verification-receipt.v0.1.json`](examples/approval-policy.verification-receipt.v0.1.json)。
-Core 不等于所有 Operation Adapter 已实现；尚未接入的 Operation 继续沿用现有逐次门禁。
+Core 不等于所有 Operation Adapter 已实现；V0.5.1 只接入 `event_head.recover`，尚未接入的 Operation 继续
+沿用现有逐次门禁。
+
+Head Inspect/Preview 不消耗 Policy Use。只有完整且唯一的 Chain 与 `head_missing|head_behind` 可以执行；
+current 返回 no-op，ahead/mismatch/invalid/Fork/Redaction 歧义全部 fail closed：
+
+```powershell
+python scripts/event_head_inspector.py `
+  path/to/project/.panorama-work/event-store/v0.1 --json
+
+python scripts/recover_event_head_with_policy.py preview `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --json
+
+python scripts/recover_event_head_with_policy.py execute `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --json
+
+python scripts/recover_event_head_with_policy.py resume `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --transaction-id EHR-... --json
+```
+
+完整约束见
+[`docs/event-head-policy-adapter-contract.md`](docs/event-head-policy-adapter-contract.md) 与
+[`schema/event-head-recovery-transaction.schema.v0.1.json`](schema/event-head-recovery-transaction.schema.v0.1.json)。
+Policy 创建、变更、续期、替换和撤销仍要求准确 Hash 的人工批准。
 
 为普通 Studio Proposal 启用事件双写：
 
@@ -602,6 +632,9 @@ Receipt Hash 去重的只读时间线。`not_enforced / not_executed / unknown` 
 [`docs/v0.4-p2-verification-receipt-validation.md`](docs/v0.4-p2-verification-receipt-validation.md)。
 V0.4 的本地发布审核记录见 [`docs/v0.4-release-audit.md`](docs/v0.4-release-audit.md)。
 V0.5.0 的本地发布候选审核记录见 [`docs/v0.5-release-audit.md`](docs/v0.5-release-audit.md)。
+V0.5.1 的内部里程碑审计见
+[`docs/v0.5.1-release-candidate-audit.md`](docs/v0.5.1-release-candidate-audit.md)；下一次公开发布的多视图规划见
+[`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
 
 ## 自动测试与 CI
 

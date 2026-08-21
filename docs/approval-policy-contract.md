@@ -1,6 +1,6 @@
 # Approval Gate and Delegated Policy Contract v0.1
 
-状态：Design Closed；Approval Policy Core 已进入 V0.5.0 Release Candidate 范围，Operation Adapter 仍按门禁分阶段接入
+状态：V0.5.0 Core 已发布；V0.5.1 `event_head.recover` Adapter 已本地验证并作为 Internal Milestone 保留，公开发布延迟；其余 Adapter 仍分阶段接入
 
 批准范围：2026-08-20 用户批准完成“减少不必要人工门禁”的设计闭合
 
@@ -166,6 +166,11 @@ Network/Filesystem Isolation 声明。Policy 固定禁止 Secret Access、依赖
 `head_ahead`、Fork、Hash mismatch、重复 Sequence、Schema invalid、Project mismatch 或 Redaction/Epoch
 歧义必须 fail closed 并转人工。
 
+V0.5.1 Adapter 的完整 Project Path、Policy Profile、Input/Output Hash、Transaction、Lock Order 与 Resume
+规则见 [Event Head Recovery Policy Adapter 合同](event-head-policy-adapter-contract.md)。该 Adapter 在恢复前
+分配 Use，并用独立带 `stateHash` 的 Operation Transaction 覆盖 post-effect/pre-receipt 边界。Head 已 current
+时只返回只读 no-op，不消耗 Use；没有已批准 Policy 时，仍沿用显式人工恢复路径。
+
 ## 10. Verified Delivery 与视觉评审
 
 本地候选只有 semantic、schema、geometry、privacy 以及适用时 browser 门禁通过后，才可按 Policy
@@ -218,6 +223,8 @@ Store Validator 只在 `valid=true` 且 `recoveryRequired=false` 时返回成功
 
 Core 可供 Operation Adapter 调用，但这不等于 allowlist 中所有 Operation 已自动化。当前普通 Studio
 Proposal/Apply 使用自身一次性 Proposal Approval 与 Governance Outbox；它不会伪装成 Delegated Policy。
-Receipt、Continuous Observation、Validation Manifest、Event Head、Verified Delivery、Renderer 和 Freshness
-仍需逐个 Adapter 通过对应 fail-closed 测试后才能免逐次批准。不得仅修改提示词、跳过 Approval 字段或直接
-调用 `begin_execution` 来宣称完成授权执行。
+V0.5.1 仅把 `event_head.recover` 接成首个 Operation Adapter；本地故障注入已通过，内部冻结前仍须在最终
+Commit 上通过远程 CI。该能力不单独公开发布；V0.6 继续复用其事务模式，其他 Adapter 仍须逐个闭合。
+Receipt、Continuous Observation、Validation Manifest、Engineering Event Record、Verified Delivery、Renderer
+和 Freshness 仍需逐个 Adapter 通过对应 fail-closed 测试后才能免逐次批准。不得仅修改提示词、跳过 Approval
+字段或直接调用 `begin_execution` 来宣称完成授权执行。

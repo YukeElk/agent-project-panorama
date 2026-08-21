@@ -7,7 +7,7 @@ description: "操作 Agent Project Panorama V0.1–V0.5，持续自动追踪 Git
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 发布候选只包含 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox；其他 Operation Adapter、View IR、Renderer 改版与 Export 不在本候选范围。
+V0.5.0 已发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.5.1 内部里程碑只接入首个真实 Delegated Operation Adapter：`event_head.recover`，已本地验证但延迟公开发布；其他 Operation Adapter、View IR、Renderer 改版与 Export 尚未成为已发布能力。
 
 ## 不变量
 
@@ -38,9 +38,10 @@ V0.5.0 发布候选只包含 Foundation Slice A、Approval Policy Core 与 opt-i
 - 用户精确引用 Policy ID/Hash 后可立即写入 Revocation；撤销先于审计 Event 生效，不能自动恢复；
 - Studio Freeze 的规范 Proposal 只批准一次；同一独立 Approval 直接供 Apply 使用，不再增加第二次批准。
 
-当前 V0.5 已实现 Policy Core，但只接入普通 Proposal/Apply 的一次性 Approval Outbox，尚未接入 allowlist
-Operation Adapter。在各自 Adapter 的 fail-closed 测试完成前，Receipt、项目测试、Head Recovery 和
-last-good 晋升继续使用现有门禁；不得通过伪造 Approval、直接调用 Core、修改提示词或跳过字段提前取消审批。
+当前 V0.5 已实现 Policy Core，普通 Proposal/Apply 使用一次性 Approval Outbox；V0.5.1 内部里程碑只把
+`event_head.recover` 接成首个 allowlist Operation Adapter。它不得称为已发布能力；其他
+Receipt、项目测试、Engineering Event Record 和 last-good 晋升继续使用现有门禁。不得通过伪造 Approval、
+直接调用 Core、修改提示词或跳过字段提前取消审批。
 
 ## INIT
 
@@ -264,13 +265,49 @@ python scripts/validate_event_store.py `
 - Event Store 不修改正式 Panorama、业务项目或治理状态；
 - `eventId`、Sequence、Previous Hash、Request/Event Hash 由 Recorder 计算，调用方不得提供；
 - Event 不保存 `trainingEligibility`、Secret、项目正文、Prompt、模型回答正文或隐藏推理；
-- Head 漂移时普通写入必须停止；当前 CLI 只有用户明确要求恢复时才可使用 `--recover-head`。未来只有在
-  `event_head.recover` Policy 下且 Chain 完整有效、Sequence 连续、Project/Stream/Epoch 一致、Tail 唯一、
-  Head 仅 missing/behind 时可免逐次批准；Chain 无效、Fork、Head ahead 或歧义仍失败；
+- Head 漂移时普通写入必须停止；显式 `--recover-head` 只用于用户明确请求的单次机械恢复。V0.5.1 Policy
+  Adapter 只有在 Chain 完整有效、Sequence 连续、Project/Stream/Epoch 一致、Tail 唯一、Head 仅
+  missing/behind 时可免逐次批准；Chain 无效、Fork、Head ahead/mismatch/invalid 或歧义仍失败；
 - Proposal/Apply 只有显式提供 `--event-store` 时才接入 Governance Outbox；Observation、Receipt、Studio
   Session 或 INIT 尚未自动记录；
-- Approval Policy Core 已实现，但各 Operation Adapter 必须逐个通过 fail-closed 门禁；View IR、Renderer
-  和 Dataset Export 仍按合同分阶段实现，不得用实验转换脚本冒充正式能力。
+- Approval Policy Core 已实现；V0.5.1 只接入 `event_head.recover`，其他 Operation Adapter 必须逐个通过
+  fail-closed 门禁。View IR、Renderer 和 Dataset Export 仍按合同分阶段实现，不得用实验转换脚本冒充正式能力。
+
+### Event Head Recovery Policy Adapter（V0.5.1 Internal Milestone）
+
+完整读取 [Event Head Recovery Policy Adapter 合同](docs/event-head-policy-adapter-contract.md)。只读检查与
+Preview 不需要人工批准、不分配 Use：
+
+```powershell
+python scripts/event_head_inspector.py `
+  path/to/project/.panorama-work/event-store/v0.1 --json
+python scripts/recover_event_head_with_policy.py preview `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --json
+```
+
+只有已由人工精确批准并激活的 `event_head.recover` Policy，且 Preview 返回 missing/behind 可恢复，才执行：
+
+```powershell
+python scripts/recover_event_head_with_policy.py execute `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --json
+```
+
+Adapter 必须从正式 Panorama 派生 Project/Schema/Revision/Data Hash，并使用项目固定 Event/Policy/Operation
+Store；禁止让调用方替换 Store、越出 Project Root 或经过符号链接。Head current 返回 no-op 且不消耗 Use。
+执行必须依次持久化 prepared、allocated、effect_observed、finalized Transaction，并让 Recovered Head、Audit
+Event、Receipt 和 Ledger 精确对账。中断后只按原 Transaction ID 恢复：
+
+```powershell
+python scripts/recover_event_head_with_policy.py resume `
+  --project-root path/to/project --panorama path/to/project-panorama.json `
+  --policy-id POLICY-ID --transaction-id EHR-... --json
+```
+
+Resume 只接受原 Before、原 Expected Tail、精确 durable Receipt 或已完成 Core；第三状态、Transaction Hash、
+Policy/Project/Input/Output/Receipt/Event Binding 任一不匹配都停止转人工，不重新分配 Use、不重复 Event、
+不 rebase。Policy 自身创建、变更、续期、替换、撤销仍要求人工精确批准。
 
 ### Approval Policy Core
 

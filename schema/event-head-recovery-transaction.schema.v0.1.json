@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/event-head-recovery-transaction.schema.v0.1.json",
+  "title": "Panorama Event Head Recovery Transaction v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "transactionId",
+    "status",
+    "policyBinding",
+    "projectBinding",
+    "storeRef",
+    "inputHash",
+    "before",
+    "observedHead",
+    "finalHead",
+    "outputHash",
+    "result",
+    "receiptBinding",
+    "eventBinding",
+    "timestamps",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": {"const": "panorama-event-head-recovery-transaction.v0.1"},
+    "transactionId": {"type": "string", "pattern": "^EHR-[A-F0-9]{32}$"},
+    "status": {
+      "enum": ["prepared", "allocated", "effect_observed", "finalized", "failed", "conflict"]
+    },
+    "policyBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyId", "policyHash", "useNumber"],
+      "properties": {
+        "policyId": {"$ref": "#/$defs/stableId"},
+        "policyHash": {"$ref": "#/$defs/sha256"},
+        "useNumber": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "panoramaSchemaVersion", "revision", "dataHash"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaSchemaVersion": {"enum": ["0.1", "0.2"]},
+        "revision": {"type": "integer", "minimum": 0},
+        "dataHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "storeRef": {"const": ".panorama-work/event-store/v0.1"},
+    "inputHash": {"$ref": "#/$defs/sha256"},
+    "before": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "head", "expectedTail"],
+      "properties": {
+        "status": {"enum": ["head_missing", "head_behind"]},
+        "head": {
+          "oneOf": [{"$ref": "#/$defs/head"}, {"type": "null"}]
+        },
+        "expectedTail": {"$ref": "#/$defs/headIdentity"}
+      }
+    },
+    "observedHead": {
+      "oneOf": [{"$ref": "#/$defs/head"}, {"type": "null"}]
+    },
+    "finalHead": {
+      "oneOf": [{"$ref": "#/$defs/head"}, {"type": "null"}]
+    },
+    "outputHash": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "errorCode", "summary"],
+      "properties": {
+        "status": {"enum": ["pending", "succeeded", "no_op", "failed", "conflict"]},
+        "errorCode": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+            {"type": "null"}
+          ]
+        },
+        "summary": {"type": "string", "maxLength": 1024}
+      }
+    },
+    "receiptBinding": {
+      "oneOf": [{"$ref": "#/$defs/receiptBinding"}, {"type": "null"}]
+    },
+    "eventBinding": {
+      "oneOf": [{"$ref": "#/$defs/eventBinding"}, {"type": "null"}]
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preparedAt", "updatedAt", "effectObservedAt", "finalizedAt"],
+      "properties": {
+        "preparedAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"},
+        "effectObservedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "finalizedAt": {"oneOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashAlgorithm", "stateHash", "hashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "stateHash": {"$ref": "#/$defs/sha256"},
+        "hashScope": {"const": "transaction_without_integrity.stateHash"}
+      }
+    },
+    "extensions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "headIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "streamId", "epoch", "sequence", "eventId", "eventHash"],
+      "properties": {
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "streamId": {"$ref": "#/$defs/stableId"},
+        "epoch": {"type": "integer", "minimum": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "eventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+        "eventHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatVersion", "projectId", "streamId", "epoch", "sequence", "eventId", "eventHash", "updatedAt"],
+      "properties": {
+        "formatVersion": {"const": "panorama-engineering-event-stream-head.v0.1"},
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "streamId": {"$ref": "#/$defs/stableId"},
+        "epoch": {"type": "integer", "minimum": 1},
+        "sequence": {"type": "integer", "minimum": 0},
+        "eventId": {
+          "oneOf": [{"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"}, {"type": "null"}]
+        },
+        "eventHash": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        },
+        "updatedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "receiptBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receiptId", "receiptHash"],
+      "properties": {
+        "receiptId": {"type": "string", "pattern": "^PEX-[A-F0-9]{32}$"},
+        "receiptHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "eventBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventId", "eventHash"],
+      "properties": {
+        "eventId": {"type": "string", "pattern": "^EVT-[A-F0-9]{32}$"},
+        "eventHash": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

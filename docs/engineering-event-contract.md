@@ -76,6 +76,12 @@ eventHash = sha256(canonical_json(event_without_integrity.eventHash))
   歧义不得自动恢复；
 - Writer 使用同目录临时文件、flush/fsync 和 `os.replace` 原子发布单个文件。
 
+V0.5.1 的 Policy 自动恢复必须使用 [Event Head Recovery Policy Adapter 合同](event-head-policy-adapter-contract.md)
+与 `panorama-event-head-recovery-transaction.v0.1`。恢复在 Event Store Lock 内同时比较原 Head State、Before
+Head 与 Expected Tail，拒绝过期 Preview；恢复结果、Audit Event、Execution Receipt 和 Ledger 必须端到端
+对账。原有显式 `--recover-head` 只代表用户对单次机械恢复的明确请求，不构成 Delegated Policy，也不能绕过
+Inspector 对 ahead/mismatch/invalid/ambiguous 状态的拒绝。
+
 ### 2.4 Authority、Outcome 与信息缺口
 
 `authority` 复用 Panorama 的 `observed | declared | inferred | unknown | conflict`；`confidence` 保持

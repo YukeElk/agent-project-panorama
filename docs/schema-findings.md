@@ -378,3 +378,20 @@
   幂等、篡改和恢复测试后，才允许将其接入 Proposal/Apply、Observation、Receipt、Studio 或 INIT。
 - Approval Policy 只授权预定义低风险 Operation；Policy 激活本身仍是治理决策。只有 Policy Hash、Expiry、
   Use Ledger、Execution Receipt、保护路径和 fail-closed 测试全部通过后，才允许取消对应的逐次人工确认。
+
+## SF-38 Operation Effect 与 Policy Core 审计之间缺少 Adapter Transaction
+
+- 证据：Approval Policy Core 能在副作用前分配 Use，并在成功后写 Audit Event、Execution Receipt 与 Ledger；
+  但真实 Operation 的效果位于独立文件系统边界。进程在效果已发生、Audit/Receipt/Ledger 尚未全部完成时，
+  Core Pending 本身不能保存 Before、Expected、Observed Result，也不能证明重试是否应再次执行效果。
+- 影响：若 Operation Adapter 只依赖 Pending Use，post-effect/pre-receipt 崩溃可能造成重复副作用、错误 no-op、
+  自动 rebase 或永久无法解释的审计缺口。SF-32 约束 Panorama/Event 双写，SF-37 约束授权 Envelope，均不能
+  替代每种 Operation 的精确效果事务。
+- V0.5.1 决策：为首个 `event_head.recover` Adapter 增加独立
+  `panorama-event-head-recovery-transaction.v0.1`，绑定 Policy ID/Hash、Use、Input Hash、固定 Store、Before
+  Head、Expected Tail、Observed/Final Head、Output Hash、Receipt/Event 与 `stateHash`。状态仅允许
+  `prepared/allocated/effect_observed/finalized/failed/conflict`。
+- 恢复边界：只接受原 Before、原 Expected Tail、精确 durable Receipt 或已完成 Core 四类可证明状态；任意
+  第三状态、Binding/Hash 篡改或歧义均 fail closed，不重做 Event、不推断 Epoch、不自动 rebase。
+- 后续门禁：第二个 Operation Adapter 必须证明此事务模式可复用或登记其特有的 Effect Contract；不得直接
+  以 Policy Pending 充当通用 Saga/Agent Runtime。

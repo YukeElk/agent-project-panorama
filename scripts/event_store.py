@@ -345,9 +345,13 @@ def _head_path(store: Path) -> Path:
 
 def _event_paths(store: Path) -> list[Path]:
     directory = _events_dir(store)
-    if not directory.exists():
+    if not directory.exists() or directory.is_symlink():
         return []
-    return sorted(path for path in directory.glob("*.json") if path.is_file())
+    return sorted(
+        path
+        for path in directory.glob("*.json")
+        if path.is_file() or path.is_symlink()
+    )
 
 
 def _head_value(
@@ -456,7 +460,15 @@ def _scan_chain(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     events: list[dict[str, Any]] = []
     errors: list[str] = []
+    if store.exists() and store.is_symlink():
+        return events, ["STORE_SYMLINK: Event Store 根目录不允许是符号链接。"]
+    events_directory = _events_dir(store)
+    if events_directory.exists() and events_directory.is_symlink():
+        return events, ["EVENTS_DIRECTORY_SYMLINK: events 目录不允许是符号链接。"]
     for path in _event_paths(store):
+        if path.is_symlink():
+            errors.append(f"EVENT_SYMLINK {path.name}: Event 文件不允许是符号链接。")
+            continue
         try:
             event = _read_json(path)
         except EventStoreError as exc:
@@ -511,49 +523,237 @@ def _scan_chain(
     return events, errors
 
 
+def _event_head_identity(event: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "projectId": event.get("projectBinding", {}).get("projectId"),
+        "streamId": event.get("stream", {}).get("streamId"),
+        "epoch": event.get("stream", {}).get("epoch"),
+        "sequence": event.get("stream", {}).get("sequence"),
+        "eventId": event.get("eventId"),
+        "eventHash": event.get("integrity", {}).get("eventHash"),
+    }
+
+
+def _head_identity(head: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "projectId": head.get("projectId"),
+        "streamId": head.get("streamId"),
+        "epoch": head.get("epoch"),
+        "sequence": head.get("sequence"),
+        "eventId": head.get("eventId"),
+        "eventHash": head.get("eventHash"),
+    }
+
+
+def inspect_head_state(
+    store: Path, *, schema_path: Path = DEFAULT_SCHEMA
+) -> dict[str, Any]:
+    """Classify a stream head without mutating the Event Store.
+
+    Only ``head_missing`` and an exact earlier-chain ``head_behind`` are
+    recoverable.  A merely well-shaped but invented head is a mismatch, not a
+    recoverable drift.
+    """
+
+    store = Path(store)
+    events, chain_errors = _scan_chain(store, schema_path=schema_path)
+    expected_tail = _event_head_identity(events[-1]) if events else None
+    ambiguous_markers = (
+        "EVENT_DUPLICATE",
+        "SEQUENCE_DUPLICATE",
+        "SEQUENCE_GAP",
+        "EPOCH_DRIFT",
+    )
+    redactions = store / "redactions"
+    redaction_entries: list[Path] = []
+    if redactions.exists():
+        if redactions.is_symlink():
+            chain_errors.append(
+                "REDACTIONS_DIRECTORY_SYMLINK: redactions 目录不允许是符号链接。"
+            )
+        elif redactions.is_dir():
+            redaction_entries = sorted(redactions.glob("*.json"))
+    if redaction_entries:
+        chain_errors.append(
+            "REDACTION_EPOCH_AMBIGUOUS: v0.1 Head Inspector 尚不能自动解释 Redaction Epoch。"
+        )
+    if chain_errors:
+        ambiguous = bool(redaction_entries) or any(
+            marker in error
+            for error in chain_errors
+            for marker in ambiguous_markers
+        )
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "ambiguous" if ambiguous else "chain_invalid",
+            "recoverable": False,
+            "eventCount": len(events),
+            "chainValid": False,
+            "head": None,
+            "expectedTail": expected_tail,
+            "errors": chain_errors,
+        }
+
+    head_path = _head_path(store)
+    if head_path.exists() and head_path.is_symlink():
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "head_invalid",
+            "recoverable": False,
+            "eventCount": len(events),
+            "chainValid": True,
+            "head": None,
+            "expectedTail": expected_tail,
+            "errors": ["HEAD_SYMLINK: stream-head.json 不允许是符号链接。"],
+        }
+    if not head_path.exists():
+        if not events:
+            return {
+                "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+                "status": "uninitialized",
+                "recoverable": False,
+                "eventCount": 0,
+                "chainValid": True,
+                "head": None,
+                "expectedTail": None,
+                "errors": [
+                    "STORE_UNINITIALIZED: 空 Store 没有可验证的 Project/Stream 身份。"
+                ],
+            }
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "head_missing",
+            "recoverable": True,
+            "eventCount": len(events),
+            "chainValid": True,
+            "head": None,
+            "expectedTail": expected_tail,
+            "errors": ["HEAD_MISSING: stream-head.json 不存在。"],
+        }
+
+    try:
+        head = _read_json(head_path)
+    except EventStoreError as exc:
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "head_invalid",
+            "recoverable": False,
+            "eventCount": len(events),
+            "chainValid": True,
+            "head": None,
+            "expectedTail": expected_tail,
+            "errors": [f"HEAD_INVALID: {exc}"],
+        }
+    shape_errors = _validate_head_shape(head)
+    if shape_errors:
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "head_invalid",
+            "recoverable": False,
+            "eventCount": len(events),
+            "chainValid": True,
+            "head": head,
+            "expectedTail": expected_tail,
+            "errors": shape_errors,
+        }
+
+    actual = _head_identity(head)
+    if not events:
+        empty = {
+            "projectId": head.get("projectId"),
+            "streamId": head.get("streamId"),
+            "epoch": head.get("epoch"),
+            "sequence": 0,
+            "eventId": None,
+            "eventHash": None,
+        }
+        if actual == empty:
+            return {
+                "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+                "status": "current",
+                "recoverable": False,
+                "eventCount": 0,
+                "chainValid": True,
+                "head": head,
+                "expectedTail": actual,
+                "errors": [],
+            }
+        return {
+            "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+            "status": "head_ahead" if head["sequence"] > 0 else "head_mismatch",
+            "recoverable": False,
+            "eventCount": 0,
+            "chainValid": True,
+            "head": head,
+            "expectedTail": None,
+            "errors": ["HEAD_AHEAD: Head 声明了 Chain 中不存在的 Event。"],
+        }
+
+    assert expected_tail is not None
+    tail_sequence = int(expected_tail["sequence"])
+    head_sequence = int(head["sequence"])
+    if actual == expected_tail:
+        status = "current"
+        recoverable = False
+        errors: list[str] = []
+    elif head_sequence > tail_sequence:
+        status = "head_ahead"
+        recoverable = False
+        errors = [
+            f"HEAD_AHEAD: Head sequence {head_sequence} 超过唯一 Tail {tail_sequence}。"
+        ]
+    elif head_sequence < tail_sequence:
+        if head_sequence == 0:
+            first = events[0]
+            exact_earlier = (
+                head.get("projectId") == first.get("projectBinding", {}).get("projectId")
+                and head.get("streamId") == first.get("stream", {}).get("streamId")
+                and head.get("epoch") == first.get("stream", {}).get("epoch")
+                and head.get("eventId") is None
+                and head.get("eventHash") is None
+            )
+        else:
+            earlier = events[head_sequence - 1] if head_sequence <= len(events) else None
+            exact_earlier = earlier is not None and actual == _event_head_identity(earlier)
+        if exact_earlier:
+            status = "head_behind"
+            recoverable = True
+            errors = [
+                f"HEAD_BEHIND: Head sequence {head_sequence} 落后于唯一 Tail {tail_sequence}。"
+            ]
+        else:
+            status = "head_mismatch"
+            recoverable = False
+            errors = [
+                "HEAD_MISMATCH: Head 不能精确绑定同一 Chain 中的较早 Event。"
+            ]
+    else:
+        status = "head_mismatch"
+        recoverable = False
+        errors = ["HEAD_MISMATCH: Head 与唯一 Tail 的身份或 Hash 不匹配。"]
+    return {
+        "formatVersion": "panorama-engineering-event-head-inspection.v0.1",
+        "status": status,
+        "recoverable": recoverable,
+        "eventCount": len(events),
+        "chainValid": True,
+        "head": head,
+        "expectedTail": expected_tail,
+        "errors": errors,
+    }
+
+
 def validate_store(
     store: Path, *, schema_path: Path = DEFAULT_SCHEMA
 ) -> dict[str, Any]:
-    store = Path(store)
-    events, errors = _scan_chain(store, schema_path=schema_path)
-    head: dict[str, Any] | None = None
-    head_path = _head_path(store)
-    if not head_path.exists():
-        errors.append("HEAD_MISSING: stream-head.json 不存在。")
-    else:
-        try:
-            head = _read_json(head_path)
-            errors.extend(_validate_head_shape(head))
-        except EventStoreError as exc:
-            errors.append(f"HEAD_INVALID: {exc}")
-    if head is not None and not _validate_head_shape(head):
-        if events:
-            last = events[-1]
-            expected = {
-                "projectId": last.get("projectBinding", {}).get("projectId"),
-                "streamId": last.get("stream", {}).get("streamId"),
-                "epoch": last.get("stream", {}).get("epoch"),
-                "sequence": last.get("stream", {}).get("sequence"),
-                "eventId": last.get("eventId"),
-                "eventHash": last.get("integrity", {}).get("eventHash"),
-            }
-        else:
-            expected = {
-                "projectId": head.get("projectId"),
-                "streamId": head.get("streamId"),
-                "epoch": head.get("epoch"),
-                "sequence": 0,
-                "eventId": None,
-                "eventHash": None,
-            }
-        for field, value in expected.items():
-            if head.get(field) != value:
-                errors.append(f"HEAD_DRIFT: {field} expected {value!r}, got {head.get(field)!r}")
+    inspection = inspect_head_state(store, schema_path=schema_path)
+    errors = list(inspection["errors"])
     return {
         "formatVersion": "panorama-engineering-event-store-validation.v0.1",
         "valid": not errors,
-        "eventCount": len(events),
-        "head": head,
+        "eventCount": inspection["eventCount"],
+        "head": inspection["head"],
+        "headStatus": inspection["status"],
         "errors": errors,
     }
 
@@ -619,42 +819,46 @@ def record_request(
 
 
 def recover_store_head(
-    store: Path, *, schema_path: Path = DEFAULT_SCHEMA
+    store: Path,
+    *,
+    schema_path: Path = DEFAULT_SCHEMA,
+    recovered_at: str | None = None,
+    expected_tail: dict[str, Any] | None = None,
+    expected_status: str | None = None,
+    expected_head: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     store = Path(store)
     with _exclusive_store_lock(store):
-        events, errors = _scan_chain(store, schema_path=schema_path)
-        if errors:
-            raise EventStoreError("Event Chain 无法恢复：" + "；".join(errors[:20]))
-        old_head: dict[str, Any] | None = None
-        if _head_path(store).exists():
-            old_head = _read_json(_head_path(store))
-            head_errors = _validate_head_shape(old_head)
-            if head_errors:
-                raise EventStoreError("现有 Stream Head 结构无效：" + "；".join(head_errors))
-        if events:
-            last = events[-1]
-            head = _head_value(
-                project_id=last["projectBinding"]["projectId"],
-                stream_id=last["stream"]["streamId"],
-                epoch=last["stream"]["epoch"],
-                sequence=last["stream"]["sequence"],
-                event_id=last["eventId"],
-                event_hash=last["integrity"]["eventHash"],
-                updated_at=_now(),
+        inspection = inspect_head_state(store, schema_path=schema_path)
+        if inspection["status"] not in {"head_missing", "head_behind"}:
+            details = "；".join(inspection["errors"][:20]) or inspection["status"]
+            raise EventStoreError(
+                "Event Head 不满足确定性恢复条件：" + details
             )
-        elif old_head is not None:
-            head = _head_value(
-                project_id=old_head["projectId"],
-                stream_id=old_head["streamId"],
-                epoch=old_head["epoch"],
-                sequence=0,
-                event_id=None,
-                event_hash=None,
-                updated_at=_now(),
+        if expected_status is not None and inspection["status"] != expected_status:
+            raise EventConflictError(
+                "Event Head State 已变化；拒绝使用过期 Preview 恢复。"
             )
-        else:
-            raise EventStoreError("空 Store 没有 Project/Stream 身份，不能自动恢复。")
+        if expected_status is not None and inspection["head"] != expected_head:
+            raise EventConflictError(
+                "Event Head Binding 已变化；拒绝使用过期 Preview 恢复。"
+            )
+        tail = inspection["expectedTail"]
+        if not isinstance(tail, dict):
+            raise EventStoreError("Event Chain 没有唯一 Tail，不能恢复。")
+        if expected_tail is not None and tail != expected_tail:
+            raise EventConflictError(
+                "Event Chain Tail 已变化；拒绝使用过期 Preview 恢复 Head。"
+            )
+        head = _head_value(
+            project_id=tail["projectId"],
+            stream_id=tail["streamId"],
+            epoch=tail["epoch"],
+            sequence=tail["sequence"],
+            event_id=tail["eventId"],
+            event_hash=tail["eventHash"],
+            updated_at=_normalize_recorded_at(recovered_at),
+        )
         atomic_write(_head_path(store), json.dumps(head, ensure_ascii=False, indent=2) + "\n")
         return head
 
@@ -675,6 +879,7 @@ __all__ = [
     "compute_event_hash",
     "compute_event_id",
     "compute_request_hash",
+    "inspect_head_state",
     "load_request",
     "record_request",
     "recover_store_head",
