@@ -164,7 +164,7 @@ Policy 创建、变更、续期、替换和撤销仍要求准确 Hash 的人工�
 
 ## V0.6 Multi-View Foundation（开发中）
 
-V0.6 已实现共享 Model/View IR、Source Extraction Foundation，以及 Module、Dependency/Data Flow、
+V0.6 已实现共享 Model/View IR、Guided View Set、Source Extraction Foundation，以及 Module、Dependency/Data Flow、
 Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种只读 View Compiler。可以先生成有界源码拓扑、Receipt 与 Loss Report，再将它作为
 可选候选输入合并到 Model IR：
 
@@ -184,6 +184,9 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   --profile module --scope current `
   --output .panorama-work/views/project.current.module.view-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile module --scope target `
+  --output .panorama-work/views/project.target.module.view-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile dependency_dataflow --max-nodes 100 `
   --output .panorama-work/views/project.dependency.view-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
@@ -193,13 +196,25 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   --profile sequence --correlation-id CORR-ID `
   --output .panorama-work/views/project.sequence.view-ir.json
 
-python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+python scripts/compile_panorama_view_set.py .panorama-work/views/project.model-ir.json `
   --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
   --view .panorama-work/views/project.dependency.view-ir.json `
   --view .panorama-work/views/project.current.deployment.view-ir.json `
   --view .panorama-work/views/project.sequence.view-ir.json `
   --view .panorama-work/views/project.lifecycle.view-ir.json `
   --view .panorama-work/views/project.evolution.view-ir.json `
+  --output .panorama-work/views/project.view-set.json
+
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
   --output .panorama-work/views/project.multi-view.html
 ```
 
@@ -208,7 +223,7 @@ Model/View IR 绑定 Project、Data Hash、Source/Event/`asOf`、Compiler、Evid
 Source Element 保持候选身份，不自动变成正式 Module，import/dependency 不变成运行调用或时序。它们是可删除、
 可重算的候选，不能反向 Apply 到正式 Panorama。
 
-当前已实现 hash-bound Single HTML Renderer Candidate、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
+当前已实现 hash-bound Single HTML Renderer Candidate、Guided Current/Target/Transition/Historical Variant、独立 Geometry Validator、Search/Trace/Filter/Deep Link、
 统一 Evidence Drawer、Pan/Zoom/Fit、主题和键盘路径；WP6 进一步实现 immutable Candidate/Receipt/Browser
 Evidence 与 Approval-Policy governed last-good 原子晋升、状态事务和中断恢复。完整 JS/TS parser、层级聚合/
 展开、通用 Event Capture Adapter、Proof Lab 与独立人工视觉 Acceptance 仍未完成。Deployment View 只证明正式声明关系，Event Sequence 也不冒充
@@ -216,11 +231,13 @@ Runtime Call。Renderer 验证见
 [`docs/v0.6-interactive-renderer-validation.md`](docs/v0.6-interactive-renderer-validation.md)；设计闭合与精确边界见
 [`docs/v0.6-design-closure.md`](docs/v0.6-design-closure.md)、
 [`docs/panorama-model-ir-contract.md`](docs/panorama-model-ir-contract.md) 和
-[`docs/panorama-view-ir-contract.md`](docs/panorama-view-ir-contract.md)。验证见
+[`docs/panorama-view-ir-contract.md`](docs/panorama-view-ir-contract.md) 和
+[`docs/panorama-view-set-contract.md`](docs/panorama-view-set-contract.md)。验证见
 [`docs/v0.6-model-view-ir-validation.md`](docs/v0.6-model-view-ir-validation.md) 和
 [`docs/v0.6-source-extraction-validation.md`](docs/v0.6-source-extraction-validation.md) 和
 [`docs/v0.6-multiview-compiler-validation.md`](docs/v0.6-multiview-compiler-validation.md) 和
 [`docs/v0.6-event-projection-validation.md`](docs/v0.6-event-projection-validation.md) 和
+[`docs/v0.6-guided-view-set-validation.md`](docs/v0.6-guided-view-set-validation.md) 和
 [`docs/v0.6-verified-delivery-validation.md`](docs/v0.6-verified-delivery-validation.md)。
 
 Verified Delivery 准备不修改 last-good；晋升 Preview 不消耗 Policy Use，正式晋升必须绑定精确批准的
@@ -231,11 +248,13 @@ python scripts/record_renderer_browser_evidence.py candidate.html browser-measur
   --output .panorama-work/views/browser-evidence.json
 python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-ir.json `
   --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
   --view .panorama-work/views/project.dependency.view-ir.json `
   --view .panorama-work/views/project.current.deployment.view-ir.json `
   --view .panorama-work/views/project.sequence.view-ir.json `
   --view .panorama-work/views/project.lifecycle.view-ir.json `
   --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
   --project-root path/to/project --browser-evidence .panorama-work/views/browser-evidence.json
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID> --preview
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>

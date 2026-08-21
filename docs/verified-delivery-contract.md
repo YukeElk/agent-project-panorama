@@ -46,7 +46,8 @@ Policy Pending 当作效果证明，也不得自动重渲染或 rebase。
 
 - `panorama-renderer-browser-evidence.v0.1`：绑定精确 HTML 字节、四档 Desktop 与可选窄屏截图 Hash、DOM/
   Geometry/Console 测量，视觉状态固定为 `pending`；
-- `panorama-verified-delivery-receipt.v0.1`：绑定 Project/Model/Bundle/六 View/Artifact 与机器门禁；
+- `panorama-verified-delivery-receipt.v0.1`：新候选绑定 Project/Model/Bundle/Guided View Set/1–24 View/Artifact
+  与机器门禁；View Set 字段保持可选以继续验证既有 v0.1 Receipt，但不得从旧 Receipt 推断 View Set 能力；
 - `panorama-verified-delivery-promotion-transaction.v0.1`：绑定 Policy Use、Receipt/Candidate、last-good
   Before/Expected、Effect/Receipt/Event 与每状态 `stateHash`。
 

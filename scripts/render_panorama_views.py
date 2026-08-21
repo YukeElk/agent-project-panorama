@@ -11,20 +11,13 @@ from typing import Any
 from panorama_cli import ChineseArgumentParser
 from panorama_io import atomic_write, compute_canonical_hash
 from panorama_view_ir import PanoramaViewIRError, validate_model_ir, validate_view_ir
+from panorama_view_set import build_view_set, validate_view_set
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates" / "panorama-multi-view.html"
 MARKER = "__PANORAMA_VIEW_BUNDLE__"
-RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.1.0"}
-PROFILE_ORDER = {
-    "module": 0,
-    "dependency_dataflow": 1,
-    "deployment_runtime": 2,
-    "sequence": 3,
-    "lifecycle": 4,
-    "evolution_risk": 5,
-}
+RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.2.0"}
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -37,30 +30,39 @@ def _load_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def build_bundle(model: dict[str, Any], views: list[dict[str, Any]]) -> dict[str, Any]:
+def build_bundle(
+    model: dict[str, Any],
+    views: list[dict[str, Any]],
+    *,
+    view_set: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     model_errors = validate_model_ir(model)
     if model_errors:
         raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:20]))
     if not views:
         raise PanoramaViewIRError("至少需要一个 View IR。")
-    profiles: set[str] = set()
+    view_ids: set[str] = set()
     for view in views:
         errors = validate_view_ir(view, model)
         if errors:
             raise PanoramaViewIRError(
                 f"View {view.get('viewId', '?')} 无效：" + "; ".join(errors[:20])
             )
-        if view["profile"] in profiles:
-            raise PanoramaViewIRError(f"同一 profile 重复：{view['profile']}")
-        profiles.add(view["profile"])
-    ordered = sorted(
-        views,
-        key=lambda item: (PROFILE_ORDER.get(item["profile"], 99), item["viewType"]),
-    )
+        if view["viewId"] in view_ids:
+            raise PanoramaViewIRError(f"View IR 重复：{view['viewId']}")
+        view_ids.add(view["viewId"])
+    guided = view_set or build_view_set(model, views)
+    view_set_errors = validate_view_set(guided, model, views)
+    if view_set_errors:
+        raise PanoramaViewIRError("View Set 无效：" + "; ".join(view_set_errors[:20]))
+    view_by_id = {view["viewId"]: view for view in views}
+    ordered = [view_by_id[chapter["viewId"]] for chapter in guided["chapters"]]
     semantics = {
         "renderer": RENDERER,
         "modelId": model["modelId"],
         "modelSemanticHash": model["integrity"]["semanticHash"],
+        "viewSetId": guided["viewSetId"],
+        "viewSetSemanticHash": guided["integrity"]["semanticHash"],
         "views": [
             {
                 "viewId": view["viewId"],
@@ -77,6 +79,7 @@ def build_bundle(model: dict[str, Any], views: list[dict[str, Any]]) -> dict[str
         "bundleHash": bundle_hash,
         "renderer": RENDERER,
         "model": model,
+        "viewSet": guided,
         "views": ordered,
     }
 
@@ -98,6 +101,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--view", type=Path, action="append", required=True, dest="views"
     )
+    parser.add_argument(
+        "--view-set", type=Path, help="可选的已验证 Guided View Set JSON"
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--overwrite", action="store_true")
     return parser
@@ -113,7 +119,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         model = _load_object(args.model)
         views = [_load_object(path) for path in args.views]
-        bundle = build_bundle(model, views)
+        view_set = _load_object(args.view_set) if args.view_set is not None else None
+        bundle = build_bundle(model, views, view_set=view_set)
         atomic_write(args.output, render_html(bundle))
     except (OSError, UnicodeError, PanoramaViewIRError) as exc:
         print(f"Renderer 生成失败：{exc}", file=sys.stderr)
@@ -125,6 +132,7 @@ def main(argv: list[str] | None = None) -> int:
                 "output": str(args.output),
                 "bundleId": bundle["bundleId"],
                 "bundleHash": bundle["bundleHash"],
+                "viewSetId": bundle["viewSet"]["viewSetId"],
                 "viewCount": len(bundle["views"]),
                 "visualReview": "pending",
             },

@@ -30,7 +30,7 @@ Evolution/Risk 共享同一 Model Identity 和 Evidence，不建立独立事实 
 - Node/Edge Evidence Pin ID 必须属于其绑定的 Entity/Relation；
 - Search、Focus、Trace、Reach 和 Deep Link 只能遍历这些现有引用。
 
-三个已实现 profile 每次只接受 `current|target|transition|historical` 中一个 Scope。只有端点 Node 都在 View 中且
+六个已实现 profile 每次只接受 `current|target|transition|historical` 中一个 Scope。只有端点 Node 都在 View 中且
 Relation Scope 匹配时才投影 Edge；不得为保持画面连通而增加代理边。
 
 - `module` 只投影正式 Module 与 `communication`；
@@ -76,3 +76,7 @@ python scripts/compile_panorama_view_ir.py project.event.model-ir.json `
 ```
 
 输出已存在时默认停止。当前命令仍只生成 JSON Candidate，不生成 HTML、不替换 last-good，也不表示人工视觉通过。
+
+多个 single-scope View 的顺序与导航组合见
+[Panorama Guided View Set Contract](panorama-view-set-contract.md)。View Set 不能复制或改写本合同定义的
+Node/Edge/Group/Layout/Evidence。

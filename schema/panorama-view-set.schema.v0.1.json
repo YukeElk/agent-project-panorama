@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-project-panorama.local/schema/panorama-view-set.schema.v0.1.json",
+  "title": "Panorama Guided View Set v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "viewSetId", "generatedAt", "compiler", "modelBinding", "title", "description", "defaultChapterId", "chapters", "integrity"],
+  "properties": {
+    "formatVersion": {"const": "panorama-view-set.v0.1"},
+    "viewSetId": {"type": "string", "pattern": "^PVS-[A-F0-9]{24}$"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "compiler": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "panorama-guided-view-set-compiler"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "modelBinding": {"$ref": "#/$defs/modelBinding"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 512},
+    "description": {"type": "string", "maxLength": 2048},
+    "defaultChapterId": {"type": "string", "pattern": "^CHAPTER-[A-F0-9]{20}$"},
+    "chapters": {
+      "type": "array", "minItems": 1, "maxItems": 24,
+      "items": {"$ref": "#/$defs/chapter"}
+    },
+    "integrity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hashAlgorithm", "semanticHash", "semanticHashScope"],
+      "properties": {
+        "hashAlgorithm": {"const": "sha256"},
+        "semanticHash": {"$ref": "#/$defs/sha256"},
+        "semanticHashScope": {"const": "view_set_without_integrity"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "modelBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["modelId", "modelSemanticHash", "projectId", "panoramaDataHash", "asOf"],
+      "properties": {
+        "modelId": {"type": "string", "pattern": "^MODEL-[A-F0-9]{24}$"},
+        "modelSemanticHash": {"$ref": "#/$defs/sha256"},
+        "projectId": {"$ref": "#/$defs/stableId"},
+        "panoramaDataHash": {"$ref": "#/$defs/sha256"},
+        "asOf": {"type": "string", "format": "date-time"}
+      }
+    },
+    "chapter": {
+      "type": "object", "additionalProperties": false,
+      "required": ["chapterId", "viewId", "order", "profile", "architectureScope", "label", "semanticHash", "layoutHash"],
+      "properties": {
+        "chapterId": {"type": "string", "pattern": "^CHAPTER-[A-F0-9]{20}$"},
+        "viewId": {"type": "string", "pattern": "^VIEW-[A-F0-9]{24}$"},
+        "order": {"type": "integer", "minimum": 0, "maximum": 23},
+        "profile": {"enum": ["module", "dependency_dataflow", "deployment_runtime", "sequence", "lifecycle", "evolution_risk"]},
+        "architectureScope": {"enum": ["current", "target", "transition", "historical"]},
+        "label": {"type": "string", "minLength": 1, "maxLength": 128},
+        "semanticHash": {"$ref": "#/$defs/sha256"},
+        "layoutHash": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

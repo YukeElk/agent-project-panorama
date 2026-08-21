@@ -118,7 +118,7 @@ def test_v060_renderer_rejects_tampered_or_duplicate_view(project_root, tmp_path
     tampered["title"] = "tampered"
     with pytest.raises(PanoramaViewIRError, match="View"):
         build_bundle(model, [tampered])
-    with pytest.raises(PanoramaViewIRError, match="profile 重复"):
+    with pytest.raises(PanoramaViewIRError, match="View IR 重复"):
         build_bundle(model, [views[0], deepcopy(views[0])])
 
 

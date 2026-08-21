@@ -1,12 +1,12 @@
 # Multi-View Renderer Contract v0.1
 
-状态：Behavioral Design Closed；WP4 Implementation Pending
+状态：Renderer 0.2 / Guided View Set Implemented；Independent Visual Pending
 
 对应 Finding：SF-34～SF-36、SF-42、SF-43
 
 ## 1. 产品边界
 
-Renderer 消费 validated View IR，不读取页面文案或源码重新推导拓扑。保留 `控制台 / 系统 / 演进` 三主视图；
+Renderer 消费 validated Model/View IR 与 Guided View Set，不读取页面文案或源码重新推导拓扑。保留 `控制台 / 系统 / 演进` 三主视图；
 Architecture、Data Flow、Deployment、Sequence 等作为 `系统` 内 Guided View，Lifecycle/Evolution/Risk 位于
 `演进`，不增加第四个主导航。
 
@@ -17,6 +17,8 @@ Architecture、Data Flow、Deployment、Sequence 等作为 `系统` 内 Guided V
 - 同一对象跨 View 使用相同 Model ID，View Node ID 只代表投影实例；
 - Deep Link 必须包含 Project/Model/View/Object Binding，stale 时显示原因而不是静默跳到同名对象；
 - Zoom、Theme、Selection、展开和临时 Filter 属于 Viewer State，不写回 Core/Model/View IR。
+- 同一 Profile 可由 View Set 并列 current/target/transition/historical Variant；章节只引用既有 View，不拥有
+  Topology/Layout，不从 Story 文案推断事实。
 
 ## 3. 图类型规则
 

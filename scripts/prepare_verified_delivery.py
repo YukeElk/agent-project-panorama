@@ -17,6 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("model", type=Path)
     parser.add_argument("--view", type=Path, action="append", required=True, dest="views")
+    parser.add_argument("--view-set", type=Path, help="可选的已验证 Guided View Set JSON")
     parser.add_argument("--project-root", type=Path, required=True)
     parser.add_argument("--browser-evidence", type=Path)
     parser.add_argument("--generated-at", help="受控测试/重放用 RFC 3339 时间")
@@ -32,6 +33,7 @@ def main(argv: list[str] | None = None) -> int:
             args.project_root,
             _read_json(args.model),
             [_read_json(path) for path in args.views],
+            view_set=_read_json(args.view_set) if args.view_set else None,
             browser_evidence=(
                 _read_json(args.browser_evidence) if args.browser_evidence else None
             ),

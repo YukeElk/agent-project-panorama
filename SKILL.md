@@ -343,6 +343,8 @@ python scripts/validate_approval_policy_store.py `
 
 需要编译多视图候选时，完整读取 [V0.6 Design Closure](docs/v0.6-design-closure.md)、
 [Model IR Contract](docs/panorama-model-ir-contract.md) 和 [View IR Contract](docs/panorama-view-ir-contract.md)。
+同一 Profile 需要 Current/Target/Transition/Historical 并列时还必须读取
+[Guided View Set Contract](docs/panorama-view-set-contract.md)。
 当前实现 Formal Panorama Core + optional Source Observation/Event Checkpoint → Model IR → Module、Dependency/
 Data Flow、Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种 single-scope View IR。使用 Event 输入时
 先完整读取 [Event Projection Contract](docs/event-projection-contract.md)。
@@ -363,6 +365,9 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   --profile module --scope current `
   --output .panorama-work/views/project.current.module.view-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
+  --profile module --scope target `
+  --output .panorama-work/views/project.target.module.view-ir.json
+python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
   --profile dependency_dataflow --max-nodes 100 `
   --output .panorama-work/views/project.dependency.view-ir.json
 python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir.json `
@@ -372,13 +377,25 @@ python scripts/compile_panorama_view_ir.py .panorama-work/views/project.model-ir
   --profile sequence --correlation-id CORR-ID `
   --output .panorama-work/views/project.sequence.view-ir.json
 
-python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+python scripts/compile_panorama_view_set.py .panorama-work/views/project.model-ir.json `
   --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
   --view .panorama-work/views/project.dependency.view-ir.json `
   --view .panorama-work/views/project.current.deployment.view-ir.json `
   --view .panorama-work/views/project.sequence.view-ir.json `
   --view .panorama-work/views/project.lifecycle.view-ir.json `
   --view .panorama-work/views/project.evolution.view-ir.json `
+  --output .panorama-work/views/project.view-set.json
+
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
   --output .panorama-work/views/project.multi-view.html
 
 python scripts/validate_panorama_renderer_geometry.py `
@@ -408,8 +425,10 @@ python scripts/validate_panorama_renderer_geometry.py `
   文件/包不自动成为 Module，import 不成为 runtime call，所有静态关系 `sequenceOrder=null`；
 - Layout Hash 与 Semantic Hash 分离；Viewer State 不进入 View IR；任何 Schema/Hash/ID/端点/Evidence/Binding
   错配必须 fail closed；
+- View Set 只组织最多 24 个已验证 single-scope View，必须精确覆盖输入集合；允许同 Profile 的
+  Current/Target/Transition/Historical Variant，但不拥有 Topology/Layout/Evidence，也不生成无事实绑定的 Conflict；
 - Renderer Candidate 必须先验证 Model/View Binding，输出 hash-bound、无框架、无 CDN、默认无网络请求的
-  Single HTML；支持六图切换、Search/Focus、上/下游 Trace、事实/Scope/Freshness/Risk/Evidence 筛选、跨 View
+  Single HTML；支持 Guided Variant 切换、Search/Focus、上/下游 Trace、事实/Scope/Freshness/Risk/Evidence 筛选、跨 View
   稳定选择、实体/关系/Event/Trace Deep Link、统一 Drawer、Pan/Zoom/Fit、主题与键盘路径；
 - Geometry Validator 的 machine status、浏览器截图/矩阵和人工视觉状态必须分开记录；自动门禁不得写成人工
   `accepted`；
@@ -420,8 +439,9 @@ python scripts/validate_panorama_renderer_geometry.py `
 将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
 不能反向修改正式 Panorama；Renderer 验证见
 [V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md) 与
-[Verified Delivery Contract](docs/verified-delivery-contract.md)。Panorama × Archify Proof Lab 已证明固定六 Profile
-Tab 尚不能表达同一 profile 的 Current/Target/Conflict Guided Views，且当前没有 Java Adapter；在
+[Verified Delivery Contract](docs/verified-delivery-contract.md)。固定六 Profile Tab 的 Current/Target 缺口已由
+[Guided View Set Validation](docs/v0.6-guided-view-set-validation.md) 关闭；Panorama × Archify Proof Lab 仍证明
+当前没有 Java Adapter，且无正式 Conflict Fact 时不能生成 Conflict Story；在
 [Proof Lab](docs/v0.6-panorama-archify-proof-lab.md) 的阻塞项关闭前，不得描述为通用源码架构生成或公开发布就绪。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：
@@ -431,11 +451,13 @@ python scripts/record_renderer_browser_evidence.py candidate.html browser-measur
   --output .panorama-work/views/browser-evidence.json
 python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-ir.json `
   --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
   --view .panorama-work/views/project.dependency.view-ir.json `
   --view .panorama-work/views/project.current.deployment.view-ir.json `
   --view .panorama-work/views/project.sequence.view-ir.json `
   --view .panorama-work/views/project.lifecycle.view-ir.json `
   --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
   --project-root path/to/project --browser-evidence .panorama-work/views/browser-evidence.json
 ```
 

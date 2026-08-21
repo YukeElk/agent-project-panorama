@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 from render_panorama_views import build_bundle, render_html
+from panorama_view_set import build_view_set
 from test_v060_multi_view_renderer import _model_and_views
 from verified_delivery import (
     VerifiedDeliveryConflictError,
@@ -69,6 +70,7 @@ def test_v060_prepare_verified_candidate_is_hash_bound_and_does_not_promote(
         delivery_project,
         model,
         views,
+        view_set=build_view_set(model, views),
         browser_evidence=_evidence(model, views),
         generated_at="2026-08-21T15:30:01Z",
     )
@@ -92,6 +94,7 @@ def test_v060_prepare_verified_candidate_is_hash_bound_and_does_not_promote(
         "visualReview": "pending",
     }
     assert not (root / "last-good").exists()
+    assert receipt["viewSetBinding"]["chapterCount"] == 6
     loaded, loaded_path = load_delivery(delivery_project, receipt["deliveryId"])
     assert loaded == receipt
     assert loaded_path == candidate

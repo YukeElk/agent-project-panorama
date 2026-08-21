@@ -239,6 +239,7 @@ def prepare_delivery(
     model: dict[str, Any],
     views: list[dict[str, Any]],
     *,
+    view_set: dict[str, Any] | None = None,
     browser_evidence: dict[str, Any] | None = None,
     generated_at: str | None = None,
 ) -> tuple[dict[str, Any], bool]:
@@ -246,7 +247,7 @@ def prepare_delivery(
 
     _, delivery = _assert_safe_project_root(project_root)
     try:
-        bundle = build_bundle(model, views)
+        bundle = build_bundle(model, views, view_set=view_set)
         geometry = validate_geometry(model, bundle["views"])
     except PanoramaViewIRError as exc:
         raise VerifiedDeliveryError(str(exc)) from exc
@@ -302,6 +303,12 @@ def prepare_delivery(
             "bundleId": bundle["bundleId"],
             "bundleHash": bundle["bundleHash"],
             "renderer": copy.deepcopy(bundle["renderer"]),
+        },
+        "viewSetBinding": {
+            "viewSetId": bundle["viewSet"]["viewSetId"],
+            "semanticHash": bundle["viewSet"]["integrity"]["semanticHash"],
+            "defaultChapterId": bundle["viewSet"]["defaultChapterId"],
+            "chapterCount": len(bundle["viewSet"]["chapters"]),
         },
         "viewBindings": [
             {
