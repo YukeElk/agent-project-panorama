@@ -1,0 +1,174 @@
+{
+  "formatVersion": "panorama-archify-proof-lab.v0.1",
+  "generatedAt": "2026-08-21T18:30:00Z",
+  "protocolBinding": {
+    "protocol": "validation-lab/protocol.md",
+    "protocolSha256": "9585644d393ab16e885eb72137b88d33a18dd2fc713dc302bb75dc2c182de8f6"
+  },
+  "participants": [
+    {
+      "id": "panorama-v0.6-development-candidate",
+      "revision": "5f14e07",
+      "mode": "deterministic-local-tools",
+      "visualReviewAuthority": "machine-only"
+    },
+    {
+      "id": "archify",
+      "revision": "2.15.0",
+      "mode": "human-operated-skill",
+      "visualReviewAuthority": "existing-independent-human-review"
+    }
+  ],
+  "cases": [
+    {
+      "id": "controlled-fixture",
+      "sourceBinding": {
+        "inventorySha256": "3b6a72184aca5a3507aa5c80402e84c698d55b54ecf5a204df91b3911b783b07"
+      },
+      "panorama": {
+        "status": "machine_passed_human_visual_pending",
+        "sourceExtraction": {
+          "status": "completed",
+          "includedFiles": 6,
+          "elements": 6,
+          "relations": 5,
+          "unresolvedRelations": 0,
+          "contentDigest": "4f2c9686b16721cfdf6ac9629030e32f845f304540c2e4e60536b3522935a202",
+          "observationHash": "896b5cbbd1809b718a0e63b4683823f1741ab2f434182b007f176f10cfb24d45",
+          "receiptHash": "9a67c9b2ec3e300e416366ac76d809d5460dc2fd5448282ae38a55a4a5de251e"
+        },
+        "model": {
+          "modelId": "MODEL-B3EEB03068BF1759EDB9CF96",
+          "semanticHash": "084d5540d5c7dc974ca624442d7ef02d62690ad597af2bb0428a25b8a7c0a373",
+          "entityCount": 12,
+          "relationCount": 11
+        },
+        "views": [
+          {"profile": "module", "nodes": 5, "edges": 4},
+          {"profile": "dependency_dataflow", "nodes": 5, "edges": 5},
+          {"profile": "deployment_runtime", "nodes": 0, "edges": 0},
+          {"profile": "sequence", "nodes": 0, "edges": 0},
+          {"profile": "lifecycle", "nodes": 0, "edges": 0},
+          {"profile": "evolution_risk", "nodes": 0, "edges": 0}
+        ],
+        "renderer": {
+          "bundleId": "PVB-44E5496FF176AED55A7C0F82",
+          "bundleHash": "44e5496ff176aed55a7c0f82399e3e28370f0afb3d8ac7df1ac4f52dc64cb9e2",
+          "artifactSha256": "02cc8d7a9e76af088cc35d9b6931db381b13630c0d1d979c1c793a5720fbec21",
+          "artifactBytes": 64544,
+          "desktopViewportsPassed": 4,
+          "narrowViewportsPassedWithExpectedVerticalScroll": 2,
+          "consoleErrors": 0,
+          "consoleWarnings": 0,
+          "visualReview": "pending"
+        },
+        "verifiedDelivery": {
+          "deliveryId": "PVD-27407750C7D36F4655466724",
+          "receiptHash": "6a480f21aec9e5446be5aa5e96fac1499a6bc0715d9d88b988769dbe66cef098",
+          "browserEvidenceId": "PBE-BF4D8F263A1B2D4B9DDB23C2",
+          "browserEvidenceHash": "1953c2d9b856041c810f0230492d345349dbf87a721f281a4f1685935320113d",
+          "lastGoodModified": false
+        },
+        "limitations": [
+          "The six-slot renderer accepts one View per profile, so the current-scope Module slot does not expose the accepted target architecture in the same artifact.",
+          "Deployment, Sequence, Lifecycle and Evolution/Risk correctly remain empty because no deployment relations or Event Checkpoint were supplied.",
+          "The existing V0.4 human review cannot be reused for this exact V0.6 artifact hash."
+        ]
+      },
+      "archify": {
+        "status": "passed",
+        "artifactSha256": "5623a83e70ba4f9ca2eee92245933e442dd3131dd64b5e92dd69e91a34ca219a",
+        "artifactBytes": 635037,
+        "guidedViews": 3,
+        "components": 7,
+        "connections": 6,
+        "supportedFactRecall": 1.0,
+        "forbiddenClaimAvoidance": 1.0,
+        "desktopViewportsPassed": 4,
+        "humanVisualReview": "passed",
+        "visualCorrectionRounds": 2,
+        "limitations": [
+          "The artifact was human-operated and human-repaired, not autonomously inferred.",
+          "The local fixture has zero clickable source-link coverage."
+        ]
+      }
+    },
+    {
+      "id": "spring-petclinic-88e37c1",
+      "sourceBinding": {
+        "gitCommit": "88e37c15cf6fc8490b01bc3e8e2c800cec1ac272",
+        "inventorySha256": "098e45cb309d7c85eb7d3e78651c0a78c9275bc073f878d5eb7b77194cab99a9"
+      },
+      "panorama": {
+        "status": "partial_unsupported_language",
+        "includedFiles": 0,
+        "unsupportedFiles": 63,
+        "coverage": "partial",
+        "currentness": "unknown",
+        "observationHash": "971fb39c699c92b85eacf0c02b051f3fdf70419c34d5e895fe28e39b373def38",
+        "receiptHash": "bbd143f0a646eb2f57406f1fc503e59b9078748e0afabdc9a48b87e3a8ec1b44",
+        "informationGaps": [
+          "unsupported_source_languages_present",
+          "unsupported_source_snapshot_not_content_bound"
+        ],
+        "viewArtifactCreated": false
+      },
+      "archify": {
+        "status": "passed_human_operated",
+        "artifactSha256": "bbc8218e347b941c79e07b86e16c80bea1e7fcbebb58e8c94da18bd61969ef1f",
+        "supportedFactRecall": 1.0,
+        "forbiddenClaimAvoidance": 1.0,
+        "humanVisualReview": "passed",
+        "visualCorrectionRounds": 3,
+        "oracleMode": "reviewer-derived-consistency-audit"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "PL-01",
+      "severity": "high",
+      "status": "fixed",
+      "summary": "Parent-relative JS/TS imports were not lexically normalized; 5/5 controlled internal imports were falsely unresolved."
+    },
+    {
+      "id": "PL-02",
+      "severity": "high",
+      "status": "fixed_fail_closed",
+      "summary": "A Java-only repository was incorrectly reported as an empty completed extraction; it now reports partial/unknown with a Loss."
+    },
+    {
+      "id": "PL-03",
+      "severity": "high",
+      "status": "open",
+      "summary": "Panorama lacks a Java source adapter and cannot yet satisfy the public Spring PetClinic source-generated architecture gate."
+    },
+    {
+      "id": "PL-04",
+      "severity": "high",
+      "status": "open",
+      "summary": "The six-profile renderer has no guided view / multi-variant scope composition, so current, accepted target and evidence-conflict views cannot coexist for one profile."
+    },
+    {
+      "id": "PL-05",
+      "severity": "medium",
+      "status": "open",
+      "summary": "Panorama evidence binding is stronger, while Archify's editorial composition, guided views and visual hierarchy are materially stronger."
+    }
+  ],
+  "releaseDecision": {
+    "status": "continue_iteration",
+    "publishV060Now": false,
+    "blockingGates": [
+      "SUPPORTED_PUBLIC_SOURCE_PROJECT",
+      "GUIDED_MULTI_VARIANT_ARCHITECTURE_VIEWS",
+      "INDEPENDENT_HUMAN_VISUAL_ACCEPTANCE_FOR_EXACT_V060_HASH",
+      "CURRENT_PROOF_LAB_ON_FINAL_COMMIT"
+    ]
+  },
+  "validation": {
+    "skillValidator": "passed",
+    "runtimePreflight": {"readyForCore": true, "schemaCount": 23, "schemaErrors": 0},
+    "pytest": {"passed": 397, "skipped": 2, "failed": 0}
+  }
+}

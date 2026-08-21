@@ -581,6 +581,21 @@
   公开项目门禁产生假阳性。
 - V0.6 修复：识别常见 source-like 未支持扩展；存在时 Source coverage、Receipt、Loss Report 固定为 partial，
   披露 `unsupported_source_languages_present` 与聚合 Loss，不读取正文。零个受支持输入时
-  `sourceBodiesReadTransiently=false`；Extraction Receipt Schema 允许该布尔值如实表达。
+  `sourceBodiesReadTransiently=false`；Extraction Receipt Schema 允许该布尔值如实表达。非 Git 输入无法用
+  included-content digest 绑定未读取正文，故 `currentness=unknown` 并披露
+  `unsupported_source_snapshot_not_content_bound`。
 - 发布影响：Spring PetClinic 仍是明确的 unsupported/partial 案例；在 Java Adapter 或另一个受支持语言的固定
   公开项目通过之前，V0.6 “基于源码生成架构”公开门禁不满足。
+
+## SF-53 固定六 Profile Tab 不能表达同 Profile 的 Current/Target/Conflict Guided Views
+
+- 证据：受控项目的正式 Model 同时含 Current 与 Accepted Target；V0.6 Candidate 的 Module Slot 只接受一个
+  current-scope View，导致 NATS Target 在同一交付 Artifact 中没有可见入口。Archify 用三个 Guided Views 在
+  同一证据图上切换当前路径、已接受目标与证据冲突。
+- 影响：即使 Model 保留事实，Renderer 仍可能通过 View Set 选择隐藏关键 Target/Conflict；六种图类型不等于
+  完整项目全景，也不能用空 Evolution View 替代未提供的 Event History。
+- V0.6 设计调整：新增 View Set / Guided View Contract，允许同一 profile 的命名 scope variant 与 Story；
+  Renderer 顶层选择 Guided View，再显示 profile/scope/evidence。所有 variant 继续精确绑定同一 Model 和
+  Evidence，不复制或编辑事实。
+- 发布影响：在 Current/Target/Conflict 可于同一 Artifact 到达且 Deep Link 可恢复之前，多图 UI 仍是内部
+  Development Candidate。

@@ -420,7 +420,9 @@ python scripts/validate_panorama_renderer_geometry.py `
 将 Derived/Declared 架构采纳为正式 Current/Target/Decision 仍须正常 Proposal/Approval/Apply。Renderer/Delivery
 不能反向修改正式 Panorama；Renderer 验证见
 [V0.6 Interactive Renderer Validation](docs/v0.6-interactive-renderer-validation.md) 与
-[Verified Delivery Contract](docs/verified-delivery-contract.md)。
+[Verified Delivery Contract](docs/verified-delivery-contract.md)。Panorama × Archify Proof Lab 已证明固定六 Profile
+Tab 尚不能表达同一 profile 的 Current/Target/Conflict Guided Views，且当前没有 Java Adapter；在
+[Proof Lab](docs/v0.6-panorama-archify-proof-lab.md) 的阻塞项关闭前，不得描述为通用源码架构生成或公开发布就绪。
 
 Candidate 准备是 Automatic Quality Gate，不要求人工审批，也不修改 last-good：
 
