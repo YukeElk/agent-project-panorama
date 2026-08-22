@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.6.0（V0.5 Compatible）
+# Agent Project Panorama V0.7.0（V0.6 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -65,6 +65,13 @@ V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Ap
 视觉验收接受。其余 Delegated Policy Operation Adapter、Dataset/RAG/Eval Export 与后训练不能由当前能力
 外推为已经实现。完整 V0.6.0 规划与边界见
 [`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
+
+V0.7.0 新增 `panorama-explain-pack.v0.1`：它把六类 View、Decision、Architecture Transition、
+Evidence/Freshness/Information Gap 与 Requirement→Acceptance/Gate 验证链编译为逐步讲解；同一个
+Explain Pack 同时驱动 Codex 对话内 Fragment、Markdown 降级和离线全景原生 Dialog。该能力不修改
+Panorama Core、Model/View IR 枚举或治理审批边界，也不把 `visualize` 插件源码、缓存路径或资源复制进 Skill。
+设计与事实边界见 [`docs/v0.7-design-closure.md`](docs/v0.7-design-closure.md) 和
+[`docs/panorama-explain-pack-contract.md`](docs/panorama-explain-pack-contract.md)。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
 
@@ -273,6 +280,53 @@ python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-i
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID> --preview
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
 ```
+
+## V0.7.0 Guided Visual Explanation
+
+Explain Pack 编译是只读 Automatic Quality Gate，不需要新增人工审批：
+
+```powershell
+python scripts/compile_panorama_explain_pack.py project-panorama.local.html `
+  .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --output .panorama-work/views/project.explain-pack.json
+```
+
+在 Codex 中逐步探索时，`render_codex_explainer.py` 生成低于 1 MiB、无网络、单根节点的对话内 Fragment，
+输出位置必须在仓库之外；可同时生成 Markdown 降级。调用方必须遵循当前会话中 `visualize` skill 的输出合同：
+
+```powershell
+python scripts/render_codex_explainer.py project-panorama.local.html `
+  .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --explain-pack .panorama-work/views/project.explain-pack.json `
+  --output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.html `
+  --markdown-output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.md
+```
+
+离线多视图候选使用同一个包显示“讲解”弹窗；`--panorama` 与 `--explain-pack` 必须成对出现。无 Explain Pack
+时继续生成 V0.6 兼容 Bundle：
+
+```powershell
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --panorama project-panorama.local.html `
+  --explain-pack .panorama-work/views/project.explain-pack.json `
+  --output .panorama-work/views/project.guided.html
+```
+
+两个呈现面必须绑定同一 `explainPackId` 与 Semantic Hash；任何 Core Pointer/Digest、Project/Model/View Set/View
+绑定或包 Hash 漂移都失败关闭。Verified Delivery 可以携带 Explain Pack，但机器 Evidence 仍保持
+`visualReview=pending`，不能冒充对精确候选字节的人工接受。
 
 为普通 Studio Proposal 启用事件双写：
 

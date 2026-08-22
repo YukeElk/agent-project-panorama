@@ -1,0 +1,63 @@
+<section id="__PANORAMA_EXPLAIN_ROOT__" aria-labelledby="__PANORAMA_EXPLAIN_ROOT__-title">
+  <style>
+    #__PANORAMA_EXPLAIN_ROOT__{width:100%;color:var(--foreground)}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-head{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-head h2{margin:0}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-select{min-width:min(100%,260px)}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-stage{position:relative;width:100%;min-height:220px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-stage svg{display:block;width:100%;overflow:visible}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-edge{fill:none;stroke:var(--border);stroke-width:1.5}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-edge.is-focus{stroke:var(--viz-series-1);stroke-width:2.5}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-node rect{fill:color-mix(in srgb,var(--muted) 25%,transparent);stroke:transparent}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-node.is-focus rect{fill:color-mix(in srgb,var(--viz-series-1) 18%,transparent);stroke:var(--viz-series-1);stroke-width:2}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-node text{fill:var(--foreground);font-size:12px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-node .pep-sub{fill:var(--muted-foreground);font-size:11px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-empty{display:grid;place-items:center;min-height:220px;color:var(--muted-foreground)}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-copy{margin-top:10px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-copy h3{margin:0 0 4px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-copy p{margin:0}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-detail{margin-top:8px}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-caveat{margin-top:6px;color:var(--muted-foreground)}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-controls{margin-top:12px;justify-content:space-between}
+    #__PANORAMA_EXPLAIN_ROOT__ .pep-progress{min-width:8ch;text-align:center;color:var(--muted-foreground)}
+    @media(max-width:420px){#__PANORAMA_EXPLAIN_ROOT__ .pep-select{width:100%}#__PANORAMA_EXPLAIN_ROOT__ .pep-controls{justify-content:center}}
+    @media(prefers-reduced-motion:no-preference){#__PANORAMA_EXPLAIN_ROOT__ .pep-node,#__PANORAMA_EXPLAIN_ROOT__ .pep-edge{transition:opacity .18s ease,stroke .18s ease,fill .18s ease}}
+  </style>
+  <div class="pep-head">
+    <div><h2 id="__PANORAMA_EXPLAIN_ROOT__-title">项目全景 · 逐步讲解</h2><div class="text-small text-muted" data-role="binding"></div></div>
+    <label class="form-label pep-select">讲解主题
+      <select class="form-select" data-role="story-select" aria-label="选择讲解主题"></select>
+    </label>
+  </div>
+  <div class="pep-stage" data-role="stage"></div>
+  <div class="pep-copy" aria-live="polite">
+    <h3 data-role="step-title"></h3>
+    <p data-role="step-summary"></p>
+    <p class="pep-detail text-small" data-role="claim"></p>
+    <p class="pep-caveat text-small" data-role="caveat"></p>
+  </div>
+  <div class="viz-row pep-controls" aria-label="讲解步骤控制">
+    <button type="button" class="btn btn-ghost" data-role="previous">上一步</button>
+    <span class="pep-progress text-small" data-role="progress"></span>
+    <button type="button" class="btn btn-primary" data-role="next">下一步</button>
+  </div>
+  <script type="application/json" data-role="payload">__PANORAMA_EXPLAIN_PAYLOAD__</script>
+  <script>
+  (()=>{"use strict";
+    const root=document.getElementById("__PANORAMA_EXPLAIN_ROOT__");
+    if(!root)return;
+    const byRole=name=>root.querySelector(`[data-role="${name}"]`),esc=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+    const payload=JSON.parse(byRole("payload").textContent),stories=payload.stories,state={story:0,step:0,width:0};
+    byRole("binding").textContent=`${payload.projectId} · ${payload.explainPackId}`;
+    byRole("story-select").innerHTML=stories.map((story,index)=>`<option value="${index}">${esc(story.title)}</option>`).join("");
+    function layout(nodes,width){const narrow=width<460,columns=narrow?1:Math.min(3,Math.max(1,Math.ceil(Math.sqrt(nodes.length)))),nodeWidth=narrow?Math.max(180,width-24):Math.max(150,(width-24-(columns-1)*18)/columns),nodeHeight=58;return{nodeWidth,nodeHeight,items:new Map(nodes.map((node,index)=>[node.id,{x:12+(index%columns)*(nodeWidth+18),y:18+Math.floor(index/columns)*88}])),height:Math.max(220,36+Math.ceil(nodes.length/columns)*88)}}
+    function draw(){const story=stories[state.story],step=story.steps[state.step],stage=byRole("stage"),width=Math.max(280,Math.floor(stage.getBoundingClientRect().width||736)),nodes=story.visual.nodes,edges=story.visual.edges;if(!nodes.length){stage.innerHTML=`<div class="pep-empty" role="img" aria-label="当前讲解步骤没有绑定图节点">当前步骤没有绑定图节点；请阅读下方证据说明。</div>`;return}const map=layout(nodes,width),focusNodes=new Set(step.focusNodeIds),focusEdges=new Set(step.focusEdgeIds),arrowId=`${root.id}-arrow`;let svg=`<svg viewBox="0 0 ${width} ${map.height}" style="height:${map.height}px" role="img" aria-labelledby="${root.id}-visual-title ${root.id}-visual-desc"><title id="${root.id}-visual-title">${esc(story.title)}</title><desc id="${root.id}-visual-desc">${esc(step.summary)}</desc><defs><marker id="${arrowId}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--border)"/></marker></defs>`;edges.forEach(edge=>{const from=map.items.get(edge.from),to=map.items.get(edge.to);if(!from||!to)return;const x1=from.x+map.nodeWidth,y1=from.y+map.nodeHeight/2,x2=to.x,y2=to.y+map.nodeHeight/2,mid=(x1+x2)/2,path=`M${x1} ${y1} C${mid} ${y1},${mid} ${y2},${x2} ${y2}`;svg+=`<path class="pep-edge ${focusEdges.has(edge.id)?"is-focus":""}" d="${path}" marker-end="url(#${arrowId})"><title>${esc(edge.label)}</title></path>`});nodes.forEach(node=>{const point=map.items.get(node.id),focused=focusNodes.has(node.id);svg+=`<g class="pep-node ${focused?"is-focus":""}" transform="translate(${point.x} ${point.y})"><rect width="${map.nodeWidth}" height="${map.nodeHeight}" rx="10"/><text x="12" y="24">${esc(node.label.slice(0,30))}</text><text class="pep-sub" x="12" y="43">${esc(node.entityId.slice(0,34))}</text></g>`});stage.innerHTML=svg+"</svg>"}
+    function render(){const story=stories[state.story],step=story.steps[state.step],claims=step.claimBlocks.map(claim=>claim.text).join(" · ");byRole("step-title").textContent=step.title;byRole("step-summary").textContent=step.summary;byRole("claim").textContent=claims;byRole("caveat").textContent=step.caveats.length?`边界：${step.caveats.join("；")}`:"";byRole("progress").textContent=`${state.step+1} / ${story.steps.length}`;byRole("previous").disabled=state.step===0;byRole("next").disabled=state.step===story.steps.length-1;draw()}
+    byRole("story-select").addEventListener("change",event=>{state.story=Number(event.target.value);state.step=0;render()});
+    byRole("previous").addEventListener("click",()=>{if(state.step>0){state.step-=1;render()}});
+    byRole("next").addEventListener("click",()=>{if(state.step<stories[state.story].steps.length-1){state.step+=1;render()}});
+    new ResizeObserver(entries=>{const width=Math.floor(entries[0].contentRect.width);if(width!==state.width){state.width=width;draw()}}).observe(byRole("stage"));
+    render();
+  })();
+  </script>
+</section>

@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.6，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑与多视图架构，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, record or validate project-local engineering events, manage bounded approvals, compile evidence-bound source topology and multi-view architecture, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.7，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑、多视图架构与逐步讲解，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
+V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 在不修改 Panorama Core、Model IR 或 View IR 枚举的前提下新增 hash-bound Explain Pack，并由同一包驱动 Codex 逐步交互 Fragment、Markdown 降级和全景原生 Dialog。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
 
 ## 不变量
 
@@ -485,6 +485,75 @@ last-good 晋升必须使用已批准的精确 `verified_delivery.promote` Polic
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID> --preview
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
 ```
+
+## V0.7.0 GUIDED VISUAL EXPLANATION
+
+需要把全景事实转为逐步交互讲解时，完整读取
+[V0.7 Design Closure](docs/v0.7-design-closure.md) 与
+[Panorama Explain Pack Contract](docs/panorama-explain-pack-contract.md)。V0.7 仍是单一 Skill，暂以 Codex
+为运行终端；`visualize` 是可选呈现能力，不是 Panorama 的源码、模板或缓存依赖。不得复制、修改或硬编码
+其插件安装路径、版本目录或内部资源。
+
+先用已经验证且精确互相绑定的 Panorama Core、Model IR、View IR 与 Guided View Set 编译只读
+`panorama-explain-pack.v0.1`：
+
+```powershell
+python scripts/compile_panorama_explain_pack.py project-panorama.local.html `
+  .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.target.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view .panorama-work/views/project.current.deployment.view-ir.json `
+  --view .panorama-work/views/project.sequence.view-ir.json `
+  --view .panorama-work/views/project.lifecycle.view-ir.json `
+  --view .panorama-work/views/project.evolution.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --output .panorama-work/views/project.explain-pack.json
+```
+
+- 每个 Guided Chapter 生成一个 View Story；Module、Dependency/Data Flow、Deployment/Runtime、Sequence、
+  Lifecycle、Evolution/Risk 六类 Profile 必须保留各自的推断边界。
+- Decision 与正式 Architecture Transition 生成独立 Story；Evidence/Freshness/Information Gap 和
+  Requirement→Acceptance/Gate 验证链作为跨视图 Story。没有正式 Core ID 关系时不得从自由文本补出影响、因果、
+  Runtime Call、Blast Radius、验证通过或迁移完成。
+- `bound_fact` Claim 必须至少绑定 View Node/Edge、Model Entity/Relation、Core Reference 或 Evidence Pin
+  之一；未知项使用 `information_gap`，纯操作说明使用 `navigation`。Core Reference 保存 JSON Pointer 与对象
+  Digest，任何 Project/Model/View Set/View/Core/Hash 错配都 fail closed。
+- Explain Pack 编译、预览和本地交互验证属于 Read-only / Automatic Quality，不新增人工门禁；它不得反向修改
+  Panorama Core、Gate、Acceptance、Decision、Risk、Review 或 Policy。正式采纳与 last-good 晋升继续遵守原审批合同。
+
+用户要求在当前 Codex 对话内探索或讲解时：若会话中存在 `visualize` skill，必须先完整读取其当前说明，再把
+Fragment 输出到仓库外的线程可视化目录，并在同一回复中返回其内容引用；若不可用或渲染失败，则使用 Markdown
+降级，不得伪造交互成功。Fragment 必须是单根 HTML Fragment、无 Document Shell、无网络/API 调用、低于 1 MiB，
+支持 320/360/736px、键盘原生控件、`aria-live` 和同一当前 Visual 的上一步/下一步推进：
+
+```powershell
+python scripts/render_codex_explainer.py project-panorama.local.html `
+  .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view .panorama-work/views/project.dependency.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --explain-pack .panorama-work/views/project.explain-pack.json `
+  --output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.html `
+  --markdown-output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.md
+```
+
+用户要求离线全景页面或 Verified Delivery 时，将同一 Explain Pack 注入 Multi-view Renderer；只有提供
+`--explain-pack` 与其精确绑定的 `--panorama` 才显示原生“讲解” Dialog，无 Explain Pack 的 V0.6 输入继续生成
+`panorama-multi-view-bundle.v0.1`：
+
+```powershell
+python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
+  --view .panorama-work/views/project.current.module.view-ir.json `
+  --view-set .panorama-work/views/project.view-set.json `
+  --panorama project-panorama.local.html `
+  --explain-pack .panorama-work/views/project.explain-pack.json `
+  --output .panorama-work/views/project.guided.html
+```
+
+两个呈现面必须报告同一 `explainPackId` 与 Semantic Hash。Fragment 的交互状态和 Dialog 当前步骤都是
+Presentation State，不进入 Explain Pack Hash；Machine Browser Evidence 仍固定 `visualReview=pending`，不能替代
+用户对精确候选字节的视觉接受。
 
 ## CONTINUOUS OBSERVATION
 

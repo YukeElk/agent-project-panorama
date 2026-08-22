@@ -631,3 +631,21 @@
 - 影响：只用小图做视觉门禁会把复杂依赖图的可读性回归带入发布；增加项目数量但不增加拓扑形态也不足。
 - V0.6 修复：路由先尝试紧凑路径并对全部非端点矩形做 obstacle check；命中后使用确定性、有界的底部 lane。
   Python Geometry Validator 与浏览器 Renderer 共享同一策略。Backstage 修复后 3→0，三项目六档矩阵均为 0。
+
+## SF-57 自由文本讲解不能成为新的工程事实旁路
+
+- 证据：V0.6 已有六类 Evidence-bound View 与 Guided View Set，但用户仍需要逐步解释图、Decision 和
+  Current→Target/Verification Story。若让模型直接读取完整 Panorama 或截图自由生成弹窗，讲解文本无法绑定
+  View/Core Hash，也可能把静态 Dependency 写成 Runtime Call、把 Risk Emphasis 写成因果或 Formal Finding。
+- 影响：Codex 对话内解释与 Panorama HTML 会形成两套不一致语义；输入漂移后旧讲解仍可能显示，且无法证明
+  每条 Claim 的来源。复制 Visualize 插件源码还会形成不可维护的私有实现依赖。
+- V0.7 决策：新增独立 `panorama-explain-pack.v0.1` Sidecar，精确绑定 Panorama Data、Model、View Set 和
+  View Hash。每条 Claim 只能是 bound_fact、information_gap 或 navigation；Decision 等治理对象使用 exact
+  Core Ref，不扩展 Model IR v0.1。Codex Fragment 与 Panorama Dialog 消费同一 Pack，Viewer State 不入 Hash。
+- 门禁：Compile/Preview 属于 Read-only/Automatic Quality；任何由讲解引出的治理修改仍走原 Proposal/Approval。
+  机器 Browser Evidence 保持 pending，公开代表制品继续要求独立人工接受精确 Artifact Hash。
+- 实现结果：V0.7 已实现独立 Schema、Compiler/Validator/CLI、六类 View Story、Decision/Transition/
+  Evidence/Verification Story、仓库外 Codex Fragment + Markdown 降级、Renderer 0.3 原生 Dialog 与 Verified
+  Delivery 传递 Hash Binding。受控项目生成 17 Story / 48 Step，四档桌面与 360/736px 交互无 Console/Geometry/
+  Overflow Error；PetClinic、Backstage 与治理型/Event 型确定性 Fixture 共同关闭五 Case 机器门禁。精确代表
+  Artifact SHA-256 `fd47f081eb15c00cb2bf59cea7f4bcda80715e74eae9dd047852c3a319a48e38` 仍等待独立人工接受。

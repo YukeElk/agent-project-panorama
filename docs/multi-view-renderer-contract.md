@@ -1,6 +1,6 @@
 # Multi-View Renderer Contract v0.1
 
-状态：Renderer 0.2 / Guided View Set Implemented；V0.6.0 Representative Artifacts Human Accepted
+状态：Renderer 0.3 / Guided View Set / Explain Pack Dialog Implemented；V0.7 Representative Artifacts Pending Human Acceptance
 
 对应 Finding：SF-34～SF-36、SF-42、SF-43
 
@@ -42,3 +42,14 @@ Architecture、Data Flow、Deployment、Sequence 等作为 `系统` 内 Guided V
 
 Renderer 实现前必须先有至少 Architecture、Data Flow、Sequence 三种 Schema-valid View IR Fixture；每次修复
 只针对 Validator 的稳定 code/subject/evidence。候选失败不得修改正式 Panorama 或 last-good HTML。
+
+## 6. V0.7 逐步讲解
+
+Renderer 0.3 只在输入包含已完整验证的 `panorama-explain-pack.v0.1` 与对应 Panorama Core 时显示原生
+`<dialog>`。View/Decision/Transition/Evidence/Verification Story 都来自该包；当前步骤只高亮其正式
+`focusNodeIds/focusEdgeIds`，不得在浏览器内重编译事实或从文案搜索同名对象。切换 Story 时必须切到包中精确绑定的
+Chapter/View；Step、Dialog 开关与临时高亮均为 Viewer State，不进入包或 Bundle 的语义 Hash。
+
+无 Explain Pack 时 Renderer 保持 V0.6 兼容并生成 `panorama-multi-view-bundle.v0.1`；带包时生成
+`panorama-multi-view-bundle.v0.2`，Bundle 身份语义包含 Explain Pack ID/Hash。两个模式都保持离线 CSP、无外部脚本、
+键盘原生控件和现有 Search/Trace/Drawer 行为。

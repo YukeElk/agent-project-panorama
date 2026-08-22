@@ -10,14 +10,16 @@ from typing import Any
 
 from panorama_cli import ChineseArgumentParser
 from panorama_io import atomic_write, compute_canonical_hash
+from panorama_explain_pack import validate_explain_pack
 from panorama_view_ir import PanoramaViewIRError, validate_model_ir, validate_view_ir
 from panorama_view_set import build_view_set, validate_view_set
+from validate_panorama import ValidationRuntimeError, load_panorama
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates" / "panorama-multi-view.html"
 MARKER = "__PANORAMA_VIEW_BUNDLE__"
-RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.2.0"}
+RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.3.0"}
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -35,6 +37,8 @@ def build_bundle(
     views: list[dict[str, Any]],
     *,
     view_set: dict[str, Any] | None = None,
+    explain_pack: dict[str, Any] | None = None,
+    panorama: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     model_errors = validate_model_ir(model)
     if model_errors:
@@ -55,6 +59,16 @@ def build_bundle(
     view_set_errors = validate_view_set(guided, model, views)
     if view_set_errors:
         raise PanoramaViewIRError("View Set 无效：" + "; ".join(view_set_errors[:20]))
+    if explain_pack is not None:
+        if panorama is None:
+            raise PanoramaViewIRError("接入 Explain Pack 时必须提供 Panorama Core。")
+        explain_errors = validate_explain_pack(
+            explain_pack, panorama, model, views, guided
+        )
+        if explain_errors:
+            raise PanoramaViewIRError(
+                "Explain Pack 无效：" + "; ".join(explain_errors[:20])
+            )
     view_by_id = {view["viewId"]: view for view in views}
     ordered = [view_by_id[chapter["viewId"]] for chapter in guided["chapters"]]
     semantics = {
@@ -71,16 +85,29 @@ def build_bundle(
             }
             for view in ordered
         ],
+        "explainPack": (
+            {
+                "explainPackId": explain_pack["explainPackId"],
+                "semanticHash": explain_pack["integrity"]["semanticHash"],
+            }
+            if explain_pack is not None
+            else None
+        ),
     }
     bundle_hash = compute_canonical_hash(semantics)
     return {
-        "formatVersion": "panorama-multi-view-bundle.v0.1",
+        "formatVersion": (
+            "panorama-multi-view-bundle.v0.2"
+            if explain_pack is not None
+            else "panorama-multi-view-bundle.v0.1"
+        ),
         "bundleId": f"PVB-{bundle_hash[:24].upper()}",
         "bundleHash": bundle_hash,
         "renderer": RENDERER,
         "model": model,
         "viewSet": guided,
         "views": ordered,
+        "explainPack": explain_pack,
     }
 
 
@@ -104,6 +131,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--view-set", type=Path, help="可选的已验证 Guided View Set JSON"
     )
+    parser.add_argument("--panorama", type=Path, help="Explain Pack 绑定的 Panorama Core")
+    parser.add_argument("--explain-pack", type=Path, help="可选的已验证 Explain Pack JSON")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--overwrite", action="store_true")
     return parser
@@ -120,9 +149,24 @@ def main(argv: list[str] | None = None) -> int:
         model = _load_object(args.model)
         views = [_load_object(path) for path in args.views]
         view_set = _load_object(args.view_set) if args.view_set is not None else None
-        bundle = build_bundle(model, views, view_set=view_set)
+        if (args.panorama is None) != (args.explain_pack is None):
+            raise PanoramaViewIRError("--panorama 与 --explain-pack 必须同时提供。")
+        panorama = load_panorama(args.panorama)[0] if args.panorama is not None else None
+        explain_pack = _load_object(args.explain_pack) if args.explain_pack is not None else None
+        bundle = build_bundle(
+            model,
+            views,
+            view_set=view_set,
+            explain_pack=explain_pack,
+            panorama=panorama,
+        )
         atomic_write(args.output, render_html(bundle))
-    except (OSError, UnicodeError, PanoramaViewIRError) as exc:
+    except (
+        OSError,
+        UnicodeError,
+        ValidationRuntimeError,
+        PanoramaViewIRError,
+    ) as exc:
         print(f"Renderer 生成失败：{exc}", file=sys.stderr)
         return 2
     print(
@@ -134,6 +178,11 @@ def main(argv: list[str] | None = None) -> int:
                 "bundleHash": bundle["bundleHash"],
                 "viewSetId": bundle["viewSet"]["viewSetId"],
                 "viewCount": len(bundle["views"]),
+                "explainPackId": (
+                    bundle["explainPack"]["explainPackId"]
+                    if bundle["explainPack"] is not None
+                    else None
+                ),
                 "visualReview": "pending",
             },
             ensure_ascii=False,

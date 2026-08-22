@@ -1,6 +1,6 @@
 # Verified Projection Delivery Contract v0.1
 
-状态：V0.6.0 Machine Contract Implemented；独立人工视觉 Acceptance 已以外部 Hash-bound 记录完成
+状态：V0.6.0 Machine Contract Implemented；V0.7 Explain Pack 兼容扩展已实现；独立人工视觉 Acceptance 必须继续外部 Hash-bound
 
 对应 Finding：SF-32、SF-36、SF-38、SF-43
 
@@ -61,3 +61,15 @@ Candidate/Receipt/Browser Evidence/Transaction 篡改、缺失 viewport、overfl
 继续固定为 `visualReview=pending`；独立人工接受通过
 [V0.6 Human Visual Acceptance](v0.6-human-visual-acceptance.md) 绑定精确 Artifact Hash。不得把外部接受反写进
 机器 Receipt，也不得仅凭本地 last-good 宣称外部发布完成。
+
+## 5. V0.7 Explain Pack 兼容扩展
+
+V0.7 不修改冻结的 `panorama-verified-delivery-receipt.v0.1` Schema。`prepare_delivery` 在调用方同时提供
+Panorama Core 与 Explain Pack 时，先执行完整 Core/Model/View/View Set/Explain Pack Binding 校验，再由
+Renderer 0.3 生成 `panorama-multi-view-bundle.v0.2`。Bundle Hash 的身份语义显式包含
+`explainPackId + semanticHash`，因此 Receipt 的既有 `bundleBinding.bundleHash` 会传递绑定精确 Explain Pack；
+缺少 Core、包被篡改或任一输入漂移都在候选写入前失败。
+
+这一传递绑定不能被解释为人工视觉接受。带讲解 Dialog 的精确候选仍须经过 Browser/Viewport/Console 机器门禁，
+机器 Receipt 继续写 `visualReview=pending`；代表性公开制品只有在独立人工记录绑定其精确 Artifact SHA-256 后才可
+宣称接受。

@@ -1,7 +1,7 @@
 interface:
   display_name: "Agent Project Panorama"
-  short_description: "生成证据绑定的项目全景、多视图架构与风险"
-  default_prompt: "使用 $agent-project-panorama 检查这个项目的事实来源与漂移，并生成证据绑定的多视图架构和下一步建议。"
+  short_description: "生成证据绑定的项目全景、多视图架构、风险与逐步交互讲解"
+  default_prompt: "使用 $agent-project-panorama 检查这个项目的事实来源与漂移，生成证据绑定的多视图架构，并在 Codex 中逐步讲解关键视图与决策。"
 
 policy:
   allow_implicit_invocation: true

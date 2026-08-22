@@ -1,4 +1,4 @@
-"""Fail-closed candidate preparation for V0.6 multi-view delivery."""
+"""Fail-closed candidate preparation for V0.6+ multi-view delivery."""
 
 from __future__ import annotations
 
@@ -240,6 +240,8 @@ def prepare_delivery(
     views: list[dict[str, Any]],
     *,
     view_set: dict[str, Any] | None = None,
+    explain_pack: dict[str, Any] | None = None,
+    panorama: dict[str, Any] | None = None,
     browser_evidence: dict[str, Any] | None = None,
     generated_at: str | None = None,
 ) -> tuple[dict[str, Any], bool]:
@@ -247,7 +249,13 @@ def prepare_delivery(
 
     _, delivery = _assert_safe_project_root(project_root)
     try:
-        bundle = build_bundle(model, views, view_set=view_set)
+        bundle = build_bundle(
+            model,
+            views,
+            view_set=view_set,
+            explain_pack=explain_pack,
+            panorama=panorama,
+        )
         geometry = validate_geometry(model, bundle["views"])
     except PanoramaViewIRError as exc:
         raise VerifiedDeliveryError(str(exc)) from exc
