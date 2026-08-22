@@ -140,6 +140,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
     outputs = [args.output, *([args.markdown_output] if args.markdown_output else [])]
     if _inside_repository(args.output):
         print("Codex Fragment 必须输出到项目仓库之外的线程可视化目录。", file=sys.stderr)
