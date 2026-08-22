@@ -328,6 +328,10 @@ python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.js
 绑定或包 Hash 漂移都失败关闭。Verified Delivery 可以携带 Explain Pack，但机器 Evidence 仍保持
 `visualReview=pending`，不能冒充对精确候选字节的人工接受。
 
+可直接离线打开的受控 V0.7 示例见
+[`examples/v0.7-guided-explanation-orders.html`](examples/v0.7-guided-explanation-orders.html)；其精确 Candidate
+与人工视觉接受记录见 [`docs/v0.7-human-visual-acceptance.md`](docs/v0.7-human-visual-acceptance.md)。
+
 为普通 Studio Proposal 启用事件双写：
 
 ```powershell
