@@ -748,3 +748,13 @@
   “批准发布”或“批准发布为某版本”即有效，Recorder 自动保存 PVD、Artifact Hash、Bytes、版本、原文和时间。多个候选、
   候选变化、版本歧义或未披露重大风险才重新确认。INIT、Studio Proposal、Approval Policy 与 Verification Receipt 的
   精确 Hash 事务输入规则保持不变。
+# SF-46 Source Topology 的冻结语言枚举与单体 Extractor 阻碍多栈生产支持
+
+- 证据：`source-topology-observation.v0.1` 只允许 Python、JavaScript、TypeScript、Java 与少量 Manifest；
+  Extractor、Validator、Receipt 和支持声明各自内置 Adapter 列表。
+- 影响：新增语言需要同时修改多处枚举和分支，容易出现 Schema 接受但 Validator/Receipt 不接受，或把后缀识别
+  错报为正式支持；无法为个人多语言 Monorepo 提供一致的能力矩阵。
+- V0.82 决策：保留 v0.1 输入兼容，新增 v0.2 Observation 与版本化 Multistack Registry；Support Matrix 分开记录
+  detected/topology/module candidate/module logic，并以 Evidence、Recall 和 forbidden-claim 指标控制正式支持声明。
+- 授权边界：用户于 2026-08-24 明确要求完整规划并推进至 V0.85 发布评审；这授权 Skill 仓库内的 Schema、脚本、
+  测试和文档迭代，不授权外部 Tag/Push/Release，也不授权修改任何业务项目。

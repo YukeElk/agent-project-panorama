@@ -17,7 +17,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install jsonschema pytest PyYAML tomli
       - run: python -m pytest -q
+      - run: python scripts/validate_v085_capability_matrix.py
       - run: node tests/test_url_sanitizer.js
+      - run: node tests/test_multi_view_renderer.js
       - run: python scripts/validate_panorama.py examples/reference-project.v0.1.json
       - run: python scripts/init_panorama.py --template templates/panorama.html --data examples/reference-project.v0.1.json --output generated-reference.html
       - run: python scripts/validate_panorama.py generated-reference.html
@@ -37,3 +39,41 @@ jobs:
           generated = Path("generated-reference.html").read_text(encoding="utf-8")
           assert compute_presentation_hash(template) == compute_presentation_hash(generated)
           PY
+
+  browser-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-save --no-package-lock playwright@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - name: Start local offline candidate server
+        run: |
+          python -m http.server 8875 --bind 127.0.0.1 > /tmp/panorama-http.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8875/examples/v0.8-unified-canvas-reference.html > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/panorama-http.log
+          exit 1
+      - name: Validate desktop, mobile, input, reduced-motion and print matrix
+        run: |
+          node scripts/validate_v080_browser_matrix.cjs \
+            http://127.0.0.1:8875/examples/v0.8-unified-canvas-reference.html \
+            /tmp/panorama-browser-matrix.json \
+            /tmp/panorama-browser-measurement.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: panorama-browser-matrix
+          path: |
+            /tmp/panorama-browser-matrix.json
+            /tmp/panorama-browser-measurement.json
+            /tmp/screenshots

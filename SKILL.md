@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.81，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑、多视图架构、逐步讲解与显式业务流轨迹，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.85，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的多语言源码拓扑、多视图架构、逐步讲解与显式业务流轨迹，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound multistack architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 新增 hash-bound Explain Pack。V0.81.0 发布父子语义画布 WP0–WP8：唯一 Canvas Runtime、`read|edit` 两模式、架构主画布/模块逻辑子画布，以及作为镜片的讲解、进度、风险/决策、证据和轨迹；同时修复编辑既有模块、拖动后连线重算、跨层吸附归属，以及控制台/演进/需求的信息架构。历史 V0.8 PVD 只作为回归基线；V0.81 代表制品由普通自然语言发布批准自动绑定唯一冻结候选。机器 Browser Evidence 缺口必须继续披露，不能被人工发布批准冒充为机器验证。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
+V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 新增 hash-bound Explain Pack。V0.81.0 发布父子语义画布 WP0–WP8：唯一 Canvas Runtime、`read|edit` 两模式、架构主画布/模块逻辑子画布，以及作为镜片的讲解、进度、风险/决策、证据和轨迹；同时修复编辑既有模块、拖动后连线重算、跨层吸附归属，以及控制台/演进/需求的信息架构。历史 V0.8 PVD 只作为回归基线；V0.81 代表制品由普通自然语言发布批准自动绑定唯一冻结候选。V0.85 当前处于发布评审候选：新增版本化 Multistack Registry、Source Observation/Mapping v0.2、项目本地幂等 Source Sync，以及 Kotlin/Go/C# 正式 L1 与 Rust/PHP/Ruby/Swift/Scala/C/C++ Preview L1；并把桌面/移动、输入设备、Reduced Motion 与 Print 浏览器矩阵纳入 CI。V0.81 的历史 Browser Evidence 缺口继续保留在历史审计中，不得回填伪造。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
 
 ## 不变量
 
@@ -354,15 +354,18 @@ Data Flow、Deployment/Runtime、Sequence、Lifecycle、Evolution/Risk 六种 si
 
 ```powershell
 python scripts/extract_source_topology.py path/to/project `
-  --project-id PRJ-ID --observed-at 2026-08-21T12:00:00Z `
+  --project-id PRJ-ID --observed-at 2026-08-24T12:00:00Z `
   --observation-output .panorama-work/views/source-observation.json `
   --receipt-output .panorama-work/views/extraction-receipt.json `
   --loss-output .panorama-work/views/extraction-loss.json
 
 python scripts/compile_source_module_mapping.py `
   .panorama-work/views/source-observation.json `
-  --generated-at 2026-08-21T12:05:00Z `
+  --generated-at 2026-08-24T12:05:00Z `
   --output .panorama-work/views/source-module-mapping-proposal.json
+
+python scripts/sync_source_observation.py path/to/project `
+  --project-id PRJ-ID --observed-at 2026-08-24T12:00:00Z --json
 
 python scripts/compile_panorama_model_ir.py path/to/project-panorama.json `
   --source-observation .panorama-work/views/source-observation.json `
@@ -417,6 +420,11 @@ python scripts/validate_panorama_renderer_geometry.py `
 
 - Model/View Compile、Validate 与新 Candidate 输出不修改正式 Panorama，不要求人工批准；覆盖候选必须显式
   使用 `--overwrite`；
+- Source Observation v0.2 的 Adapter Registry 是唯一支持声明来源。正式 L1：Python、JS/TS、Java、Kotlin、
+  Go、C#；Preview L1：Rust、PHP、Ruby、Swift、Scala、C/C++。静态 L1 只能陈述 package/namespace/import/
+  dependency candidate，不得声称已理解业务调用、模块内部实现或运行顺序；
+- `sync_source_observation.py` 只发布项目本地派生 Sidecar；相同 Source Binding + Registry 必须 no-op，
+  变化时发布新的不可变 Observation/Receipt/Loss，不修改正式 Panorama；
 - Model IR 必须绑定 Project/Data/Source/Event/`asOf`、Compiler 和 Evidence Pin；View 必须精确绑定 Model；
 - authored Module/Connection ID 原样保留；View Node/Edge/Group 使用确定性 derived ID；
 - 六个 profile 每次只接受一个 current/target/transition/historical Scope；module 只投影 communication，

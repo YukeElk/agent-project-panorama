@@ -23,15 +23,27 @@ from typing import Any, Iterable
 from jsonschema import Draft202012Validator, FormatChecker
 
 from panorama_io import compute_canonical_hash
+from stack_adapters import (
+    LANGUAGE_ADAPTERS,
+    MANIFEST_ADAPTERS,
+    configuration_kind,
+    dependency_stack_matches,
+    filename_stack_match,
+    manifest_name_map,
+    manifest_suffix,
+    registry_projection,
+    scan_language_source,
+    scan_multistack_manifest,
+    source_suffix_map,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OBSERVATION_SCHEMA = (
-    ROOT / "schema" / "source-topology-observation.schema.v0.1.json"
-)
+OBSERVATION_SCHEMA = ROOT / "schema" / "source-topology-observation.schema.v0.2.json"
+LEGACY_OBSERVATION_SCHEMA = ROOT / "schema" / "source-topology-observation.schema.v0.1.json"
 RECEIPT_SCHEMA = ROOT / "schema" / "extraction-receipt.schema.v0.1.json"
 LOSS_SCHEMA = ROOT / "schema" / "transformation-loss-report.schema.v0.1.json"
-PRODUCER = {"id": "panorama-source-extractor", "version": "0.3.0"}
+PRODUCER = {"id": "panorama-source-extractor", "version": "0.85.0"}
 
 MAX_FILES = 20_000
 MAX_FILE_BYTES = 1 * 1024 * 1024
@@ -58,25 +70,11 @@ IGNORED_DIRECTORIES = {
 }
 SECRET_DIRECTORIES = {".ssh", ".gnupg", "secrets", "credentials"}
 SECRET_SUFFIXES = {".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"}
-SOURCE_SUFFIXES = {
-    ".py": ("source", "python"),
-    ".js": ("source", "javascript"),
-    ".jsx": ("source", "javascript"),
-    ".mjs": ("source", "javascript"),
-    ".cjs": ("source", "javascript"),
-    ".ts": ("source", "typescript"),
-    ".tsx": ("source", "typescript"),
-    ".java": ("source", "java"),
-}
+SOURCE_SUFFIXES = source_suffix_map()
 SOURCE_LIKE_UNSUPPORTED_SUFFIXES = {
-    ".c", ".cc", ".cpp", ".cs", ".go", ".h", ".hpp", ".kt",
-    ".kts", ".php", ".rb", ".rs", ".scala", ".swift",
+    ".dart", ".ex", ".exs", ".fs", ".fsx", ".lua", ".m", ".mm", ".r", ".sol",
 }
-MANIFEST_NAMES = {
-    "package.json": ("manifest", "json"),
-    "pyproject.toml": ("manifest", "toml"),
-    "pom.xml": ("manifest", "xml"),
-}
+MANIFEST_NAMES = manifest_name_map()
 CONFIGURATION_SUFFIXES = {
     ".properties": ("configuration", "properties"),
 }
@@ -147,9 +145,15 @@ def _supported_kind(relative: Path) -> tuple[str, str] | None:
     by_name = MANIFEST_NAMES.get(relative.name.casefold())
     if by_name is not None:
         return by_name
+    by_manifest_suffix = manifest_suffix(relative)
+    if by_manifest_suffix is not None:
+        return by_manifest_suffix
     by_configuration = CONFIGURATION_SUFFIXES.get(relative.suffix.casefold())
     if by_configuration is not None:
         return by_configuration
+    by_multistack_configuration = configuration_kind(relative)
+    if by_multistack_configuration is not None:
+        return by_multistack_configuration
     return SOURCE_SUFFIXES.get(relative.suffix.casefold())
 
 
@@ -1278,6 +1282,268 @@ def _parse_java(
     return relations
 
 
+def _multistack_symbol_index(
+    inventory: list[dict[str, Any]], file_elements: dict[str, dict[str, Any]]
+) -> dict[tuple[str, str], list[str]]:
+    index: dict[tuple[str, str], list[str]] = {}
+    for item in inventory:
+        language = item["language"]
+        if language not in LANGUAGE_ADAPTERS or language in {
+            "python", "javascript", "typescript", "java"
+        }:
+            continue
+        scan = scan_language_source(language, item["_body"])
+        item["_multistack_scan"] = scan
+        element = file_elements[item["path"]]
+        adapter = LANGUAGE_ADAPTERS[language]
+        element["attributes"].update(
+            {
+                "adapterId": adapter["id"],
+                "parser": adapter["parser"],
+                "semanticBoundary": "dependencies_and_package_declarations_only",
+                "package": scan.get("package"),
+            }
+        )
+        package = scan.get("package")
+        if package:
+            keys = {package, f"{package}.{Path(item['path']).stem}"}
+            for key in keys:
+                index.setdefault((language, key), []).append(element["id"])
+    for values in index.values():
+        values.sort()
+    return index
+
+
+def _resolve_multistack_target(
+    *,
+    language: str,
+    specifier: str,
+    item: dict[str, Any],
+    file_elements: dict[str, dict[str, Any]],
+    symbol_index: dict[tuple[str, str], list[str]],
+    go_module: str | None,
+) -> tuple[str | None, str]:
+    relative = specifier.startswith(("./", "../"))
+    if relative:
+        raw = posixpath.normpath(
+            posixpath.join(posixpath.dirname(item["path"]), specifier)
+        )
+        suffixes = LANGUAGE_ADAPTERS[language]["suffixes"]
+        candidates = [raw]
+        candidates.extend(raw + suffix for suffix in suffixes)
+        candidates.extend(posixpath.join(raw, "index" + suffix) for suffix in suffixes)
+        for candidate in candidates:
+            target = file_elements.get(candidate)
+            if target is not None:
+                return target["id"], "resolved"
+        return None, "unresolved"
+    if language == "rust" and specifier.startswith("crate::"):
+        parts = specifier.split("::")[1:]
+        raw = posixpath.join("src", *parts)
+        for candidate in (raw + ".rs", posixpath.join(raw, "mod.rs")):
+            target = file_elements.get(candidate)
+            if target is not None:
+                return target["id"], "resolved"
+        return None, "unresolved"
+    if language == "go" and go_module and (
+        specifier == go_module or specifier.startswith(go_module + "/")
+    ):
+        directory = specifier[len(go_module):].lstrip("/")
+        candidates = sorted(
+            element["id"]
+            for path, element in file_elements.items()
+            if element["language"] == "go"
+            and posixpath.dirname(path) == directory
+        )
+        return (candidates[0], "resolved") if candidates else (None, "unresolved")
+    separators = ("::", "\\", ".")
+    normalized = specifier.replace("\\", ".").replace("::", ".")
+    candidates = symbol_index.get((language, normalized), [])
+    if len(candidates) == 1:
+        return candidates[0], "resolved"
+    for separator in separators:
+        if separator in specifier:
+            prefix = normalized.rpartition(".")[0]
+            candidates = symbol_index.get((language, prefix), [])
+            if len(candidates) == 1:
+                return candidates[0], "resolved"
+    return None, "external"
+
+
+def _parse_multistack_language(
+    item: dict[str, Any],
+    *,
+    file_elements: dict[str, dict[str, Any]],
+    elements: dict[str, dict[str, Any]],
+    symbol_index: dict[tuple[str, str], list[str]],
+    go_module: str | None,
+    revision: str,
+    losses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    language = item["language"]
+    adapter = LANGUAGE_ADAPTERS[language]
+    source_element = file_elements[item["path"]]
+    try:
+        scan = item.get("_multistack_scan") or scan_language_source(
+            language, item["_body"]
+        )
+    except (UnicodeDecodeError, ValueError, re.error) as exc:
+        item["parseStatus"] = "failed"
+        source_element["parseStatus"] = "failed"
+        losses.append(
+            {
+                "kind": f"parser.{language}_failed",
+                "sourceRef": item["path"],
+                "severity": "partial",
+                "reason": f"Bounded {language} parser failed: {type(exc).__name__}",
+                "preservedAs": f"element:{source_element['id']}",
+            }
+        )
+        return []
+    relations: list[dict[str, Any]] = []
+    for dependency in scan["dependencies"]:
+        specifier = dependency["specifier"]
+        line = dependency["line"]
+        pin = _evidence_pin(item, line=line, column=dependency.get("column"), revision=revision)
+        _merge_pin(source_element, pin)
+        local_id, resolution = _resolve_multistack_target(
+            language=language,
+            specifier=specifier,
+            item=item,
+            file_elements=file_elements,
+            symbol_index=symbol_index,
+            go_module=go_module,
+        )
+        if local_id:
+            target = elements[local_id]
+        elif resolution == "external":
+            target = _target_element(elements, kind="external_package", name=specifier, pin=pin)
+        else:
+            target = _target_element(
+                elements,
+                kind="unresolved_target",
+                name=specifier,
+                pin=pin,
+                reason=f"{language}_local_or_dynamic_target_not_resolved",
+            )
+        dynamic = bool(dependency.get("dynamic"))
+        relation_kind = "dynamic_import" if dynamic else "import"
+        relations.append(
+            _relation(
+                kind=relation_kind,
+                name=f"{relation_kind}: {specifier}",
+                source_id=source_element["id"],
+                target_id=target["id"],
+                resolution="dynamic" if dynamic else resolution,
+                pin=pin,
+                fact_status="unknown" if dynamic or resolution == "unresolved" else "derived",
+                authority="unknown" if dynamic or resolution == "unresolved" else "inferred",
+                confidence="unknown" if dynamic or resolution == "unresolved" else "medium",
+                attributes={
+                    "adapterId": adapter["id"],
+                    "parser": adapter["parser"],
+                    "specifier": specifier,
+                    "typeOnly": False,
+                    "dynamic": dynamic,
+                    "dependencyClass": dependency.get("kind", "import"),
+                    "runtimeObserved": False,
+                    "sequenceOrder": None,
+                },
+            )
+        )
+        if dynamic or resolution == "unresolved":
+            losses.append(
+                {
+                    "kind": "source_relation.dynamic_or_unresolved",
+                    "sourceRef": f"{item['path']}:{line}",
+                    "severity": "partial",
+                    "reason": f"Bounded {language} extraction cannot resolve this dependency to one source file.",
+                    "preservedAs": f"relation:{relations[-1]['id']}",
+                }
+            )
+    item["parseStatus"] = "partial" if adapter["status"] == "preview" else "parsed"
+    source_element["parseStatus"] = item["parseStatus"]
+    losses.append(
+        {
+            "kind": f"parser.{language}_bounded_dependencies",
+            "sourceRef": item["path"],
+            "severity": "informational" if adapter["status"] == "supported" else "partial",
+            "reason": (
+                f"The {language} adapter recognizes dependency and package declarations; "
+                "it does not infer calls, framework injection, generated code or runtime behavior."
+            ),
+            "preservedAs": f"element:{source_element['id']}",
+        }
+    )
+    return relations
+
+
+def _parse_multistack_manifest(
+    item: dict[str, Any],
+    *,
+    file_elements: dict[str, dict[str, Any]],
+    elements: dict[str, dict[str, Any]],
+    revision: str,
+    losses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    source_element = file_elements[item["path"]]
+    try:
+        result = scan_multistack_manifest(item["path"], item["language"], item["_body"])
+    except (UnicodeDecodeError, ValueError, json.JSONDecodeError, ET.ParseError) as exc:
+        item["parseStatus"] = "failed"
+        source_element["parseStatus"] = "failed"
+        losses.append(
+            {
+                "kind": "manifest.parse_failed",
+                "sourceRef": item["path"],
+                "severity": "partial",
+                "reason": f"Multistack manifest parse failed: {type(exc).__name__}",
+                "preservedAs": f"element:{source_element['id']}",
+            }
+        )
+        return []
+    source_element["attributes"].update(
+        {
+            "adapterId": "multistack-manifest-dependencies",
+            "parser": "structured_manifest",
+            "manifestFormat": item["language"],
+            "metadata": result["metadata"],
+            "runtimeObserved": False,
+        }
+    )
+    relations: list[dict[str, Any]] = []
+    for dependency in result["dependencies"]:
+        pin = _evidence_pin(item, line=dependency["line"], column=None, revision=revision)
+        _merge_pin(source_element, pin)
+        target = _target_element(
+            elements, kind="external_package", name=dependency["specifier"], pin=pin
+        )
+        relations.append(
+            _relation(
+                kind="declared_dependency",
+                name=f"declared dependency: {dependency['specifier']}",
+                source_id=source_element["id"],
+                target_id=target["id"],
+                resolution="external",
+                pin=pin,
+                fact_status="declared",
+                authority="declared",
+                confidence="high",
+                attributes={
+                    "adapterId": "multistack-manifest-dependencies",
+                    "parser": "structured_manifest",
+                    "specifier": dependency["specifier"],
+                    "dependencyClass": dependency["dependencyClass"],
+                    "runtimeObserved": False,
+                    "sequenceOrder": None,
+                },
+            )
+        )
+    item["parseStatus"] = "parsed"
+    source_element["parseStatus"] = "parsed"
+    return relations
+
+
 def _dependency_name(value: str) -> str | None:
     match = re.match(r"\s*([A-Za-z0-9][A-Za-z0-9_.-]*)", value)
     return match.group(1) if match else None
@@ -1449,6 +1715,171 @@ def _parse_manifest(
     return relations
 
 
+def _stack_signal(
+    *,
+    category: str,
+    technology: str,
+    source_kind: str,
+    fact_status: str,
+    authority: str,
+    confidence: str,
+    adapter_id: str,
+    evidence_pin_ids: list[str],
+) -> dict[str, Any]:
+    identity = {
+        "category": category,
+        "technology": technology,
+        "sourceKind": source_kind,
+        "adapterId": adapter_id,
+        "evidencePinIds": sorted(set(evidence_pin_ids)),
+    }
+    return {
+        "signalId": _derived_id("STKSIG", identity),
+        "category": category,
+        "technology": technology,
+        "sourceKind": source_kind,
+        "factStatus": fact_status,
+        "authority": authority,
+        "confidence": confidence,
+        "adapterId": adapter_id,
+        "evidencePinIds": sorted(set(evidence_pin_ids)),
+    }
+
+
+def _build_stack_profile(
+    elements: list[dict[str, Any]], relations: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    signals: list[dict[str, Any]] = []
+    for element in elements:
+        if element["kind"] == "source_file" and element["language"] in LANGUAGE_ADAPTERS:
+            adapter = LANGUAGE_ADAPTERS[element["language"]]
+            signals.append(
+                _stack_signal(
+                    category="language",
+                    technology=element["language"],
+                    source_kind="language",
+                    fact_status="derived",
+                    authority="inferred",
+                    confidence="high",
+                    adapter_id=adapter["id"],
+                    evidence_pin_ids=[element["evidencePins"][0]["evidenceId"]],
+                )
+            )
+        filename_match = filename_stack_match(element.get("path") or "")
+        if filename_match:
+            category, technology = filename_match
+            signals.append(
+                _stack_signal(
+                    category=category,
+                    technology=technology,
+                    source_kind="filename",
+                    fact_status="derived",
+                    authority="inferred",
+                    confidence="medium",
+                    adapter_id="stack-filename-signals",
+                    evidence_pin_ids=[element["evidencePins"][0]["evidenceId"]],
+                )
+            )
+    for relation in relations:
+        if relation["kind"] != "declared_dependency":
+            continue
+        specifier = relation["attributes"].get("specifier") or ""
+        for category, technology in dependency_stack_matches(specifier):
+            signals.append(
+                _stack_signal(
+                    category=category,
+                    technology=technology,
+                    source_kind="manifest_dependency",
+                    fact_status="declared",
+                    authority="declared",
+                    confidence="high",
+                    adapter_id=relation["attributes"]["adapterId"],
+                    evidence_pin_ids=[pin["evidenceId"] for pin in relation["evidencePins"]],
+                )
+            )
+    merged: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for signal in signals:
+        key = (
+            signal["category"], signal["technology"],
+            signal["sourceKind"], signal["adapterId"],
+        )
+        if key not in merged:
+            merged[key] = signal
+            continue
+        evidence = sorted(set(merged[key]["evidencePinIds"] + signal["evidencePinIds"]))
+        merged[key] = _stack_signal(
+            category=signal["category"], technology=signal["technology"],
+            source_kind=signal["sourceKind"], fact_status=signal["factStatus"],
+            authority=signal["authority"], confidence=signal["confidence"],
+            adapter_id=signal["adapterId"], evidence_pin_ids=evidence,
+        )
+    return sorted(merged.values(), key=lambda item: item["signalId"])
+
+
+def _build_monorepo_boundaries(elements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    boundaries: list[dict[str, Any]] = []
+    for element in elements:
+        if element["kind"] != "manifest" or not element.get("path"):
+            continue
+        path = Path(element["path"])
+        name = path.name.casefold()
+        if name not in MANIFEST_ADAPTERS and not name.endswith(".csproj"):
+            continue
+        root = path.parent.as_posix()
+        if root == ".":
+            root = ""
+        kind = "workspace" if name == "package.json" else "project"
+        if name == "cargo.toml":
+            kind = "crate"
+        elif name in {"go.mod", "pom.xml", "build.gradle", "build.gradle.kts", "cmakelists.txt"}:
+            kind = "build_root"
+        identity = {"kind": kind, "root": root, "path": element["path"]}
+        boundaries.append(
+            {
+                "boundaryId": _derived_id("WRKSP", identity),
+                "kind": kind,
+                "root": root,
+                "name": path.parent.name or path.stem,
+                "evidencePinIds": [element["evidencePins"][0]["evidenceId"]],
+            }
+        )
+    return sorted(boundaries, key=lambda item: item["boundaryId"])
+
+
+def _build_support_matrix(
+    adapter_inputs: dict[str, int],
+    adapter_outputs: dict[str, int],
+    adapter_errors: dict[str, int],
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for language, adapter in sorted(LANGUAGE_ADAPTERS.items()):
+        count = adapter_inputs.get(language, 0)
+        errors = adapter_errors.get(language, 0)
+        if count == 0:
+            status = "not_applicable"
+        elif errors:
+            status = "partial"
+        else:
+            status = adapter["status"]
+        gaps = [] if count == 0 else [
+            f"{language}_static_dependencies_do_not_prove_runtime_calls",
+            f"{language}_reflection_generated_code_and_framework_injection_not_resolved",
+        ]
+        result.append(
+            {
+                "adapterId": adapter["id"],
+                "language": language,
+                "level": adapter["level"],
+                "status": status,
+                "inputCount": count,
+                "outputCount": adapter_outputs.get(language, 0),
+                "errorCount": errors,
+                "informationGaps": gaps,
+            }
+        )
+    return result
+
+
 def compute_observation_semantic_hash(observation: dict[str, Any]) -> str:
     value = deepcopy(observation)
     value.pop("integrity", None)
@@ -1462,7 +1893,12 @@ def compute_receipt_hash(receipt: dict[str, Any]) -> str:
 
 
 def validate_source_observation(observation: dict[str, Any]) -> list[str]:
-    errors = _schema_errors(observation, OBSERVATION_SCHEMA)
+    schema = (
+        LEGACY_OBSERVATION_SCHEMA
+        if observation.get("formatVersion") == "panorama-source-topology-observation.v0.1"
+        else OBSERVATION_SCHEMA
+    )
+    errors = _schema_errors(observation, schema)
     if errors:
         return errors
     if observation["integrity"]["semanticHash"] != compute_observation_semantic_hash(
@@ -1483,6 +1919,11 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
         errors.append("/relations: 存在重复稳定 ID")
     element_set = set(element_ids)
     element_by_id = {item["id"]: item for item in observation["elements"]}
+    evidence_ids = {
+        pin["evidenceId"]
+        for item in observation["elements"]
+        for pin in item["evidencePins"]
+    }
     revision = observation["sourceBinding"]["gitHead"] or expected_digest
     for owner in observation["elements"] + observation["relations"]:
         for pin in owner["evidencePins"]:
@@ -1544,8 +1985,8 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
         if source is not None:
             if source["kind"] == "manifest":
                 expected_adapter = (
-                    "manifest-dependencies",
-                    source["language"],
+                    source["attributes"].get("adapterId", "manifest-dependencies"),
+                    source["attributes"].get("parser", source["language"]),
                 )
             else:
                 expected_adapter = {
@@ -1554,6 +1995,9 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
                     "typescript": ("javascript-static-imports", "bounded_regex"),
                     "java": ("java-static-imports", "bounded_regex"),
                 }.get(source["language"])
+                if expected_adapter is None and source["language"] in LANGUAGE_ADAPTERS:
+                    adapter = LANGUAGE_ADAPTERS[source["language"]]
+                    expected_adapter = (adapter["id"], adapter["parser"])
         if expected_adapter is None:
             errors.append(
                 f"/relations/{relation['id']}: 来源 Element 没有受支持的 Adapter Binding"
@@ -1576,6 +2020,22 @@ def validate_source_observation(observation: dict[str, Any]) -> list[str]:
             errors.append(
                 f"/relations/{relation['id']}: declared_dependency 权威边界不匹配"
             )
+    if observation.get("formatVersion") == "panorama-source-topology-observation.v0.2":
+        extensions = observation["extensions"]
+        if extensions["adapterRegistry"] != registry_projection():
+            errors.append("/extensions/adapterRegistry: 与当前 Multistack Registry 不匹配")
+        support_ids = [
+            (item["adapterId"], item["language"])
+            for item in extensions["supportMatrix"]
+        ]
+        if len(support_ids) != len(set(support_ids)):
+            errors.append("/extensions/supportMatrix: adapterId/language 重复")
+        signal_ids = [item["signalId"] for item in extensions["stackProfile"]]
+        if len(signal_ids) != len(set(signal_ids)):
+            errors.append("/extensions/stackProfile: signalId 重复")
+        for signal in extensions["stackProfile"]:
+            if not set(signal["evidencePinIds"]).issubset(evidence_ids):
+                errors.append(f"/extensions/stackProfile/{signal['signalId']}: Evidence Pin 不存在")
     return errors
 
 
@@ -1639,11 +2099,23 @@ def extract_source_topology(
     elements = {item["id"]: item for item in file_elements.values()}
     module_index = _python_module_index(inventory, file_elements)
     java_type_index, java_packages = _java_type_index(inventory, file_elements)
+    multistack_symbol_index = _multistack_symbol_index(inventory, file_elements)
+    go_module = None
+    for item in inventory:
+        if Path(item["path"]).name.casefold() == "go.mod":
+            try:
+                go_module = scan_multistack_manifest(
+                    item["path"], item["language"], item["_body"]
+                )["metadata"].get("module")
+            except (UnicodeDecodeError, ValueError):
+                go_module = None
+            break
     losses: list[dict[str, Any]] = []
     relations: list[dict[str, Any]] = []
-    adapter_inputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
-    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
-    adapter_errors = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
+    adapter_keys = set(LANGUAGE_ADAPTERS) | {"manifest", "multistack_manifest", "properties"}
+    adapter_inputs = {key: 0 for key in adapter_keys}
+    adapter_outputs = {key: 0 for key in adapter_keys}
+    adapter_errors = {key: 0 for key in adapter_keys}
 
     for item in inventory:
         before = len(relations)
@@ -1661,7 +2133,7 @@ def extract_source_topology(
                 )
             )
         elif item["language"] in {"javascript", "typescript"}:
-            adapter = "javascript"
+            adapter = item["language"]
             adapter_inputs[adapter] += 1
             relations.extend(
                 _parse_javascript(
@@ -1686,6 +2158,20 @@ def extract_source_topology(
                     losses=losses,
                 )
             )
+        elif item["language"] in LANGUAGE_ADAPTERS:
+            adapter = item["language"]
+            adapter_inputs[adapter] += 1
+            relations.extend(
+                _parse_multistack_language(
+                    item,
+                    file_elements=file_elements,
+                    elements=elements,
+                    symbol_index=multistack_symbol_index,
+                    go_module=go_module,
+                    revision=revision,
+                    losses=losses,
+                )
+            )
         elif item["language"] == "properties":
             adapter = "properties"
             adapter_inputs[adapter] += 1
@@ -1698,10 +2184,14 @@ def extract_source_topology(
                 )
             )
         elif item["kind"] == "manifest":
-            adapter = "manifest"
+            legacy_manifest = Path(item["path"]).name.casefold() in {
+                "package.json", "pyproject.toml", "pom.xml"
+            }
+            adapter = "manifest" if legacy_manifest else "multistack_manifest"
             adapter_inputs[adapter] += 1
+            parser = _parse_manifest if legacy_manifest else _parse_multistack_manifest
             relations.extend(
-                _parse_manifest(
+                parser(
                     item,
                     file_elements=file_elements,
                     elements=elements,
@@ -1718,20 +2208,31 @@ def extract_source_topology(
 
     relation_by_id = {item["id"]: item for item in relations}
     relations = sorted(relation_by_id.values(), key=lambda item: item["id"])
-    adapter_key_by_id = {
-        "python-ast-imports": "python",
-        "javascript-static-imports": "javascript",
-        "java-static-imports": "java",
-        "manifest-dependencies": "manifest",
-    }
-    adapter_outputs = {"python": 0, "javascript": 0, "java": 0, "manifest": 0, "properties": 0}
+    adapter_outputs = {key: 0 for key in adapter_keys}
+    element_by_id = {item["id"]: item for item in elements.values()}
     for relation in relations:
-        key = adapter_key_by_id.get(relation["attributes"].get("adapterId"))
+        source = element_by_id.get(relation["fromElementId"])
+        key = None
+        if source is not None:
+            if source["kind"] == "manifest":
+                key = (
+                    "multistack_manifest"
+                    if source["attributes"].get("adapterId") == "multistack-manifest-dependencies"
+                    else "manifest"
+                )
+            elif source["language"] in LANGUAGE_ADAPTERS:
+                key = source["language"]
+            elif source["language"] == "properties":
+                key = "properties"
         if key is not None:
             adapter_outputs[key] += 1
     public_inventory = []
     for item in inventory:
-        public_item = {key: value for key, value in item.items() if key != "_body"}
+        public_item = {
+            key: value
+            for key, value in item.items()
+            if key not in {"_body", "_multistack_scan"}
+        }
         public_inventory.append(public_item)
     public_inventory.sort(key=lambda item: item["path"])
     information_gaps = [
@@ -1739,7 +2240,7 @@ def extract_source_topology(
     ]
     if any(item["resolution"] in {"unresolved", "dynamic"} for item in relations):
         information_gaps.append("dynamic_or_unresolved_dependencies_present")
-    if adapter_inputs["javascript"]:
+    if adapter_inputs["javascript"] or adapter_inputs["typescript"]:
         information_gaps.append("javascript_typescript_full_parser_not_used")
     if adapter_inputs["java"]:
         information_gaps.extend(
@@ -1748,6 +2249,13 @@ def extract_source_topology(
                 "java_reflection_generated_sources_and_calls_not_resolved",
             ]
         )
+    for language, adapter in sorted(LANGUAGE_ADAPTERS.items()):
+        if language in {"python", "javascript", "typescript", "java"}:
+            continue
+        if adapter_inputs[language]:
+            information_gaps.append(
+                f"{language}_bounded_parser_does_not_resolve_calls_reflection_generated_code_or_framework_injection"
+            )
     if any(item["parseStatus"] == "failed" for item in inventory):
         information_gaps.append("source_parse_failures_present")
     if excluded["unsupportedSource"]:
@@ -1761,7 +2269,7 @@ def extract_source_topology(
                 "severity": "unsupported",
                 "reason": (
                     f"{excluded['unsupportedSource']} source-like files use languages "
-                    "without a V0.6 extractor adapter and were not read."
+                    "without a V0.85 extractor adapter and were not read."
                 ),
                 "preservedAs": "inventory.excluded.unsupported",
             }
@@ -1774,8 +2282,12 @@ def extract_source_topology(
             "sourceBinding": source_binding,
         },
     )
+    sorted_elements = sorted(elements.values(), key=lambda item: item["id"])
+    support_matrix = _build_support_matrix(
+        adapter_inputs, adapter_outputs, adapter_errors
+    )
     observation: dict[str, Any] = {
-        "formatVersion": "panorama-source-topology-observation.v0.1",
+        "formatVersion": "panorama-source-topology-observation.v0.2",
         "observationId": observation_id,
         "observedAt": observed_at,
         "producer": PRODUCER,
@@ -1795,10 +2307,15 @@ def extract_source_topology(
                 "maxDepth": MAX_DEPTH,
             },
         },
-        "elements": sorted(elements.values(), key=lambda item: item["id"]),
+        "elements": sorted_elements,
         "relations": relations,
         "informationGaps": sorted(information_gaps),
-        "extensions": {},
+        "extensions": {
+            "adapterRegistry": registry_projection(),
+            "supportMatrix": support_matrix,
+            "stackProfile": _build_stack_profile(sorted_elements, relations),
+            "monorepoBoundaries": _build_monorepo_boundaries(sorted_elements),
+        },
     }
     observation["integrity"] = {
         "hashAlgorithm": "sha256",
@@ -1841,7 +2358,7 @@ def extract_source_topology(
             "sha256": content_digest,
         },
         "outputBinding": {
-            "format": "panorama-source-topology-observation.v0.1",
+            "format": "panorama-source-topology-observation.v0.2",
             "revision": observation_id,
             "sha256": observation["integrity"]["semanticHash"],
         },
@@ -1874,32 +2391,66 @@ def extract_source_topology(
     if loss_errors:
         raise SourceTopologyError("Loss Report 无效：" + "; ".join(loss_errors[:10]))
 
-    adapters = []
-    for key, adapter_id, version in (
-        ("python", "python-ast-imports", "0.1.0"),
-        ("javascript", "javascript-static-imports", "0.1.0"),
-        ("java", "java-static-imports", "0.1.0"),
-        ("manifest", "manifest-dependencies", "0.2.0"),
-        ("properties", "java-properties-metadata", "0.1.0"),
-    ):
-        count = adapter_inputs[key]
-        errors = adapter_errors[key]
-        adapters.append(
+    receipt_adapters: dict[str, dict[str, Any]] = {}
+
+    def add_receipt_adapter(
+        adapter_id: str,
+        version: str,
+        keys: list[str],
+        *,
+        bounded: bool,
+    ) -> None:
+        target = receipt_adapters.setdefault(
+            adapter_id,
             {
                 "id": adapter_id,
                 "version": version,
-                "status": (
-                    "not_applicable"
-                    if count == 0
-                    else "partial"
-                    if errors or key in {"javascript", "java"}
-                    else "completed"
-                ),
-                "inputCount": count,
-                "outputCount": adapter_outputs[key],
-                "errorCount": errors,
-            }
+                "status": "not_applicable",
+                "inputCount": 0,
+                "outputCount": 0,
+                "errorCount": 0,
+                "_bounded": False,
+            },
         )
+        target["inputCount"] += sum(adapter_inputs[key] for key in keys)
+        target["outputCount"] += sum(adapter_outputs[key] for key in keys)
+        target["errorCount"] += sum(adapter_errors[key] for key in keys)
+        target["_bounded"] = target["_bounded"] or bounded
+
+    add_receipt_adapter("python-ast-imports", "0.1.0", ["python"], bounded=False)
+    add_receipt_adapter(
+        "javascript-static-imports", "0.1.0",
+        ["javascript", "typescript"], bounded=True,
+    )
+    add_receipt_adapter("java-static-imports", "0.1.0", ["java"], bounded=True)
+    add_receipt_adapter("manifest-dependencies", "0.3.0", ["manifest"], bounded=False)
+    add_receipt_adapter(
+        "multistack-manifest-dependencies", "0.1.0",
+        ["multistack_manifest"], bounded=False,
+    )
+    add_receipt_adapter(
+        "java-properties-metadata", "0.1.0", ["properties"], bounded=False
+    )
+    for language, adapter in sorted(LANGUAGE_ADAPTERS.items()):
+        if language in {"python", "javascript", "typescript", "java"}:
+            continue
+        add_receipt_adapter(
+            adapter["id"], adapter["version"], [language], bounded=True
+        )
+
+    adapters = []
+    for adapter_id in sorted(receipt_adapters):
+        item = receipt_adapters[adapter_id]
+        count = item["inputCount"]
+        item["status"] = (
+            "not_applicable"
+            if count == 0
+            else "partial"
+            if item["errorCount"] or item.pop("_bounded")
+            else "completed"
+        )
+        item.pop("_bounded", None)
+        adapters.append(item)
     receipt_id = _derived_id(
         "SRCREC",
         {

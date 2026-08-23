@@ -1,6 +1,6 @@
 # Panorama Model IR Contract v0.1
 
-状态：Implementation Slice D；Core Deployment + optional Source/Event inputs
+状态：V0.85 Release Candidate；Core Deployment + optional Source v0.1/v0.2 + Event inputs
 
 对应 Finding：SF-34、SF-35、SF-39、SF-40、SF-47、SF-48
 
@@ -19,8 +19,9 @@
 - exact-path `factProvenance`；
 - recorded `sourceBinding`。
 
-可选 Source 输入只接受通过 `source-topology-observation.v0.1` Schema、Semantic Hash、Evidence/Inventory
-Digest、Endpoint 与 Project ID 绑定检查的 Observation。不得从页面文案、DOM、文件相邻、名称相似、目录
+可选 Source 输入只接受通过 `source-topology-observation.v0.1` 或 `v0.2` Schema、Semantic Hash、
+Evidence/Inventory Digest、Endpoint 与 Project ID 绑定检查的 Observation。v0.2 还必须验证精确 Adapter Registry、
+Support Matrix 与 Stack Profile Evidence。不得从页面文案、DOM、文件相邻、名称相似、目录
 结构或 LLM 输出补实体和关系。可选 Event 输入只接受 Head=current、完整有效、Project 精确匹配的 Event
 Checkpoint；Checkpoint/事件链合同见 [Event Projection Contract](event-projection-contract.md)。
 

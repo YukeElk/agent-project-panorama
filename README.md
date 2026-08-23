@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.81 父子语义画布（V0.7 Compatible）
+# Agent Project Panorama V0.85 多语言个人项目全景候选（V0.81 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -92,6 +92,28 @@ V0.81 同时关闭验收后发现的三个编辑缺陷：已有模块可编辑�
 [`docs/panorama-business-flow-contract.md`](docs/panorama-business-flow-contract.md) 和
 [`docs/v0.8-unified-canvas-flow-iteration-plan.md`](docs/v0.8-unified-canvas-flow-iteration-plan.md)。当前实现验证见
 [`docs/v0.8-implementation-validation.md`](docs/v0.8-implementation-validation.md)。
+
+## V0.85 多语言 / 多技术栈发布候选
+
+V0.85 面向完整个人项目全景，不引入多人协作范围。它保留 V0.81 的唯一画布与父子语义导航，并新增
+`source-topology-observation.v0.2`、版本化 Multistack Registry、`supportMatrix`、证据绑定的
+`stackProfile`、Monorepo Boundary 和项目本地幂等 Source Sync。正式 L1 支持 Python、JavaScript、
+TypeScript、Java、Kotlin、Go、C#；Rust、PHP、Ruby、Swift、Scala、C、C++ 为 Preview L1。
+
+L1 只证明有界 package/namespace/import/dependency 抽取，不等于完整 AST、运行调用或业务流程理解。
+源码元素继续作为 `source_element` 候选进入 Model IR 和依赖/数据流 View，不会自动提升为正式 Module；
+多语言 Module Mapping Proposal 固定 `pending_review`。框架、数据、AI、接口与交付技术信号必须绑定 Evidence，
+不能由名称相似或布局推断。
+
+```powershell
+python scripts/sync_source_observation.py path/to/project `
+  --project-id PRJ-ID --observed-at 2026-08-24T12:00:00Z --json
+```
+
+发布评审范围、支持等级和生产指标见
+[`docs/v0.82-v0.85-personal-production-multistack-plan.md`](docs/v0.82-v0.85-personal-production-multistack-plan.md)；
+当前结论与变更说明见 [`docs/v0.85-release-audit.md`](docs/v0.85-release-audit.md) 和
+[`docs/v0.85-release-notes.md`](docs/v0.85-release-notes.md)。外部 Tag/Push/Release 仍需用户另行批准。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
 

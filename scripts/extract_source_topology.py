@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
     outputs = [args.observation_output, args.receipt_output, args.loss_output]
     existing = [str(path) for path in outputs if path.exists()]
     if existing and not args.overwrite:

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/panorama/source-topology-observation.schema.v0.2.json",
+  "title": "Panorama Multistack Source Topology Observation v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "observationId", "observedAt", "producer", "projectBinding", "sourceBinding", "inventory", "elements", "relations", "informationGaps", "integrity", "extensions"],
+  "properties": {
+    "formatVersion": {"const": "panorama-source-topology-observation.v0.2"},
+    "observationId": {"type": "string", "pattern": "^SRCOBS-[A-F0-9]{24}$"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "projectBinding": {"$ref": "#/$defs/projectBinding"},
+    "sourceBinding": {"$ref": "#/$defs/sourceBinding"},
+    "inventory": {
+      "type": "object", "additionalProperties": false, "required": ["files", "excluded", "limits"],
+      "properties": {
+        "files": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/inventoryFile"}},
+        "excluded": {
+          "type": "object", "additionalProperties": false, "required": ["ignored", "unsupported", "secretRisk"],
+          "properties": {
+            "ignored": {"type": "integer", "minimum": 0},
+            "unsupported": {"type": "integer", "minimum": 0},
+            "secretRisk": {"type": "integer", "minimum": 0}
+          }
+        },
+        "limits": {
+          "type": "object", "additionalProperties": false, "required": ["maxFiles", "maxFileBytes", "maxTotalBytes", "maxDepth"],
+          "properties": {
+            "maxFiles": {"type": "integer", "minimum": 1},
+            "maxFileBytes": {"type": "integer", "minimum": 1},
+            "maxTotalBytes": {"type": "integer", "minimum": 1},
+            "maxDepth": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    },
+    "elements": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/element"}},
+    "relations": {"type": "array", "maxItems": 500000, "items": {"$ref": "#/$defs/relation"}},
+    "informationGaps": {"type": "array", "maxItems": 10000, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 1024}},
+    "integrity": {"$ref": "#/$defs/integrity"},
+    "extensions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["adapterRegistry", "supportMatrix", "stackProfile"],
+      "properties": {
+        "adapterRegistry": {"$ref": "#/$defs/adapterRegistry"},
+        "supportMatrix": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/supportEntry"}},
+        "stackProfile": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/stackSignal"}},
+        "monorepoBoundaries": {"type": "array", "maxItems": 1000, "items": {"$ref": "#/$defs/monorepoBoundary"}}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stableId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "language": {"enum": ["python", "javascript", "typescript", "java", "kotlin", "go", "csharp", "rust", "php", "ruby", "swift", "scala", "c", "cpp", "json", "toml", "xml", "properties", "gradle", "go_mod", "csproj", "ruby_manifest", "swift_manifest", "cmake", "yaml", "hcl", "dockerfile", "unknown"]},
+    "producer": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": {"id": {"$ref": "#/$defs/stableId"}, "version": {"type": "string", "minLength": 1, "maxLength": 128}}
+    },
+    "projectBinding": {
+      "type": "object", "additionalProperties": false, "required": ["projectId", "rootName"],
+      "properties": {"projectId": {"$ref": "#/$defs/stableId"}, "rootName": {"type": "string", "minLength": 1, "maxLength": 512}}
+    },
+    "sourceBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "gitHead", "contentDigest", "coverage", "currentness", "includedFileCount", "includedByteCount"],
+      "properties": {
+        "mode": {"enum": ["git", "content_digest"]},
+        "gitHead": {"oneOf": [{"type": "string", "pattern": "^[a-fA-F0-9]{40}([a-fA-F0-9]{24})?$"}, {"type": "null"}]},
+        "contentDigest": {"$ref": "#/$defs/sha256"},
+        "coverage": {"enum": ["complete", "partial"]},
+        "currentness": {"enum": ["current", "unknown"]},
+        "includedFileCount": {"type": "integer", "minimum": 0},
+        "includedByteCount": {"type": "integer", "minimum": 0}
+      }
+    },
+    "inventoryFile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "kind", "language", "size", "sha256", "parseStatus", "accessClass"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "kind": {"enum": ["source", "manifest", "configuration"]},
+        "language": {"$ref": "#/$defs/language"},
+        "size": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "parseStatus": {"enum": ["parsed", "partial", "failed", "not_applicable"]},
+        "accessClass": {"const": "PROJECT_CONTENT"}
+      }
+    },
+    "evidencePin": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidenceId", "kind", "ref", "line", "column", "revision", "digest", "accessClass", "freshness"],
+      "properties": {
+        "evidenceId": {"$ref": "#/$defs/stableId"},
+        "kind": {"const": "source_location"},
+        "ref": {"type": "string", "minLength": 1, "maxLength": 2048},
+        "line": {"type": ["integer", "null"], "minimum": 1},
+        "column": {"type": ["integer", "null"], "minimum": 0},
+        "revision": {"type": "string", "minLength": 1, "maxLength": 256},
+        "digest": {"$ref": "#/$defs/sha256"},
+        "accessClass": {"const": "PROJECT_CONTENT"},
+        "freshness": {"const": "current"}
+      }
+    },
+    "element": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "kind", "name", "path", "language", "parseStatus", "factStatus", "authority", "confidence", "evidencePins", "attributes"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^SRCEL-[A-F0-9]{24}$"},
+        "kind": {"enum": ["source_file", "manifest", "configuration", "external_package", "unresolved_target"]},
+        "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "path": {"type": ["string", "null"], "maxLength": 2048},
+        "language": {"oneOf": [{"$ref": "#/$defs/language"}, {"type": "null"}]},
+        "parseStatus": {"enum": ["parsed", "partial", "failed", "not_applicable", "unresolved"]},
+        "factStatus": {"enum": ["observed", "declared", "derived", "unknown"]},
+        "authority": {"enum": ["observed", "declared", "inferred", "unknown"]},
+        "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+        "evidencePins": {"type": "array", "minItems": 1, "maxItems": 10000, "items": {"$ref": "#/$defs/evidencePin"}},
+        "attributes": {"type": "object"}
+      }
+    },
+    "relationAttributes": {
+      "type": "object", "additionalProperties": false,
+      "required": ["adapterId", "parser", "specifier", "runtimeObserved", "sequenceOrder"],
+      "properties": {
+        "adapterId": {"$ref": "#/$defs/stableId"},
+        "parser": {"enum": ["python_ast", "bounded_regex", "bounded_lexer", "json", "toml", "xml", "structured_manifest", "declaration_scanner"]},
+        "specifier": {"type": ["string", "null"], "maxLength": 512},
+        "typeOnly": {"type": "boolean"},
+        "dynamic": {"type": "boolean"},
+        "dependencyClass": {"type": "string", "minLength": 1, "maxLength": 512},
+        "runtimeObserved": {"const": false},
+        "sequenceOrder": {"type": "null"}
+      }
+    },
+    "relation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "kind", "name", "fromElementId", "toElementId", "resolution", "factStatus", "authority", "confidence", "evidencePins", "attributes"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^SRCREL-[A-F0-9]{24}$"},
+        "kind": {"enum": ["import", "type_import", "dynamic_import", "declared_dependency"]},
+        "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "fromElementId": {"type": "string", "pattern": "^SRCEL-[A-F0-9]{24}$"},
+        "toElementId": {"type": "string", "pattern": "^SRCEL-[A-F0-9]{24}$"},
+        "resolution": {"enum": ["resolved", "external", "unresolved", "dynamic"]},
+        "factStatus": {"enum": ["declared", "derived", "unknown"]},
+        "authority": {"enum": ["declared", "inferred", "unknown"]},
+        "confidence": {"enum": ["high", "medium", "low", "unknown"]},
+        "evidencePins": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "#/$defs/evidencePin"}},
+        "attributes": {"$ref": "#/$defs/relationAttributes"}
+      }
+    },
+    "adapterRegistry": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version", "hash"],
+      "properties": {"id": {"$ref": "#/$defs/stableId"}, "version": {"type": "string", "minLength": 1}, "hash": {"$ref": "#/$defs/sha256"}}
+    },
+    "supportEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["adapterId", "language", "level", "status", "inputCount", "outputCount", "errorCount", "informationGaps"],
+      "properties": {
+        "adapterId": {"$ref": "#/$defs/stableId"}, "language": {"$ref": "#/$defs/language"},
+        "level": {"enum": ["L0", "L1", "L2", "L3"]},
+        "status": {"enum": ["supported", "partial", "preview", "not_applicable", "unsupported"]},
+        "inputCount": {"type": "integer", "minimum": 0}, "outputCount": {"type": "integer", "minimum": 0},
+        "errorCount": {"type": "integer", "minimum": 0},
+        "informationGaps": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 512}}
+      }
+    },
+    "stackSignal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["signalId", "category", "technology", "sourceKind", "factStatus", "authority", "confidence", "adapterId", "evidencePinIds"],
+      "properties": {
+        "signalId": {"type": "string", "pattern": "^STKSIG-[A-F0-9]{24}$"},
+        "category": {"enum": ["runtime", "language", "frontend", "backend", "data", "messaging", "ai", "interface", "build", "deployment", "ci"]},
+        "technology": {"type": "string", "minLength": 1, "maxLength": 256},
+        "sourceKind": {"enum": ["language", "manifest_dependency", "manifest_metadata", "configuration", "filename"]},
+        "factStatus": {"enum": ["declared", "derived"]}, "authority": {"enum": ["declared", "inferred"]},
+        "confidence": {"enum": ["high", "medium", "low"]}, "adapterId": {"$ref": "#/$defs/stableId"},
+        "evidencePinIds": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/stableId"}}
+      }
+    },
+    "monorepoBoundary": {
+      "type": "object", "additionalProperties": false,
+      "required": ["boundaryId", "kind", "root", "name", "evidencePinIds"],
+      "properties": {
+        "boundaryId": {"type": "string", "pattern": "^WRKSP-[A-F0-9]{24}$"},
+        "kind": {"enum": ["workspace", "build_root", "package_root", "crate", "project"]},
+        "root": {"type": "string", "maxLength": 2048}, "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "evidencePinIds": {"type": "array", "minItems": 1, "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/stableId"}}
+      }
+    },
+    "integrity": {
+      "type": "object", "additionalProperties": false, "required": ["hashAlgorithm", "semanticHash", "hashScope"],
+      "properties": {"hashAlgorithm": {"const": "sha256"}, "semanticHash": {"$ref": "#/$defs/sha256"}, "hashScope": {"const": "observation_without_integrity"}}
+    }
+  }
+}

@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--source-observation",
         type=Path,
-        help="可选、已验证的 panorama-source-topology-observation.v0.1",
+        help="可选、已验证的 panorama-source-topology-observation.v0.1/v0.2",
     )
     parser.add_argument(
         "--event-store",
@@ -44,6 +44,8 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
     if args.output.exists() and not args.overwrite:
         print(f"Model IR 输出已存在：{args.output}", file=sys.stderr)
         return 2

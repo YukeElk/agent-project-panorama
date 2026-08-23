@@ -1,0 +1,36 @@
+{
+  "formatVersion": "panorama-v085-capability-expectations.v0.1",
+  "fixture": "examples/v0.85-multistack-capability-fixture",
+  "projectId": "PRJ-V085-CAP",
+  "observedAt": "2026-08-24T12:00:00Z",
+  "supportedLanguages": [
+    "python", "javascript", "typescript", "java", "kotlin", "go", "csharp"
+  ],
+  "previewLanguages": [
+    "rust", "php", "ruby", "swift", "scala", "c", "cpp"
+  ],
+  "relationAdapters": [
+    "python-ast-imports",
+    "javascript-static-imports",
+    "java-static-imports",
+    "kotlin-bounded-imports",
+    "go-bounded-imports",
+    "csharp-bounded-usings",
+    "rust-bounded-uses",
+    "php-bounded-uses",
+    "ruby-bounded-requires",
+    "swift-bounded-imports",
+    "scala-bounded-imports",
+    "c-cpp-bounded-includes",
+    "manifest-dependencies",
+    "multistack-manifest-dependencies"
+  ],
+  "technologies": [
+    "React", "Next.js", "OpenAI", "FastAPI", "SQLAlchemy", "Spring Boot",
+    "Gin", "Entity Framework Core", "Axum", "Laravel", "Rails", "Docker",
+    "GitHub Actions", "OpenAPI"
+  ],
+  "minimumRecall": 0.9,
+  "requiredEvidenceCoverage": 1.0,
+  "requiredForbiddenClaimAvoidance": 1.0
+}

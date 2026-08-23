@@ -1,8 +1,8 @@
-# Source Extraction Contract v0.1
+# Source Extraction Contract v0.2
 
-状态：WP2 Slice C Implemented；Python/JS/TS/Java/Manifest/Properties Foundation；未进入公开发布
+状态：V0.85 Release Candidate；v0.1 输入兼容；多语言/多技术栈 Adapter Registry 已实现；尚未获外部发布授权
 
-对应 Finding：SF-24、SF-30、SF-39、SF-40
+对应 Finding：SF-24、SF-30、SF-39、SF-40、SF-46
 
 ## 1. 目标与边界
 
@@ -40,7 +40,7 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 - Source Location 只有在 revision/digest 当前时可激活；旧位置保持可读但标记 stale/historical；
 - 每个输出 Node/Relation 都必须至少绑定一个 Source Location、配置 Pointer、作者模型 ID、Receipt 或 Event。
 
-## 5. WP2 Schema 冻结门禁
+## 5. Schema 版本与兼容
 
 只有 Repository Inventory 与至少一个 Language/Config Adapter 端到端原型通过后，才冻结
 `source-topology-observation.v0.1` 和 `extraction-receipt.v0.1`。Schema 必须由真实输出与负向测试证明，不先创建
@@ -53,7 +53,18 @@ Information Gap 与 currentness。未解析动态加载、反射、生成代码�
 - 既有 `transformation-loss-report.schema.v0.1.json`；
 - `source_topology.py`、`extract_source_topology.py` 与 Model IR 可选 Source Observation 输入。
 
-## 6. Slice A 支持范围
+V0.85 不修改已冻结的 v0.1，而是新增：
+
+- `source-topology-observation.schema.v0.2.json`；
+- `source-module-mapping-proposal.schema.v0.2.json`；
+- `stack_adapters.py` 单一版本化 Registry；
+- `sync_source_observation.py` 项目本地幂等同步入口。
+
+Extractor 默认输出 v0.2；Validator 和 Model IR 同时接受 v0.1/v0.2。v0.2 的 `adapterRegistry`、
+`supportMatrix`、`stackProfile` 与 `monorepoBoundaries` 都进入 Observation semantic hash。Registry 版本、
+Evidence Pin 或 Stack Signal 被篡改时必须 fail closed，不能静默降级到旧合同。
+
+## 6. V0.1 基线支持范围
 
 - Repository Inventory：Git tracked + 非忽略 untracked，或非 Git 有界目录清单；
 - Python：标准库 AST 的静态 import、type-only import、相对 import 与 dynamic import candidate；
@@ -80,11 +91,33 @@ Java 当前也不是完整 parser，Receipt Adapter 固定为 `partial`，Observ
 它不解析方法调用、同包隐式类型引用、反射、注解处理、生成源码或运行状态；Java import 始终只是 derived
 dependency candidate。Properties Adapter 只读取声明，不推断 profile 激活、数据库连接或部署暴露。
 
+### 6.1 V0.85 多语言支持等级
+
+支持等级描述证据能力，不等于“理解整个程序”：
+
+- L0：只识别文件/清单存在；
+- L1：有界解析 package/namespace/import/dependency 并生成带 Source Location 的静态候选；
+- L2：能在正式 Module 边界内生成受约束的内部逻辑 Observation；
+- L3：有受信运行/Event/Trace 证据，可陈述实际顺序或运行关系。
+
+V0.85 正式 L1：Python、JavaScript、TypeScript、Java、Kotlin、Go、C#。V0.85 Preview L1：Rust、PHP、Ruby、
+Swift、Scala、C、C++。Preview 表示已具备有界抽取和测试样例，但尚未达到正式样本集的 recall/precision 门禁；
+页面、Receipt 和 Support Matrix 必须显示 preview，不能称为正式全语义支持。所有静态关系仍固定
+`runtimeObserved=false`、`sequenceOrder=null`。
+
+Manifest/构建边界覆盖 `package.json`、`pyproject.toml`、`pom.xml`、Gradle、`go.mod`、`.csproj`、
+`Cargo.toml`、`composer.json`、`Gemfile`、`Package.swift` 与 CMake。技术栈 Profile 分为 framework、data、
+AI、interface 和 delivery 信号；例如 React/Next.js、Spring、ASP.NET Core、Gin、FastAPI、EF/SQLAlchemy、
+OpenAI/LangChain、gRPC/GraphQL/OpenAPI、Docker/GitHub Actions/Terraform。每个信号必须绑定 Evidence Pin，
+并明确 `declared` 或 `derived`，不能由文件名相邻关系推导架构事实。
+
 ## 7. Source Element → Module Mapping Proposal
 
-`compile_source_module_mapping.py` 可以把 main-source Java package 编译成待评审候选。它精确绑定 Source
-Observation ID/Hash/Content Digest、Source Element 与 Evidence Pin；test、configuration、manifest 和非 Java
-元素保持 unmapped。输出固定为 `pending_review`、`suggestedModuleId=null`，不会写正式 Panorama。
+`compile_source_module_mapping.py` 可以按受支持语言的稳定语义边界生成待评审候选：Java/Kotlin/Scala package、
+Go package directory、C# namespace/project、Python package、JS/TS workspace、Rust crate、PHP namespace、
+Ruby app、Swift module 和 C/C++ build target。它精确绑定 Source Observation ID/Hash/Content Digest、Source
+Element 与 Evidence Pin；配置、manifest 和无法证明分组边界的元素保持 unmapped。输出固定为
+`pending_review`、`suggestedModuleId=null`，不会写正式 Panorama。
 
 package 仅是候选分组信号。正式 Module 必须继续评审职责、接口、状态所有权和部署边界，并经过精确 Proposal
 Hash 的正常 Approval/Apply；Mapping Proposal 本身不能绕过该治理流程。
@@ -106,7 +139,7 @@ python scripts/compile_source_module_mapping.py .panorama-work/source-observatio
 
 Receipt 的安全陈述必须区分：有支持的输入时 `sourceBodiesReadTransiently=true`，零个受支持输入时为 `false`；
 `sourceBodyPersisted=false`、`classifiedSecretPathsRead=false` 与 `embeddedSecretScan=not_performed` 保持固定。
-发现 Kotlin/Go/Rust/C/C++/C#/Ruby/PHP/Swift/Scala 等 source-like 文件但没有对应 Adapter 时，
+发现 Dart、Elixir、F#/Lua/Objective-C/R/Solidity 等 source-like 文件但没有对应 Adapter 时，
 `coverage/status/lossReport` 必须为 `partial` 并披露 `unsupported_source_languages_present`，不得以 0 files
 报告 completed。若 Project Root 不是精确 Git checkout，未支持语言正文不进入 Content Digest，
 `currentness=unknown` 并披露 `unsupported_source_snapshot_not_content_bound`；固定外部 Source Inventory 只能作为
@@ -125,10 +158,18 @@ python scripts/extract_source_topology.py path/to/project `
 python scripts/compile_panorama_model_ir.py project-panorama.json `
   --source-observation .panorama-work/source-observation.json `
   --output .panorama-work/source-bound.model-ir.json
+
+python scripts/sync_source_observation.py path/to/project `
+  --project-id PRJ-ID `
+  --observed-at 2026-08-24T12:00:00Z
 ```
 
 `--observed-at` 是显式 as-of 输入，避免运行时钟破坏可重算性。输出存在时默认拒绝覆盖；`--overwrite`
 只覆盖候选制品，不修改正式 Panorama 或业务源码。
+
+Sync 只写项目自己的 `.panorama-work/source/`：不可变 Observation/Receipt/Loss 与 `latest.*` 指针制品。相同
+Source Binding + Registry Hash 返回 `noop`；内容或 Registry 变化才发布新观察。输出路径逃逸、Latest 被篡改、
+Observation 校验失败或锁冲突均 fail closed。该命令不修改 Panorama Core，不自动批准 Mapping Proposal。
 
 ## 10. V0.8 Module Logic 有界归纳链
 

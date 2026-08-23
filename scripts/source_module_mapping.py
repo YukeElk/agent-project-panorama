@@ -14,8 +14,9 @@ from source_topology import validate_source_observation
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / "schema" / "source-module-mapping-proposal.schema.v0.1.json"
-COMPILER = {"id": "panorama-source-module-mapping-compiler", "version": "0.1.0"}
+SCHEMA = ROOT / "schema" / "source-module-mapping-proposal.schema.v0.2.json"
+LEGACY_SCHEMA = ROOT / "schema" / "source-module-mapping-proposal.schema.v0.1.json"
+COMPILER = {"id": "panorama-source-module-mapping-compiler", "version": "0.85.0"}
 
 
 class SourceModuleMappingError(ValueError):
@@ -32,10 +33,73 @@ def compute_mapping_proposal_hash(proposal: dict[str, Any]) -> str:
     return compute_canonical_hash(value)
 
 
+def _workspace_root(path: str, boundaries: list[dict[str, Any]]) -> str:
+    matches = []
+    for boundary in boundaries:
+        root = boundary.get("root") or ""
+        if not root or path == root or path.startswith(root.rstrip("/") + "/"):
+            matches.append(root)
+    return max(matches, key=len) if matches else ""
+
+
+def _grouping_for(
+    element: dict[str, Any], boundaries: list[dict[str, Any]]
+) -> tuple[str, str, str] | None:
+    if element["kind"] != "source_file" or not element.get("path"):
+        return None
+    language = element.get("language")
+    path = element["path"]
+    parts = Path(path).parts
+    package = element["attributes"].get("package")
+    if language == "java" and path.startswith("src/main/") and package:
+        return "java_main_package", package, language
+    if language == "kotlin" and path.startswith("src/main/") and package:
+        return "kotlin_main_package", package, language
+    if language == "go" and not Path(path).name.endswith("_test.go"):
+        key = f"{Path(path).parent.as_posix()}:{package or Path(path).parent.name or 'main'}"
+        return "go_package_directory", key, language
+    if language == "csharp" and package:
+        root = _workspace_root(path, boundaries)
+        return "csharp_namespace_project", f"{root or '<root>'}:{package}", language
+    if language == "python" and "tests" not in {part.casefold() for part in parts}:
+        source_parts = list(parts)
+        if source_parts and source_parts[0] == "src":
+            source_parts = source_parts[1:]
+        if len(source_parts) >= 2:
+            return "python_import_package", source_parts[0], language
+    if language in {"javascript", "typescript"} and "test" not in Path(path).stem.casefold():
+        root = _workspace_root(path, boundaries)
+        relative = Path(path).relative_to(root) if root else Path(path)
+        relative_parts = list(relative.parts)
+        if relative_parts and relative_parts[0] == "src" and len(relative_parts) > 1:
+            key = f"{root or '<root>'}:src/{relative_parts[1]}"
+        else:
+            key = root or "<root>"
+        return "javascript_workspace_package", key, language
+    if language == "rust":
+        return "rust_crate", _workspace_root(path, boundaries) or "<root>", language
+    if language == "php" and package:
+        return "php_namespace_package", package, language
+    if language == "ruby":
+        return "ruby_application", _workspace_root(path, boundaries) or "<root>", language
+    if language == "swift":
+        return "swift_module", _workspace_root(path, boundaries) or Path(path).parent.as_posix(), language
+    if language == "scala" and package:
+        return "scala_package", package, language
+    if language in {"c", "cpp"}:
+        return "c_cpp_build_target", _workspace_root(path, boundaries) or Path(path).parent.as_posix() or "<root>", language
+    return None
+
+
 def validate_mapping_proposal(
     proposal: dict[str, Any], observation: dict[str, Any] | None = None
 ) -> list[str]:
-    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    schema_path = (
+        LEGACY_SCHEMA
+        if proposal.get("formatVersion") == "panorama-source-module-mapping-proposal.v0.1"
+        else SCHEMA
+    )
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
     errors = [
         f"/{'/'.join(map(str, error.absolute_path))}: {error.message}"
         for error in sorted(
@@ -80,6 +144,7 @@ def validate_mapping_proposal(
         }
         if set(mapped_ids) | set(proposal["unmappedSourceElementIds"]) != source_ids:
             errors.append("/candidates: 未精确覆盖全部 project-local Source Element")
+        boundaries = observation.get("extensions", {}).get("monorepoBoundaries", [])
         for candidate in proposal["candidates"]:
             expected_pins = {
                 pin["evidenceId"]
@@ -88,11 +153,22 @@ def validate_mapping_proposal(
             }
             if set(candidate["evidencePinIds"]) != expected_pins:
                 errors.append(f"/candidates/{candidate['candidateId']}: Evidence Pin 不匹配")
-            if any(
-                not (element_by_id[element_id].get("path") or "").startswith("src/main/")
-                for element_id in candidate["sourceElementIds"]
-            ):
-                errors.append(f"/candidates/{candidate['candidateId']}: 非 main source 被提升为候选")
+            if proposal["formatVersion"] == "panorama-source-module-mapping-proposal.v0.1":
+                if any(
+                    not (element_by_id[element_id].get("path") or "").startswith("src/main/")
+                    for element_id in candidate["sourceElementIds"]
+                ):
+                    errors.append(f"/candidates/{candidate['candidateId']}: 非 main source 被提升为候选")
+            else:
+                expected_groups = {
+                    _grouping_for(element_by_id[element_id], boundaries)
+                    for element_id in candidate["sourceElementIds"]
+                }
+                expected = (
+                    candidate["groupingBasis"], candidate["groupingKey"], candidate["language"]
+                )
+                if expected_groups != {expected}:
+                    errors.append(f"/candidates/{candidate['candidateId']}: 分组基础与 Source Element 不匹配")
     return errors
 
 
@@ -108,18 +184,18 @@ def compile_mapping_proposal(
         for item in observation["elements"]
         if item["kind"] in {"source_file", "manifest", "configuration"}
     ]
-    groups: dict[str, list[dict[str, Any]]] = {}
+    boundaries = observation.get("extensions", {}).get("monorepoBoundaries", [])
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     unmapped: list[str] = []
     for element in local_elements:
-        package = element["attributes"].get("package")
-        path = element.get("path") or ""
-        if element["language"] == "java" and path.startswith("src/main/") and package:
-            groups.setdefault(package, []).append(element)
-        else:
+        grouping = _grouping_for(element, boundaries)
+        if grouping is None:
             unmapped.append(element["id"])
+        else:
+            groups.setdefault(grouping, []).append(element)
 
     candidates = []
-    for package, elements in sorted(groups.items()):
+    for (basis, grouping_key, language), elements in sorted(groups.items()):
         element_ids = sorted(item["id"] for item in elements)
         evidence_ids = sorted(
             {
@@ -135,19 +211,23 @@ def compile_mapping_proposal(
                 for annotation in element["attributes"].get("typeAnnotations", [])
             }
         )
-        identity = {"package": package, "sourceElementIds": element_ids}
+        identity = {
+            "basis": basis, "groupingKey": grouping_key,
+            "language": language, "sourceElementIds": element_ids,
+        }
         candidates.append(
             {
                 "candidateId": _derived_id("MODCAND", identity),
-                "name": f"{package.rpartition('.')[2]} package candidate",
-                "groupingBasis": "java_main_package",
-                "groupingKey": package,
+                "name": f"{grouping_key.rpartition(':')[2].rpartition('.')[2]} candidate",
+                "groupingBasis": basis,
+                "groupingKey": grouping_key,
+                "language": language,
                 "sourceElementIds": element_ids,
                 "evidencePinIds": evidence_ids,
                 "signals": [f"type_annotation:{item}" for item in annotations],
                 "rationale": (
-                    "同一 main-source Java package 是责任边界候选信号；"
-                    "package 不等于 Module，仍需评审职责、接口、状态所有权和部署边界。"
+                    f"{basis} 是 {language} 责任边界候选信号；"
+                    "源码分组不等于 Module，仍需评审职责、接口、状态所有权和部署边界。"
                 ),
                 "confidence": "medium" if len(elements) > 1 or annotations else "low",
                 "reviewStatus": "pending",
@@ -162,7 +242,7 @@ def compile_mapping_proposal(
         "gitHead": observation["sourceBinding"]["gitHead"],
     }
     proposal: dict[str, Any] = {
-        "formatVersion": "panorama-source-module-mapping-proposal.v0.1",
+        "formatVersion": "panorama-source-module-mapping-proposal.v0.2",
         "proposalId": _derived_id(
             "MAP", {"compiler": COMPILER, "sourceBinding": binding, "generatedAt": generated_at}
         ),
@@ -175,12 +255,15 @@ def compile_mapping_proposal(
         "candidates": candidates,
         "unmappedSourceElementIds": sorted(unmapped),
         "informationGaps": [
-            "java_packages_are_candidates_not_formal_modules",
+            "source_groups_are_candidates_not_formal_modules",
             "responsibilities_interfaces_state_ownership_and_deployment_boundaries_require_review",
-            "test_configuration_manifest_and_non_java_elements_are_not_auto_promoted",
+            "test_configuration_manifest_and_unmapped_elements_are_not_auto_promoted",
             "mapping_proposal_does_not_modify_panorama",
         ],
-        "extensions": {},
+        "extensions": {
+            "sourceObservationFormat": observation["formatVersion"],
+            "candidateLanguages": sorted({item["language"] for item in candidates}),
+        },
     }
     proposal["integrity"] = {
         "hashAlgorithm": "sha256",

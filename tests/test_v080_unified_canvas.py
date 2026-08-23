@@ -266,6 +266,8 @@ def test_v080_guided_canvas_fits_desktop_shell_and_routes_by_facing_ports(projec
     assert "class CameraController" in source
     assert "class NavigationStack" in source
     assert 'data-semantic-enter="double-click"' in source
+    assert "var canEnter=" in source
+    assert "adapter.child(node.entityRef.id,architectureScope,parentViewId)" in source
     assert "this.store.enter(child.viewId)" in source
     assert "else if(to.x>from.x)" in source
     assert "else{x1=from.x;x2=to.x+to.w" in source

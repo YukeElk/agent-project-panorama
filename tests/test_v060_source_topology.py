@@ -205,8 +205,8 @@ def test_v060_javascript_parent_relative_imports_resolve_lexically(tmp_path):
 
 
 def test_v060_unsupported_source_language_is_partial_not_empty_success(tmp_path):
-    root = tmp_path / "kotlin-project"
-    _write(root / "src" / "Main.kt", "class Main\n")
+    root = tmp_path / "dart-project"
+    _write(root / "src" / "main.dart", "void main() {}\n")
     _write(root / "README.md", "documentation is not a source adapter input\n")
 
     bundle = extract_source_topology(
