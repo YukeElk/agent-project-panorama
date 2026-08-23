@@ -1626,8 +1626,13 @@ def _parse_manifest(
         elif item["language"] == "toml":
             try:
                 import tomllib
-            except ImportError as exc:  # Python 3.10 remains supported.
-                raise ValueError("tomllib is unavailable") from exc
+            except ImportError:  # Python 3.10 remains supported through tomli.
+                try:
+                    import tomli as tomllib
+                except ImportError as exc:
+                    raise ValueError(
+                        "TOML parser is unavailable; install tomli on Python 3.10"
+                    ) from exc
             data = tomllib.loads(text)
             project = data.get("project", {}) if isinstance(data, dict) else {}
             if isinstance(project, dict):

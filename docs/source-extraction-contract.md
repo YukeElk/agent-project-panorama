@@ -73,8 +73,8 @@ Evidence Pin 或 Stack Signal 被篡改时必须 fail closed，不能静默降�
   static import 只定位到可证明的类型前缀；重复 FQCN、wildcard 多目标保持 unresolved；另记录顶层声明、
   type-level annotation 与构造函数参数的行级元数据，但不推断框架行为；
 - Manifest：`package.json`、`pyproject.toml` 与 Maven `pom.xml` 声明依赖；Maven 使用标准库 XML parser，
-  dependency 坐标保持 declared；`pyproject.toml` 使用 Python 3.11+ 标准库
-  `tomllib`，Python 3.10 无 TOML parser 时保留 parse failure/Loss，不静默猜测；
+  dependency 坐标保持 declared；`pyproject.toml` 优先使用 Python 3.11+ 标准库
+  `tomllib`，Python 3.10 使用已声明依赖 `tomli`；两者都不可用时保留 parse failure/Loss，不静默猜测；
 - Java Properties：只持久化 key、line、Evidence Pin 和白名单安全值；`database`、Thymeleaf mode、Actuator
   exposure 可记录安全标量，datasource URL 只记录 `jdbc:<driver>` scheme。密码、用户名、token、任意自定义值
   一律 `omitted_by_policy`；配置声明不等于 active runtime；
