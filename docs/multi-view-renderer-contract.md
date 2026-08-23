@@ -1,6 +1,6 @@
 # Multi-View Renderer Contract v0.1
 
-状态：Renderer 0.3 / Guided View Set / Explain Pack Dialog Implemented；V0.7 Representative Artifacts Pending Human Acceptance
+状态：V0.6/V0.7 已实现能力作为兼容基线；V0.81 发布 V0.8 WP4–WP8 唯一读/编画布、父子导航、相机、Target Module Logic Studio、知识镜片、中文扫描层与编辑修正
 
 对应 Finding：SF-34～SF-36、SF-42、SF-43
 
@@ -43,13 +43,52 @@ Architecture、Data Flow、Deployment、Sequence 等作为 `系统` 内 Guided V
 Renderer 实现前必须先有至少 Architecture、Data Flow、Sequence 三种 Schema-valid View IR Fixture；每次修复
 只针对 Validator 的稳定 code/subject/evidence。候选失败不得修改正式 Panorama 或 last-good HTML。
 
-## 6. V0.7 逐步讲解
+## 6. V0.7 兼容基线
 
-Renderer 0.3 只在输入包含已完整验证的 `panorama-explain-pack.v0.1` 与对应 Panorama Core 时显示原生
-`<dialog>`。View/Decision/Transition/Evidence/Verification Story 都来自该包；当前步骤只高亮其正式
+V0.7 的 Renderer 0.3.1 只在输入包含已完整验证的 `panorama-explain-pack.v0.1` 与对应 Panorama Core 时，把 Guided
+Viewer 作为原生 `<dialog>` 嵌入正式 Panorama Renderer 0.4.0。该形态仅作为历史兼容基线；V0.8 集成交付必须使用
+第 7 节的同页画布。控制台、系统、演进、Evidence Inspector 与
+Architecture Studio 不得被平行只读页面替换。View/Decision/Risk/Transition/Evidence/Verification Story 都来自该包；当前步骤只高亮其正式
 `focusNodeIds/focusEdgeIds`，不得在浏览器内重编译事实或从文案搜索同名对象。切换 Story 时必须切到包中精确绑定的
 Chapter/View；Step、Dialog 开关与临时高亮均为 Viewer State，不进入包或 Bundle 的语义 Hash。
+
+节点以单击为主要选择路径，Enter/Space 只保留为可访问键盘等价项。中文标签、Purpose、关系、属性、证据与缺口
+必须进入主扫描层；原始枚举/JSON 只能放在次级详情。章节切换、空 View 或无效 hash 不能残留上一 View 的 Drawer。
 
 无 Explain Pack 时 Renderer 保持 V0.6 兼容并生成 `panorama-multi-view-bundle.v0.1`；带包时生成
 `panorama-multi-view-bundle.v0.2`，Bundle 身份语义包含 Explain Pack ID/Hash。两个模式都保持离线 CSP、无外部脚本、
 键盘原生控件和现有 Search/Trace/Drawer 行为。
+
+## 7. V0.8 唯一画布、父子导航与有限动效
+
+Renderer 任一时刻只能挂载一个 Canvas World。`read|edit` 是两种模式；Explain、Progress、Risk/Decision、
+Evidence 和 Playback 是 Knowledge Lens；Module/Dataflow/Runtime/Sequence/Lifecycle/Evolution-Risk 是
+Structural Lens。模式/镜片切换不得重建另一套节点 DOM、改变几何或丢失 Camera/Selection。
+
+主画布双击 Module 进入绑定 `rootModuleId` 的子画布；单击仅选择，Enter/Space 是键盘等价。
+子画布只展示当前模块内部逻辑与 Boundary Port，外部 Module/Resource 仅显示紧凑引用卡；面包屑/
+Back 恢复父画布离开前相机。Canvas Viewport 必须 `overflow:hidden`，支持空白拖动、Space+拖动、中键/触控平移、
+指针中心缩放和 Fit All/Selection，正常桌面不依赖画布滚动条。
+
+六类结构镜片均保留；空 Scene 显示绑定范围与信息缺口，并清空不属于当前 Scene 的详情、Story 和
+播放上下文。中文 `displayLabel` 作为主扫描层，技术名称/ID 作为次级身份；不得在浏览器即时翻译或写回。
+
+动效只消费 Explain Pack 中精确绑定的 `playbackScenarios`，并沿原 Scene Node/Edge Path 高亮。默认静止、
+用户启动、有限完成，提供暂停、重播、速度和 Reduced Motion；页面隐藏时暂停，打印保留静态语义。
+播放状态不进入任何语义 Hash。
+
+### 7.1 WP4 已实现边界
+
+- Integrated Bundle 以 `views[]` 承载顶层结构镜片，以 `childViews[]` 承载 `module_logic` 子画布；
+  Child 必须绑定同 Bundle 中的父架构 View，且不得进入 Guided View Set 顶层章节。
+- 阅读面只保留一个 `CanvasSceneAdapter + CanvasStore + CameraController + NavigationStack` Runtime；
+  旧 `全景查看 / 全景讲解` 已合并为 `阅读模式`，Explain/Detail/Playback 位于同一画布右侧知识镜片。
+- 主画布 Module 单击选择，双击或键盘 Enter/Space 下钻；子画布 Back 返回并按 View ID 恢复父相机。
+- 相机按 View 保存 `x/y/scale`，支持空白/中键/Space 平移、滚轮指针中心缩放、Zoom、Fit All 和
+  Fit Selection；这些字段只存在 Viewer State，不进入 Bundle/View Hash。
+- WP5 已把 Studio 迁入统一 Runtime，并恢复正式化治理链。
+- WP6 已把模块整体、内部节点、边界交互、项目进度、风险/决策和显式业务流程动效接入同一场景；
+  空场景必须清空旧选择/讲解上下文。
+- WP7 使用 authored `displayName` 作为中文主标签，技术名、ID、事实状态作为副标签；旧数据缺失时显示 Gap。
+- WP8 的 1440、1600、1920、2048、839、430、360 宽度矩阵、Reduced Motion、打印与真实项目局部归纳
+  已通过。机器通过不替代精确候选的人工视觉接受。

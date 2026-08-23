@@ -1,4 +1,10 @@
-"""Render validated Panorama View IR candidates into standalone HTML."""
+"""Render validated Panorama View IR candidates into offline HTML.
+
+V0.6 bundles remain standalone. A V0.8 bundle with an Explain Pack is mounted
+as a native, same-page Panorama canvas mode so the control, system, evolution,
+Evidence Inspector, Architecture Studio, explanations, and finite flow motion
+remain part of one governed delivery surface.
+"""
 
 from __future__ import annotations
 
@@ -18,8 +24,11 @@ from validate_panorama import ValidationRuntimeError, load_panorama
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "templates" / "panorama-multi-view.html"
+PANORAMA_TEMPLATE = ROOT / "templates" / "panorama.html"
+GUIDED_HOST_TEMPLATE = ROOT / "templates" / "panorama-guided-host.html"
 MARKER = "__PANORAMA_VIEW_BUNDLE__"
-RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.3.0"}
+GUIDED_BUNDLE_MARKER = "__PANORAMA_GUIDED_BUNDLE__"
+RENDERER = {"id": "panorama-multi-view-renderer", "version": "0.4.0"}
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -36,6 +45,7 @@ def build_bundle(
     model: dict[str, Any],
     views: list[dict[str, Any]],
     *,
+    child_views: list[dict[str, Any]] | None = None,
     view_set: dict[str, Any] | None = None,
     explain_pack: dict[str, Any] | None = None,
     panorama: dict[str, Any] | None = None,
@@ -47,6 +57,10 @@ def build_bundle(
         raise PanoramaViewIRError("至少需要一个 View IR。")
     view_ids: set[str] = set()
     for view in views:
+        if view.get("profile") == "module_logic":
+            raise PanoramaViewIRError(
+                "module_logic 是嵌套子画布，必须通过 child_views 提供。"
+            )
         errors = validate_view_ir(view, model)
         if errors:
             raise PanoramaViewIRError(
@@ -55,6 +69,34 @@ def build_bundle(
         if view["viewId"] in view_ids:
             raise PanoramaViewIRError(f"View IR 重复：{view['viewId']}")
         view_ids.add(view["viewId"])
+    child_views = child_views or []
+    parent_by_id = {view["viewId"]: view for view in views}
+    child_ids: set[str] = set()
+    child_keys: set[tuple[str, str]] = set()
+    for child in child_views:
+        if child.get("profile") != "module_logic":
+            raise PanoramaViewIRError("child_views 只接受 module_logic View IR。")
+        parent = parent_by_id.get(child.get("parentViewBinding", {}).get("viewId"))
+        if parent is None:
+            raise PanoramaViewIRError(
+                f"Module Logic View 缺少同 Bundle 父 View：{child.get('viewId', '?')}"
+            )
+        errors = validate_view_ir(child, model, parent_view=parent)
+        if errors:
+            raise PanoramaViewIRError(
+                f"Child View {child.get('viewId', '?')} 无效："
+                + "; ".join(errors[:20])
+            )
+        if child["viewId"] in view_ids or child["viewId"] in child_ids:
+            raise PanoramaViewIRError(f"View IR 重复：{child['viewId']}")
+        child_ids.add(child["viewId"])
+        scope = child["filters"]["architectureScopes"][0]
+        key = (child["rootModuleId"], scope)
+        if key in child_keys:
+            raise PanoramaViewIRError(
+                f"Module Logic Child 重复：{key[0]} / {key[1]}"
+            )
+        child_keys.add(key)
     guided = view_set or build_view_set(model, views)
     view_set_errors = validate_view_set(guided, model, views)
     if view_set_errors:
@@ -63,7 +105,12 @@ def build_bundle(
         if panorama is None:
             raise PanoramaViewIRError("接入 Explain Pack 时必须提供 Panorama Core。")
         explain_errors = validate_explain_pack(
-            explain_pack, panorama, model, views, guided
+            explain_pack,
+            panorama,
+            model,
+            views,
+            guided,
+            child_views=child_views,
         )
         if explain_errors:
             raise PanoramaViewIRError(
@@ -84,6 +131,16 @@ def build_bundle(
                 "layoutHash": view["integrity"]["layoutHash"],
             }
             for view in ordered
+        ],
+        "childViews": [
+            {
+                "viewId": view["viewId"],
+                "semanticHash": view["integrity"]["semanticHash"],
+                "layoutHash": view["integrity"]["layoutHash"],
+                "rootModuleId": view["rootModuleId"],
+                "parentViewId": view["parentViewBinding"]["viewId"],
+            }
+            for view in sorted(child_views, key=lambda item: item["viewId"])
         ],
         "explainPack": (
             {
@@ -107,17 +164,59 @@ def build_bundle(
         "model": model,
         "viewSet": guided,
         "views": ordered,
+        "childViews": sorted(child_views, key=lambda item: item["viewId"]),
         "explainPack": explain_pack,
     }
 
 
-def render_html(bundle: dict[str, Any]) -> str:
+def _render_standalone_html(bundle: dict[str, Any]) -> str:
     template = TEMPLATE.read_text(encoding="utf-8")
     if template.count(MARKER) != 1:
         raise PanoramaViewIRError("Multi-view Template Marker 数量必须精确为 1。")
     payload = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"))
     payload = payload.replace("<", "\\u003c").replace(">", "\\u003e")
     return template.replace(MARKER, payload)
+
+
+def _embed_panorama_data(template: str, panorama: dict[str, Any]) -> str:
+    script_open = '<script id="project-panorama-data" type="application/json">'
+    if template.count(script_open) != 1:
+        raise PanoramaViewIRError("正式 Panorama Template 数据锚点无效。")
+    payload_start = template.index(script_open) + len(script_open)
+    payload_end = template.index("</script>", payload_start)
+    payload = json.dumps(panorama, ensure_ascii=False, indent=2)
+    payload = payload.replace("</script", "<\\/script")
+    return template[:payload_start] + "\n" + payload + "\n  " + template[payload_end:]
+
+
+def _render_integrated_html(
+    bundle: dict[str, Any], panorama: dict[str, Any]
+) -> str:
+    panorama_template = PANORAMA_TEMPLATE.read_text(encoding="utf-8")
+    host_template = GUIDED_HOST_TEMPLATE.read_text(encoding="utf-8")
+    if panorama_template.count("</body>") != 1:
+        raise PanoramaViewIRError("正式 Panorama Template 必须精确包含一个 </body>。")
+    if host_template.count(GUIDED_BUNDLE_MARKER) != 1:
+        raise PanoramaViewIRError(
+            f"Guided Host Template Marker 数量无效：{GUIDED_BUNDLE_MARKER}"
+        )
+    payload = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"))
+    payload = payload.replace("<", "\\u003c").replace(">", "\\u003e")
+    host = host_template.replace(GUIDED_BUNDLE_MARKER, payload)
+    integrated = _embed_panorama_data(panorama_template, panorama)
+    return integrated.replace("</body>", host + "\n</body>", 1)
+
+
+def render_html(
+    bundle: dict[str, Any], *, panorama: dict[str, Any] | None = None
+) -> str:
+    if bundle.get("explainPack") is None:
+        return _render_standalone_html(bundle)
+    if panorama is None:
+        raise PanoramaViewIRError(
+            "V0.8 Explain Pack Renderer 必须嵌入正式 Panorama，不能生成替代主页面。"
+        )
+    return _render_integrated_html(bundle, panorama)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -127,6 +226,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("model", type=Path, help="Panorama Model IR JSON")
     parser.add_argument(
         "--view", type=Path, action="append", required=True, dest="views"
+    )
+    parser.add_argument(
+        "--child-view",
+        type=Path,
+        action="append",
+        dest="child_views",
+        help="可重复指定、绑定同 Bundle 父 View 的 module_logic 子画布",
     )
     parser.add_argument(
         "--view-set", type=Path, help="可选的已验证 Guided View Set JSON"
@@ -148,6 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         model = _load_object(args.model)
         views = [_load_object(path) for path in args.views]
+        child_views = [_load_object(path) for path in (args.child_views or [])]
         view_set = _load_object(args.view_set) if args.view_set is not None else None
         if (args.panorama is None) != (args.explain_pack is None):
             raise PanoramaViewIRError("--panorama 与 --explain-pack 必须同时提供。")
@@ -156,11 +263,12 @@ def main(argv: list[str] | None = None) -> int:
         bundle = build_bundle(
             model,
             views,
+            child_views=child_views,
             view_set=view_set,
             explain_pack=explain_pack,
             panorama=panorama,
         )
-        atomic_write(args.output, render_html(bundle))
+        atomic_write(args.output, render_html(bundle, panorama=panorama))
     except (
         OSError,
         UnicodeError,
@@ -178,10 +286,16 @@ def main(argv: list[str] | None = None) -> int:
                 "bundleHash": bundle["bundleHash"],
                 "viewSetId": bundle["viewSet"]["viewSetId"],
                 "viewCount": len(bundle["views"]),
+                "childViewCount": len(bundle["childViews"]),
                 "explainPackId": (
                     bundle["explainPack"]["explainPackId"]
                     if bundle["explainPack"] is not None
                     else None
+                ),
+                "surface": (
+                    "panorama-integrated-guided"
+                    if bundle["explainPack"] is not None
+                    else "standalone-multi-view"
                 ),
                 "visualReview": "pending",
             },

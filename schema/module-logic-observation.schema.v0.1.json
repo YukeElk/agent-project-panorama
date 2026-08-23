@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/module-logic-observation.schema.v0.1.json",
+  "title": "Panorama Module Logic Observation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "observationId",
+    "generatedAt",
+    "producer",
+    "projectBinding",
+    "moduleBinding",
+    "sourceBinding",
+    "asOf",
+    "evidencePins",
+    "nodes",
+    "edges",
+    "boundaryPorts",
+    "externalReferences",
+    "coverage",
+    "unresolved",
+    "transformationLoss",
+    "informationGaps",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": { "const": "module-logic-observation.v0.1" },
+    "observationId": { "type": "string", "pattern": "^MLO-[A-F0-9]{24}$" },
+    "generatedAt": { "$ref": "#/$defs/timestamp" },
+    "producer": { "$ref": "#/$defs/producer" },
+    "projectBinding": { "$ref": "#/$defs/projectBinding" },
+    "moduleBinding": { "$ref": "#/$defs/moduleBinding" },
+    "sourceBinding": { "$ref": "#/$defs/sourceBinding" },
+    "asOf": { "$ref": "#/$defs/timestamp" },
+    "evidencePins": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/evidencePin" }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/logicNode" }
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 2048,
+      "items": { "$ref": "#/$defs/logicEdge" }
+    },
+    "boundaryPorts": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/boundaryPort" }
+    },
+    "externalReferences": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/externalReference" }
+    },
+    "coverage": { "$ref": "#/$defs/coverage" },
+    "unresolved": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/unresolvedItem" }
+    },
+    "transformationLoss": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": { "$ref": "#/$defs/transformationLossItem" }
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 1024,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 2048 }
+    },
+    "integrity": { "$ref": "#/$defs/integrity" },
+    "extensions": { "type": "object" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "stableId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "contractVersion"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "contractVersion": { "const": "module-logic-observation.v0.1" }
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "panoramaSchemaVersion", "revision", "dataHash"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/stableId" },
+        "panoramaSchemaVersion": { "enum": ["0.1", "0.2"] },
+        "revision": { "type": "integer", "minimum": 0 },
+        "dataHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "moduleBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "moduleDigest"],
+      "properties": {
+        "moduleId": { "$ref": "#/$defs/stableId" },
+        "moduleDigest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sourceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "gitHead", "sourceContentDigest", "coverage", "currentness"],
+      "properties": {
+        "mode": { "enum": ["git", "content_digest", "unknown"] },
+        "gitHead": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+            { "type": "null" }
+          ]
+        },
+        "sourceContentDigest": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        },
+        "coverage": { "enum": ["complete", "partial", "unknown"] },
+        "currentness": { "enum": ["current", "recorded_as_of", "stale", "unknown"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "git" } } },
+          "then": { "properties": { "gitHead": { "type": "string" } } }
+        },
+        {
+          "if": { "properties": { "mode": { "const": "content_digest" } } },
+          "then": { "properties": { "sourceContentDigest": { "$ref": "#/$defs/sha256" } } }
+        }
+      ]
+    },
+    "evidencePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "kind",
+        "ref",
+        "lineStart",
+        "lineEnd",
+        "digest",
+        "accessClass",
+        "freshness"
+      ],
+      "properties": {
+        "evidenceId": { "$ref": "#/$defs/stableId" },
+        "kind": { "enum": ["source_location", "json_pointer", "reference_id", "event_id"] },
+        "ref": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "lineStart": {
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "lineEnd": {
+          "oneOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+        },
+        "digest": { "$ref": "#/$defs/sha256" },
+        "accessClass": { "const": "PROJECT_OPERATIONAL_METADATA" },
+        "freshness": { "enum": ["current", "recorded_as_of", "stale", "unknown"] }
+      }
+    },
+    "logicNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "displayName",
+        "type",
+        "purpose",
+        "rationale",
+        "implementationSummary",
+        "loopExitCondition",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePinIds",
+        "extensions"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "displayName": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 512 },
+            { "type": "null" }
+          ]
+        },
+        "type": {
+          "enum": [
+            "input",
+            "preprocess",
+            "decision",
+            "processing",
+            "llm_call",
+            "tool_call",
+            "agent_call",
+            "state_read",
+            "state_write",
+            "validation",
+            "loop",
+            "retry",
+            "fallback",
+            "output"
+          ]
+        },
+        "purpose": { "type": "string", "maxLength": 4096 },
+        "rationale": { "type": "string", "maxLength": 4096 },
+        "implementationSummary": { "type": "string", "maxLength": 8192 },
+        "loopExitCondition": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 2048 },
+            { "type": "null" }
+          ]
+        },
+        "factStatus": { "const": "derived" },
+        "authority": { "const": "inferred" },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "extensions": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "loop" } } },
+          "then": { "properties": { "loopExitCondition": { "type": "string", "minLength": 1 } } }
+        },
+        {
+          "if": { "not": { "properties": { "type": { "const": "loop" } } } },
+          "then": { "properties": { "loopExitCondition": { "type": "null" } } }
+        }
+      ]
+    },
+    "logicEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "fromNodeId",
+        "toNodeId",
+        "kind",
+        "condition",
+        "dataSummary",
+        "order",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePinIds",
+        "extensions"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "fromNodeId": { "$ref": "#/$defs/stableId" },
+        "toNodeId": { "$ref": "#/$defs/stableId" },
+        "kind": { "enum": ["flow", "conditional", "loop_back", "retry", "fallback"] },
+        "condition": { "type": "string", "maxLength": 2048 },
+        "dataSummary": { "type": "string", "maxLength": 4096 },
+        "order": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }]
+        },
+        "factStatus": { "const": "derived" },
+        "authority": { "const": "inferred" },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "extensions": { "type": "object" }
+      }
+    },
+    "boundaryPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "direction",
+        "internalNodeId",
+        "externalReferenceId",
+        "bindingKind",
+        "bindingId",
+        "dataSummary",
+        "protocol",
+        "factStatus",
+        "authority",
+        "confidence",
+        "evidencePinIds",
+        "extensions"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "direction": { "enum": ["input", "output", "bidirectional"] },
+        "internalNodeId": { "$ref": "#/$defs/stableId" },
+        "externalReferenceId": { "$ref": "#/$defs/stableId" },
+        "bindingKind": { "enum": ["connection", "resource_usage"] },
+        "bindingId": { "$ref": "#/$defs/stableId" },
+        "dataSummary": { "type": "string", "maxLength": 4096 },
+        "protocol": { "type": "string", "maxLength": 512 },
+        "factStatus": { "const": "derived" },
+        "authority": { "const": "inferred" },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "extensions": { "type": "object" }
+      }
+    },
+    "externalReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "entityRef", "label", "purpose", "evidencePinIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "entityRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "enum": ["module", "resource"] },
+            "id": { "$ref": "#/$defs/stableId" }
+          }
+        },
+        "label": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "purpose": { "type": "string", "maxLength": 4096 },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        },
+        "extensions": { "type": "object" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "filesConsidered", "filesReadTransiently", "supportedLanguages", "unsupportedLanguages"],
+      "properties": {
+        "status": { "enum": ["complete", "partial", "blocked"] },
+        "filesConsidered": { "type": "integer", "minimum": 0, "maximum": 20000 },
+        "filesReadTransiently": { "type": "integer", "minimum": 0, "maximum": 20000 },
+        "supportedLanguages": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        },
+        "unsupportedLanguages": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+        }
+      }
+    },
+    "unresolvedItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "summary", "evidencePinIds"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableId" },
+        "kind": {
+          "enum": [
+            "dynamic_call",
+            "reflection",
+            "generated_code",
+            "framework_injection",
+            "unsupported_language",
+            "unmapped_branch",
+            "unbound_external",
+            "other"
+          ]
+        },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    },
+    "transformationLossItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "sourceConstruct", "lossReason", "impact", "evidencePinIds"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,127}$" },
+        "sourceConstruct": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "lossReason": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "impact": { "enum": ["low", "medium", "high", "unknown"] },
+        "evidencePinIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stableId" }
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticHash", "semanticHashScope"],
+      "properties": {
+        "semanticHash": { "$ref": "#/$defs/sha256" },
+        "semanticHashScope": { "const": "module_logic_observation_without_integrity" }
+      }
+    }
+  }
+}

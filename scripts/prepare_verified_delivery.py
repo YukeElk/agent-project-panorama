@@ -18,6 +18,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("model", type=Path)
     parser.add_argument("--view", type=Path, action="append", required=True, dest="views")
+    parser.add_argument(
+        "--child-view",
+        type=Path,
+        action="append",
+        dest="child_views",
+        help="可选的已验证 Module Logic 子 View IR；可重复提供",
+    )
     parser.add_argument("--view-set", type=Path, help="可选的已验证 Guided View Set JSON")
     parser.add_argument("--panorama", type=Path, help="Explain Pack 绑定的 Panorama Core")
     parser.add_argument("--explain-pack", type=Path, help="可选的已验证 Explain Pack JSON")
@@ -38,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
             args.project_root,
             _read_json(args.model),
             [_read_json(path) for path in args.views],
+            child_views=[_read_json(path) for path in (args.child_views or [])],
             view_set=_read_json(args.view_set) if args.view_set else None,
             panorama=load_panorama(args.panorama)[0] if args.panorama else None,
             explain_pack=_read_json(args.explain_pack) if args.explain_pack else None,

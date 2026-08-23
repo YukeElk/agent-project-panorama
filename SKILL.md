@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.7，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑、多视图架构与逐步讲解，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.81，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的源码拓扑、多视图架构、逐步讲解与显式业务流轨迹，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 在不修改 Panorama Core、Model IR 或 View IR 枚举的前提下新增 hash-bound Explain Pack，并由同一包驱动 Codex 逐步交互 Fragment、Markdown 降级和全景原生 Dialog。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
+V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 新增 hash-bound Explain Pack。V0.81.0 发布父子语义画布 WP0–WP8：唯一 Canvas Runtime、`read|edit` 两模式、架构主画布/模块逻辑子画布，以及作为镜片的讲解、进度、风险/决策、证据和轨迹；同时修复编辑既有模块、拖动后连线重算、跨层吸附归属，以及控制台/演进/需求的信息架构。历史 V0.8 PVD 只作为回归基线；V0.81 代表制品由普通自然语言发布批准自动绑定唯一冻结候选。机器 Browser Evidence 缺口必须继续披露，不能被人工发布批准冒充为机器验证。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
 
 ## 不变量
 
@@ -28,7 +28,9 @@ V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Appl
 不绑定同一风险边界之后的每个机械步骤：
 
 - Target、Requirement、Decision、Review、Acceptance/Gate 状态、Waiver、Guidance、Credential、正式架构选型、
-  Policy 自身变化、冲突裁决、外部发布/导出、Hook 安装和破坏性删除继续要求准确 Hash 的人工批准；
+  Policy 自身变化、冲突裁决、外部发布/导出、Hook 安装和破坏性删除继续要求人工批准；外部发布若只有一个已冻结且
+  已展示/选中的候选，用户说“批准发布”或“批准发布为某版本”即已足够，Recorder 自动绑定准确 PVD/Hash/Bytes，
+  不得要求用户重复抄写机器标识；多个候选、候选变化、版本歧义或新重大风险才重新确认；
 - Inspect、Discovery、Preview、Diff、Validation、Studio 草稿/布局和 Advisory Review 不需要人工批准；
 - `continuous_observation.apply`、`verification_receipt.import`、`validation_manifest.execute`、
   `engineering_event.record`、`event_head.recover`、`verified_delivery.promote`、`renderer.generate` 和
@@ -468,6 +470,7 @@ python scripts/record_renderer_browser_evidence.py candidate.html browser-measur
   --output .panorama-work/views/browser-evidence.json
 python scripts/prepare_verified_delivery.py .panorama-work/views/project.model-ir.json `
   --view .panorama-work/views/project.current.module.view-ir.json `
+  --child-view .panorama-work/views/project.current.orchestrator.module-logic.view-ir.json `
   --view .panorama-work/views/project.target.module.view-ir.json `
   --view .panorama-work/views/project.dependency.view-ir.json `
   --view .panorama-work/views/project.current.deployment.view-ir.json `
@@ -486,11 +489,13 @@ python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLIC
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
 ```
 
-## V0.7.0 GUIDED VISUAL EXPLANATION
+## V0.7–V0.8 GUIDED VISUAL EXPLANATION
 
 需要把全景事实转为逐步交互讲解时，完整读取
-[V0.7 Design Closure](docs/v0.7-design-closure.md) 与
-[Panorama Explain Pack Contract](docs/panorama-explain-pack-contract.md)。V0.7 仍是单一 Skill，暂以 Codex
+[V0.7 Design Closure](docs/v0.7-design-closure.md)、
+[V0.8 Design Closure](docs/v0.8-design-closure.md)、
+[Panorama Explain Pack Contract](docs/panorama-explain-pack-contract.md) 与
+[Panorama Business Flow Contract](docs/panorama-business-flow-contract.md)。V0.8 仍是单一 Skill，暂以 Codex
 为运行终端；`visualize` 是可选呈现能力，不是 Panorama 的源码、模板或缓存依赖。不得复制、修改或硬编码
 其插件安装路径、版本目录或内部资源。
 
@@ -511,9 +516,12 @@ python scripts/compile_panorama_explain_pack.py project-panorama.local.html `
   --output .panorama-work/views/project.explain-pack.json
 ```
 
-- 每个 Guided Chapter 生成一个 View Story；Module、Dependency/Data Flow、Deployment/Runtime、Sequence、
+- 每个 Guided Chapter 生成一个 View Story；至少依次解释整图范围与边界、关键关系/阅读路径、每个节点的职责与
+  事实/实现/验证/运行状态、证据及时效以及未知项。Module、Dependency/Data Flow、Deployment/Runtime、Sequence、
   Lifecycle、Evolution/Risk 六类 Profile 必须保留各自的推断边界。
-- Decision 与正式 Architecture Transition 生成独立 Story；Evidence/Freshness/Information Gap 和
+- Decision、Risk 与正式 Architecture Transition 生成独立 Story。Decision 必须说明为什么需要决策、候选项细节、
+  推荐/已选状态及基于已记录 Option 事实的可能结果；Risk 必须说明风险描述/成因、可能影响、应对措施及关联追踪。
+  缺失 cause/context、impact 或 mitigation 时输出 `information_gap`，不得让模型补写。Evidence/Freshness/Information Gap 和
   Requirement→Acceptance/Gate 验证链作为跨视图 Story。没有正式 Core ID 关系时不得从自由文本补出影响、因果、
   Runtime Call、Blast Radius、验证通过或迁移完成。
 - `bound_fact` Claim 必须至少绑定 View Node/Edge、Model Entity/Relation、Core Reference 或 Evidence Pin
@@ -521,6 +529,11 @@ python scripts/compile_panorama_explain_pack.py project-panorama.local.html `
   Digest，任何 Project/Model/View Set/View/Core/Hash 错配都 fail closed。
 - Explain Pack 编译、预览和本地交互验证属于 Read-only / Automatic Quality，不新增人工门禁；它不得反向修改
   Panorama Core、Gate、Acceptance、Decision、Risk、Review 或 Policy。正式采纳与 last-good 晋升继续遵守原审批合同。
+- Module 讲解必须按“设计需求→设计原因→实现功能→系统角色→交互方式→技术选型→风险/决策”形成完整逻辑链，
+  首屏只展开第一个层级，其余细节按需展开；不得用关键词堆叠代替因果和职责说明。
+- 轨迹动效只能从 Core 中显式、已校验的 `businessFlows` 编译为 `playbackScenarios`。每步绑定真实 Module，除首步外
+  绑定一条连通前后 Module 的 Connection，并保留 Risk、Decision 与 Evidence/Core 引用；不得依据几何位置、名称或
+  自由文本猜测路径。动效必须有限、由用户启动、支持暂停/重播/速度/静止模式，页面隐藏、打印或减少动态时停止。
 
 用户要求在当前 Codex 对话内探索或讲解时：若会话中存在 `visualize` skill，必须先完整读取其当前说明，再把
 Fragment 输出到仓库外的线程可视化目录，并在同一回复中返回其内容引用；若不可用或渲染失败，则使用 Markdown
@@ -538,8 +551,11 @@ python scripts/render_codex_explainer.py project-panorama.local.html `
   --markdown-output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.md
 ```
 
-用户要求离线全景页面或 Verified Delivery 时，将同一 Explain Pack 注入 Multi-view Renderer；只有提供
-`--explain-pack` 与其精确绑定的 `--panorama` 才显示原生“讲解” Dialog，无 Explain Pack 的 V0.6 输入继续生成
+用户要求离线全景页面或 Verified Delivery 时，将同一 Explain Pack 作为正式 Panorama Renderer 当前 Scene 的只读讲解镜片；
+不得生成独立 Guided/Multi-view 画布、iframe 或 data URL，也不得用讲解替代控制台、系统、演进或 Evidence Inspector。节点单击
+必须直接打开详情，Enter/Space 只作为键盘等价操作；切换章节、空视图或无效 Deep Link 时必须清空旧选择与 Drawer。
+只有提供 `--explain-pack` 与其精确绑定的 `--panorama` 才允许在唯一 Canvas Runtime 中启用讲解镜片，无 Explain Pack 的
+V0.6 输入继续生成
 `panorama-multi-view-bundle.v0.1`：
 
 ```powershell
@@ -551,9 +567,55 @@ python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.js
   --output .panorama-work/views/project.guided.html
 ```
 
-两个呈现面必须报告同一 `explainPackId` 与 Semantic Hash。Fragment 的交互状态和 Dialog 当前步骤都是
+两个呈现面必须报告同一 `explainPackId` 与 Semantic Hash。Fragment、同页讲解与动效当前步骤都是
 Presentation State，不进入 Explain Pack Hash；Machine Browser Evidence 仍固定 `visualReview=pending`，不能替代
 用户对精确候选字节的视觉接受。
+
+讲解必须随项目进展重算，而不是在浏览器里自由续写。每次使用 V0.7/V0.8 讲解前先执行 Continuous Observation，并比较
+Panorama Revision/Data Hash、Model Semantic Hash/`asOf`、View Set Hash、每个 View Semantic/Layout Hash 与 Event
+投影。任一项变化时，按 `Core/Event → Model IR → View IR/View Set → Explain Pack → Renderer/Fragment` 顺序重新编译；
+旧 Explain Pack 不得复用。Validator 对任何旧 Revision、Core Object Digest 或上下游 Hash 都必须 fail closed。
+
+### V0.8 模块内部逻辑边界（实现中）
+
+需要展示或编辑“架构层级 → 功能模块 → 模块内部实现逻辑”时，完整读取
+[Module Logic Observation Contract](docs/module-logic-observation-contract.md)、
+[Module Logic Design Contract](docs/module-logic-design-contract.md) 和
+[V0.8 Parent/Child Implementation Plan](docs/v0.8-parent-child-semantic-canvas-implementation-plan.md)。
+
+- Current 必须使用通过 `module-logic-observation.v0.1` 验证的只读 Sidecar；不得把 AI 归纳直接写入
+  `architecture.moduleLogicDesigns`，也不得持久化源码正文、Prompt、模型输出或隐藏推理。
+- Target/Historical 只能来自正式 Core 或 Studio Candidate。跨模块端口绑定正式 Connection，资源端口绑定正式
+  Resource Usage；`unbound_candidate` 不得进入 Formal Proposal。
+- 源码变化后旧 Observation 立即 stale。保留 Target Candidate，但必须使其 Validation/Review/Proposal stale；
+  不得用名称或坐标对齐新旧内部节点。
+- WP2 已提供只读 Prepare/Materialize/Reconcile 工具，但 Codex 必须只瞬时读取 Analysis Manifest 列出的文件，
+  Candidate 只保存结构化逻辑和路径/行/digest；不得保存源码正文、Prompt 或模型输出。执行顺序与命令
+  见 [Source Extraction Contract](docs/source-extraction-contract.md) 第 10 节。
+- WP3 已提供共享 Model 身份下的 `module_logic` 子 View 编译；Current 接受通过校验的
+  `current|recorded_as_of`、`complete|partial` Observation。Partial 必须携带 Coverage/Currentness 与信息缺口，
+  `stale|unknown` 仍失败关闭；Target/Historical 只接受正式 Design，父 View/Scope/Root Module/数据源 Hash
+  任一不匹配即停止。
+- WP4 已在阅读模式实现唯一 Canvas Runtime、父子导航和相机恢复；Integrated Bundle 的顶层 `views[]` 与
+  嵌套 `childViews[]` 必须分开传入，子 View 不得进入 Guided View Set 顶层章节。
+- WP5 已把 Studio 迁入同一 Canvas Runtime，并完成 Target Module Logic Candidate、Hash 分离和正式治理闭环专项验证。
+- WP6–WP7 已把模块整体/节点/边界交互、进度、风险/决策和显式业务流动效编译为同一画布镜片；
+  authored `displayName` 是中文主标签，技术名与 ID 为副标签，缺失时只降级显示并记录 Gap，不自动翻译写回。
+- WP8 已覆盖 AI Wiki、Spring PetClinic、Backstage、复杂 Agent 逻辑与浏览器尺寸矩阵。机器绿色只表示具备
+  发布评审能力；公开发布仍须有人工发布批准，但唯一冻结候选由 Recorder 自动绑定 PVD 与精确 Artifact Hash，
+  不要求用户在批准语句中复述这些标识。
+
+### V0.8 需求演进与控制台决策投影
+
+需要判断“需求目前处于哪个阶段、影响哪些层级/模块、关联哪个架构版本与迁移、如何形成发布和证据”时，完整读取
+[Requirement Evolution & Decision Projection Contract](docs/requirement-evolution-contract.md)。
+
+- 控制台只保留当前阶段退出、需求健康度、架构迁移、风险与决策摘要；完整 Requirement 库属于演进页；
+- P0 只能沿正式 ID 字段生成只读推导，必须标注“推导”；名称、坐标、画布邻近和自由文本不能成为关系来源；
+- 原始 Trace、JSON Pointer、Trace Gap Candidate 与 Formal Finding 默认折叠为技术诊断；人类主层使用
+  “需求 → 阶段 → 层级/模块 → 版本迁移 → 发布/验收/部署”的连续逻辑链；
+- P1 `Requirement Realization` 和可重建 Architecture Snapshot 尚未进入 Core。完成 Schema、Migration、Validator、
+  Renderer 和负向测试前，不得把迁移链称为某版本的完整架构，也不得声明这些字段已可写。
 
 ## CONTINUOUS OBSERVATION
 
@@ -670,7 +732,7 @@ python scripts/studio_bridge.py path/to/project-panorama.html `
 
 只有用户明确要求 Agent 评审时才在启动参数中提供受信 Codex CLI 路径；页面/API 不得选择 executable、参数、cwd 或环境。Bridge 只探测 `--codex-cli` 指定的普通可执行文件，坏路径必须拒绝启动，未提供参数时不得从环境变量、PATH 或用户目录自动发现。Bridge 必须只绑定 `127.0.0.1` 随机端口，使用一次性 capability、同源 Origin、CSRF 与 no-store 响应；不要把它暴露到局域网、云端或多人环境。
 
-Studio Session 保存在 `.panorama-work/studio/`，正式 `project-panorama-data` 在画布编辑期间保持不变。支持多个候选与最多三个方案比较；浏览器 `CLIENT_*` 检查不是 Formal Finding。语义操作与布局操作必须分开，只有语义变化使正式校验、Agent Review、Proposal 与 Approval stale。只把 Bridge 返回的完整 `semanticHash / layoutHash` 称为权威 Hash；离线页面固定显示 `not_computed_by_bridge`。候选 Semantic Diff 中正式实体只按 `entityRef.type + entityRef.id` 对齐，草稿只按 session-local ID 对齐，不得用显示名称猜测同一实体，也不得把坐标、缩放或操作时间算入语义差异。Data/Git/Source/CAS/候选变化等 stale 原因必须逐项保留，不压缩为模糊标签。
+Studio Session 保存在 `.panorama-work/studio/`，正式 `project-panorama-data` 在画布编辑期间保持不变。支持多个候选与最多三个方案比较；浏览器 `CLIENT_*` 检查不是 Formal Finding。V0.8 候选可增加、重命名、设置父级、排序和受约束删除层级/功能区；`id/name/parentLayerId/kind/order` 参与候选语义，`layoutHeight/selected/collapsed` 只属于布局，正式化时只把前者物化到 `architecture.layers`。层级环、未知父级、含子层或含节点的删除必须失败关闭。语义操作与布局操作必须分开，只有语义变化使正式校验、Agent Review、Proposal 与 Approval stale。只把 Bridge 返回的完整 `semanticHash / layoutHash` 称为权威 Hash；离线页面固定显示 `not_computed_by_bridge`。候选 Semantic Diff 中正式实体只按 `entityRef.type + entityRef.id` 对齐，草稿只按 session-local ID 对齐，不得用显示名称猜测同一实体，也不得把坐标、缩放或操作时间算入语义差异。Data/Git/Source/CAS/候选变化等 stale 原因必须逐项保留，不压缩为模糊标签。
 
 保持 Studio 主流程仅用键盘可完成：候选 Tab 实现方向键和 Home/End；节点用 `Alt + 方向键` 调整布局并只记录 Layout Operation；为每条 SVG 连线提供可聚焦文本等价项；Drawer/Dialog 打开后移动焦点，Tab 闭环，Esc 关闭并把焦点返回触发控件。840px 以下使用组件、画布、属性/检查分段面板。保持正文至少 13px、辅助文字至少 12px、主要触控目标至少 44×44 CSS px；未实现完整 Tree 键盘模型前不要使用 `tree/treeitem`。只报告 WCAG 相关实现证据，不宣称完整 WCAG 认证。
 

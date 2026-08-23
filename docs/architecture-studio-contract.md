@@ -1,4 +1,4 @@
-# Architecture Studio V0.3 合同
+# Architecture Studio V0.3/V0.8 合同
 
 ## 定位
 
@@ -29,7 +29,7 @@ header 获取受保护的 `/studio/document`，fragment 随即从地址栏移除
 
 ## 用户流程
 
-1. 在 Panorama 中进入 `系统 → 逻辑架构 → 架构设计 Studio`。
+1. 在 Panorama 唯一画布中从阅读模式切换到编辑模式；不挂载第二张 Studio 画布。
 2. 从正式 Target（不存在时使用 Current）创建隔离会话。
 3. 新建、克隆、重命名或归档候选；编辑模块和数据流；最多比较三个候选。
 4. 浏览器基础检查持续运行。它只产生 `CLIENT_*` 检查，不是 Formal Finding。
@@ -98,3 +98,30 @@ Hash、Data/Git/Source/CAS Binding 变化时才要求重新批准。
 - Git/Data/Source 漂移：保留草稿并标记 stale，禁止 Proposal/批准/Apply；不自动 rebase。
 - Codex 不可用或未登录：正式 Validator 仍可运行，Agent 评审显示 `not_configured`。
 - Apply 失败：正式 HTML 保持原状态；若事务已开始，保留备份用于审计与恢复。
+
+## V0.8 候选层级画布
+
+Candidate 新增 `architectureLayers` 语义投影。用户可在 Studio 中新增、重命名、排序、设置父层级并安全删除层级/
+功能区；节点继续绑定 Layer，数据流继续绑定显式端点。Layer ID、名称、顺序、父子关系、Kind 和 Summary 进入
+Candidate Semantic Hash 与 Proposal Diff；坐标、折叠和 `layoutHeight` 只进入 Layout。
+
+Client Validator 必须拒绝重复 Layer ID、未知父层级、父子循环和节点悬空 Layer 引用。删除仍含模块或子层的 Layer
+必须在 UI 中阻断；Formal Validator 再次校验完整 Panorama。候选物化可以更新正式 `architecture.layers`，但只有
+Proposal 的精确 Hash Approval 与 Apply 才能修改项目 Core。
+
+## V0.8 父子语义画布与 Module Logic Candidate
+
+Studio 是唯一 Canvas Runtime 的 `edit` 模式，不是与查看/讲解并列的工具。进入编辑模式时保留当前
+`architecture|module_logic(moduleId)` 场景、Camera 和 Selection，但把数据源从正式 Current/
+Target 投影切换为隔离 Candidate。
+
+- 架构主画布编辑 Layer Container、Module Card 和 Candidate Connection；
+- Layer/Module 的 authored `displayName` 是可编辑中文主显示名，稳定 `name` 是只读技术名；清空
+  `displayName` 只触发兼容降级与 Information Gap，不得覆盖技术名或由浏览器自动翻译；
+- 模块子画布编辑 Logic Node/Edge、Loop/Condition、Boundary Port 和内部数据流；
+- 其他模块/资源在子画布中只是只读外部引用卡。新建跨模块交互必须同时生成 Candidate
+  Connection Diff 并披露受影响模块；
+- `moduleLogicCanvases[]` 属于 Candidate。名称、节点类型、边端点、条件、Loop 退出条件、端口绑定和关联
+  ID 进入 Semantic Hash；内部节点/端口坐标进入 Layout Hash；Camera、Selection、Explain/Playback 不进入两者；
+- Current Observation 始终只读。复制为 Target Candidate 只是创建起点，不提升事实状态；
+- `unbound_candidate` 只允许草稿中存在，Formal Validation/Proposal 必须拒绝未绑定边界端口。

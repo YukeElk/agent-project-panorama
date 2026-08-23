@@ -30,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("panorama", type=Path, help="Panorama JSON 或 Single HTML")
     parser.add_argument("model", type=Path, help="Panorama Model IR JSON")
     parser.add_argument("--view", type=Path, action="append", required=True, dest="views")
+    parser.add_argument("--child-view", type=Path, action="append", dest="child_views")
     parser.add_argument("--view-set", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--overwrite", action="store_true")
@@ -52,6 +53,7 @@ def main(argv: list[str] | None = None) -> int:
             _load(args.model),
             [_load(path) for path in args.views],
             _load(args.view_set),
+            child_views=[_load(path) for path in (args.child_views or [])],
         )
         atomic_write(args.output, json.dumps(pack, ensure_ascii=False, indent=2) + "\n")
     except (ValidationRuntimeError, PanoramaExplainPackError) as exc:

@@ -17,6 +17,7 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 from event_projection import validate_event_checkpoint
+from module_logic_observation import validate_module_logic_observation
 from panorama_io import compute_canonical_hash, compute_data_hash
 from source_topology import validate_source_observation
 from validate_panorama import load_panorama, validate_data
@@ -27,6 +28,10 @@ MODEL_SCHEMA = ROOT / "schema" / "panorama-model-ir.schema.v0.1.json"
 VIEW_SCHEMA = ROOT / "schema" / "panorama-view-ir.schema.v0.1.json"
 MODEL_COMPILER = {"id": "panorama-core-model-compiler", "version": "0.4.0"}
 VIEW_COMPILER = {"id": "panorama-module-view-compiler", "version": "0.1.0"}
+MODULE_LOGIC_VIEW_COMPILER = {
+    "id": "panorama-module-logic-view-compiler",
+    "version": "0.1.0",
+}
 DEPENDENCY_VIEW_COMPILER = {
     "id": "panorama-dependency-dataflow-view-compiler",
     "version": "0.1.0",
@@ -251,6 +256,54 @@ def _model_source_pin(pin: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _model_module_logic_pin(pin: dict[str, Any]) -> dict[str, Any]:
+    """Normalize a Module Logic Observation pin without retaining source text."""
+    suffix = ""
+    line_start = pin.get("lineStart")
+    line_end = pin.get("lineEnd")
+    if line_start is not None:
+        suffix = f"#L{line_start}"
+        if line_end is not None and line_end != line_start:
+            suffix += f"-L{line_end}"
+    return {
+        "evidenceId": pin["evidenceId"],
+        "kind": pin["kind"],
+        "ref": pin["ref"] + suffix,
+        "revision": None,
+        "digest": pin["digest"],
+        "accessClass": pin["accessClass"],
+        "freshness": pin["freshness"],
+    }
+
+
+def _display_fields(value: dict[str, Any]) -> dict[str, str]:
+    technical = str(value["name"])
+    display = value.get("displayName")
+    if not isinstance(display, str) or not display.strip():
+        display = technical
+    return {"displayLabel": display, "technicalLabel": technical}
+
+
+def _empty_layer_bindings() -> dict[str, None]:
+    return {"current": None, "target": None, "historical": None}
+
+
+def _relation_semantics(
+    *,
+    mode: str,
+    protocol: str | None = None,
+    data_summary: str | None = None,
+    order: int | None = None,
+) -> dict[str, Any]:
+    return {
+        "protocol": protocol or None,
+        "mode": mode,
+        "dataSummary": data_summary or None,
+        "order": order,
+        "asynchronous": None,
+    }
+
+
 def _event_fact(authority: str) -> str:
     return "derived" if authority == "inferred" else authority
 
@@ -292,6 +345,7 @@ def compile_model_ir(
     *,
     source_observation: dict[str, Any] | None = None,
     event_checkpoint: dict[str, Any] | None = None,
+    module_logic_observations: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     report = validate_data(data)
     if report.errors:
@@ -313,6 +367,7 @@ def compile_model_ir(
             {
                 "id": layer["id"],
                 "name": layer["name"],
+                **_display_fields(layer),
                 "order": layer["order"],
                 "summary": layer.get("summary", ""),
                 "evidencePins": [
@@ -333,6 +388,7 @@ def compile_model_ir(
                 "id": module["id"],
                 "kind": "module",
                 "name": module["name"],
+                **_display_fields(module),
                 "layerBindings": _layer_bindings(module, scopes),
                 "architectureScopes": scopes,
                 "purpose": module.get("purpose", ""),
@@ -454,6 +510,203 @@ def compile_model_ir(
                 },
             }
         )
+
+    module_logic_bindings: list[dict[str, Any]] = []
+    formal_logic_relations: list[dict[str, Any]] = []
+    for design_index, design in enumerate(architecture.get("moduleLogicDesigns", [])):
+        scope = design["architectureScope"]
+        design_pointer = f"/architecture/moduleLogicDesigns/{design_index}"
+        design_digest = compute_canonical_hash(design)
+        binding = {
+            "source": "formal_design",
+            "moduleId": design["moduleId"],
+            "architectureScope": scope,
+            "designId": design["id"],
+            "designDigest": design_digest,
+        }
+        module_logic_bindings.append(binding)
+        binding_key = f"formal_design:{design['id']}:{design_digest}"
+
+        for node_index, node in enumerate(design["nodes"]):
+            pointer = f"{design_pointer}/nodes/{node_index}"
+            pin = _evidence_pin(pointer=pointer, value=node, data_hash=data_hash)
+            entities.append(
+                {
+                    "id": node["id"],
+                    "kind": "module_logic_node",
+                    "name": node["name"],
+                    **_display_fields(node),
+                    "layerBindings": _empty_layer_bindings(),
+                    "architectureScopes": [scope],
+                    "purpose": node.get("purpose", ""),
+                    "factStatus": "declared",
+                    "authority": "declared",
+                    "confidence": "unknown",
+                    "evidencePins": [pin],
+                    "attributes": {
+                        "rootModuleId": design["moduleId"],
+                        "moduleLogicSource": "formal_design",
+                        "moduleLogicBindingKey": binding_key,
+                        "designId": design["id"],
+                        "logicNodeId": node["id"],
+                        "logicType": node["type"],
+                        "rationale": node.get("rationale", ""),
+                        "implementationSummary": node.get(
+                            "implementationSummary", ""
+                        ),
+                        "loopExitCondition": node.get("loopExitCondition"),
+                        "requirementIds": node.get("requirementIds", []),
+                        "decisionIds": node.get("decisionIds", []),
+                        "riskIds": node.get("riskIds", []),
+                        "referenceIds": node.get("referenceIds", []),
+                    },
+                }
+            )
+
+        for edge_index, edge in enumerate(design["edges"]):
+            pointer = f"{design_pointer}/edges/{edge_index}"
+            pin = _evidence_pin(pointer=pointer, value=edge, data_hash=data_hash)
+            formal_logic_relations.append(
+                {
+                    "id": edge["id"],
+                    "kind": "logic_flow",
+                    "name": edge.get("condition") or edge["kind"],
+                    "fromEntityId": edge["fromNodeId"],
+                    "toEntityId": edge["toNodeId"],
+                    "direction": "one_way",
+                    "architectureScopes": [scope],
+                    "factStatus": "declared",
+                    "authority": "declared",
+                    "confidence": "unknown",
+                    "evidencePins": [pin],
+                    "semantics": _relation_semantics(
+                        mode=edge["kind"],
+                        data_summary=edge.get("dataSummary"),
+                        order=edge.get("order"),
+                    ),
+                    "attributes": {
+                        "rootModuleId": design["moduleId"],
+                        "moduleLogicSource": "formal_design",
+                        "moduleLogicBindingKey": binding_key,
+                        "designId": design["id"],
+                        "logicEdgeId": edge["id"],
+                        "condition": edge.get("condition", ""),
+                        "referenceIds": edge.get("referenceIds", []),
+                    },
+                }
+            )
+
+        for port_index, port in enumerate(design["boundaryPorts"]):
+            pointer = f"{design_pointer}/boundaryPorts/{port_index}"
+            pin = _evidence_pin(pointer=pointer, value=port, data_hash=data_hash)
+            entities.append(
+                {
+                    "id": port["id"],
+                    "kind": "boundary_port",
+                    "name": port["name"],
+                    "displayLabel": port["name"],
+                    "technicalLabel": port["name"],
+                    "layerBindings": _empty_layer_bindings(),
+                    "architectureScopes": [scope],
+                    "purpose": port.get("dataSummary", ""),
+                    "factStatus": "declared",
+                    "authority": "declared",
+                    "confidence": "unknown",
+                    "evidencePins": [pin],
+                    "attributes": {
+                        "rootModuleId": design["moduleId"],
+                        "moduleLogicSource": "formal_design",
+                        "moduleLogicBindingKey": binding_key,
+                        "designId": design["id"],
+                        "boundaryPortId": port["id"],
+                        "portDirection": port["direction"],
+                        "internalNodeId": port["internalNodeId"],
+                        "externalEntityType": port["externalEntityRef"]["type"],
+                        "externalEntityId": port["externalEntityRef"]["id"],
+                        "bindingKind": port["bindingKind"],
+                        "bindingId": port["bindingId"],
+                        "dataSummary": port.get("dataSummary", ""),
+                        "protocol": port.get("protocol", ""),
+                        "referenceIds": port.get("referenceIds", []),
+                    },
+                }
+            )
+            internal_id = port["internalNodeId"]
+            external_id = port["externalEntityRef"]["id"]
+            if port["direction"] == "input":
+                internal_from, internal_to = port["id"], internal_id
+                external_from, external_to = external_id, port["id"]
+                direction = "one_way"
+            elif port["direction"] == "output":
+                internal_from, internal_to = internal_id, port["id"]
+                external_from, external_to = port["id"], external_id
+                direction = "one_way"
+            else:
+                internal_from, internal_to = internal_id, port["id"]
+                external_from, external_to = port["id"], external_id
+                direction = "two_way"
+            common_attributes = {
+                "rootModuleId": design["moduleId"],
+                "moduleLogicSource": "formal_design",
+                "moduleLogicBindingKey": binding_key,
+                "designId": design["id"],
+                "boundaryPortId": port["id"],
+                "bindingKind": port["bindingKind"],
+                "bindingId": port["bindingId"],
+                "portDirection": port["direction"],
+            }
+            formal_logic_relations.extend(
+                [
+                    {
+                        "id": _stable_derived_id(
+                            "MLREL",
+                            {"binding": binding_key, "port": port["id"], "side": "internal"},
+                        ),
+                        "kind": "port_binding",
+                        "name": port["name"],
+                        "fromEntityId": internal_from,
+                        "toEntityId": internal_to,
+                        "direction": direction,
+                        "architectureScopes": [scope],
+                        "factStatus": "declared",
+                        "authority": "declared",
+                        "confidence": "unknown",
+                        "evidencePins": [pin],
+                        "semantics": _relation_semantics(
+                            mode="internal_port_binding",
+                            protocol=port.get("protocol"),
+                            data_summary=port.get("dataSummary"),
+                        ),
+                        "attributes": {**common_attributes, "boundarySide": "internal"},
+                    },
+                    {
+                        "id": _stable_derived_id(
+                            "MLREL",
+                            {"binding": binding_key, "port": port["id"], "side": "external"},
+                        ),
+                        "kind": (
+                            "resource_usage"
+                            if port["bindingKind"] == "resource_usage"
+                            else "port_binding"
+                        ),
+                        "name": port["name"],
+                        "fromEntityId": external_from,
+                        "toEntityId": external_to,
+                        "direction": direction,
+                        "architectureScopes": [scope],
+                        "factStatus": "declared",
+                        "authority": "declared",
+                        "confidence": "unknown",
+                        "evidencePins": [pin],
+                        "semantics": _relation_semantics(
+                            mode=port["bindingKind"],
+                            protocol=port.get("protocol"),
+                            data_summary=port.get("dataSummary"),
+                        ),
+                        "attributes": {**common_attributes, "boundarySide": "external"},
+                    },
+                ]
+            )
     entities.sort(key=lambda item: item["id"])
 
     relations: list[dict[str, Any]] = []
@@ -507,6 +760,8 @@ def compile_model_ir(
                 },
             }
         )
+
+    relations.extend(formal_logic_relations)
 
     for deployment_index, deployment in enumerate(data.get("deployments", [])):
         scopes = _deployment_scopes(deployment["status"])
@@ -738,6 +993,286 @@ def compile_model_ir(
         relations.sort(key=lambda item: item["id"])
     else:
         source_binding = _source_binding(data)
+
+    module_logic_observation_gaps: set[str] = set()
+    seen_current_logic_modules: set[str] = set()
+    for observation in module_logic_observations or []:
+        observation_errors = validate_module_logic_observation(observation, data)
+        if observation_errors:
+            raise PanoramaViewIRError(
+                "Module Logic Observation 无效："
+                + "; ".join(observation_errors[:10])
+            )
+        module_id = observation["moduleBinding"]["moduleId"]
+        if module_id in seen_current_logic_modules:
+            raise PanoramaViewIRError(
+                f"同一 Module 只能绑定一个 Current Module Logic Observation：{module_id}"
+            )
+        seen_current_logic_modules.add(module_id)
+        currentness = observation["sourceBinding"]["currentness"]
+        source_coverage = observation["sourceBinding"]["coverage"]
+        logic_coverage = observation["coverage"]["status"]
+        if (
+            currentness not in {"current", "recorded_as_of"}
+            or source_coverage not in {"complete", "partial"}
+            or logic_coverage not in {"complete", "partial"}
+        ):
+            raise PanoramaViewIRError(
+                "Current Module Logic 只接受 current/recorded_as_of 且"
+                f" complete/partial 的有效 Observation：{module_id}"
+            )
+        observation_id = observation["observationId"]
+        observation_hash = observation["integrity"]["semanticHash"]
+        binding_key = f"current_observation:{observation_id}:{observation_hash}"
+        module_logic_bindings.append(
+            {
+                "source": "current_observation",
+                "moduleId": module_id,
+                "architectureScope": "current",
+                "observationId": observation_id,
+                "semanticHash": observation_hash,
+                "coverage": logic_coverage,
+                "sourceCoverage": source_coverage,
+                "currentness": currentness,
+            }
+        )
+        pin_by_id = {
+            pin["evidenceId"]: _model_module_logic_pin(pin)
+            for pin in observation["evidencePins"]
+        }
+        node_entity_by_local_id: dict[str, str] = {}
+        for node in observation["nodes"]:
+            entity_id = _stable_derived_id(
+                "MLEN",
+                {
+                    "observationId": observation_id,
+                    "kind": "logic_node",
+                    "localId": node["id"],
+                },
+            )
+            node_entity_by_local_id[node["id"]] = entity_id
+            entities.append(
+                {
+                    "id": entity_id,
+                    "kind": "module_logic_node",
+                    "name": node["name"],
+                    "displayLabel": node.get("displayName") or node["name"],
+                    "technicalLabel": node["name"],
+                    "layerBindings": _empty_layer_bindings(),
+                    "architectureScopes": ["current"],
+                    "purpose": node.get("purpose", ""),
+                    "factStatus": node["factStatus"],
+                    "authority": node["authority"],
+                    "confidence": node["confidence"],
+                    "evidencePins": [
+                        pin_by_id[pin_id] for pin_id in node["evidencePinIds"]
+                    ],
+                    "attributes": {
+                        "rootModuleId": module_id,
+                        "moduleLogicSource": "current_observation",
+                        "moduleLogicBindingKey": binding_key,
+                        "observationId": observation_id,
+                        "logicNodeId": node["id"],
+                        "logicType": node["type"],
+                        "rationale": node.get("rationale", ""),
+                        "implementationSummary": node.get(
+                            "implementationSummary", ""
+                        ),
+                        "loopExitCondition": node.get("loopExitCondition"),
+                    },
+                }
+            )
+
+        for edge in observation["edges"]:
+            relations.append(
+                {
+                    "id": _stable_derived_id(
+                        "MLREL",
+                        {
+                            "observationId": observation_id,
+                            "kind": "logic_edge",
+                            "localId": edge["id"],
+                        },
+                    ),
+                    "kind": "logic_flow",
+                    "name": edge.get("condition") or edge["kind"],
+                    "fromEntityId": node_entity_by_local_id[edge["fromNodeId"]],
+                    "toEntityId": node_entity_by_local_id[edge["toNodeId"]],
+                    "direction": "one_way",
+                    "architectureScopes": ["current"],
+                    "factStatus": edge["factStatus"],
+                    "authority": edge["authority"],
+                    "confidence": edge["confidence"],
+                    "evidencePins": [
+                        pin_by_id[pin_id] for pin_id in edge["evidencePinIds"]
+                    ],
+                    "semantics": _relation_semantics(
+                        mode=edge["kind"],
+                        data_summary=edge.get("dataSummary"),
+                        order=edge.get("order"),
+                    ),
+                    "attributes": {
+                        "rootModuleId": module_id,
+                        "moduleLogicSource": "current_observation",
+                        "moduleLogicBindingKey": binding_key,
+                        "observationId": observation_id,
+                        "logicEdgeId": edge["id"],
+                        "condition": edge.get("condition", ""),
+                    },
+                }
+            )
+
+        external_by_id = {
+            external["id"]: external for external in observation["externalReferences"]
+        }
+        for port in observation["boundaryPorts"]:
+            port_entity_id = _stable_derived_id(
+                "MLPORT",
+                {
+                    "observationId": observation_id,
+                    "kind": "boundary_port",
+                    "localId": port["id"],
+                },
+            )
+            external = external_by_id[port["externalReferenceId"]]
+            external_entity_id = external["entityRef"]["id"]
+            port_pins = [
+                pin_by_id[pin_id] for pin_id in port["evidencePinIds"]
+            ]
+            entities.append(
+                {
+                    "id": port_entity_id,
+                    "kind": "boundary_port",
+                    "name": port["name"],
+                    "displayLabel": port["name"],
+                    "technicalLabel": port["name"],
+                    "layerBindings": _empty_layer_bindings(),
+                    "architectureScopes": ["current"],
+                    "purpose": port.get("dataSummary", ""),
+                    "factStatus": port["factStatus"],
+                    "authority": port["authority"],
+                    "confidence": port["confidence"],
+                    "evidencePins": port_pins,
+                    "attributes": {
+                        "rootModuleId": module_id,
+                        "moduleLogicSource": "current_observation",
+                        "moduleLogicBindingKey": binding_key,
+                        "observationId": observation_id,
+                        "boundaryPortId": port["id"],
+                        "portDirection": port["direction"],
+                        "internalNodeId": port["internalNodeId"],
+                        "externalEntityType": external["entityRef"]["type"],
+                        "externalEntityId": external_entity_id,
+                        "externalReferenceId": external["id"],
+                        "bindingKind": port["bindingKind"],
+                        "bindingId": port["bindingId"],
+                        "dataSummary": port.get("dataSummary", ""),
+                        "protocol": port.get("protocol", ""),
+                    },
+                }
+            )
+            internal_entity_id = node_entity_by_local_id[port["internalNodeId"]]
+            if port["direction"] == "input":
+                internal_from, internal_to = port_entity_id, internal_entity_id
+                external_from, external_to = external_entity_id, port_entity_id
+                direction = "one_way"
+            elif port["direction"] == "output":
+                internal_from, internal_to = internal_entity_id, port_entity_id
+                external_from, external_to = port_entity_id, external_entity_id
+                direction = "one_way"
+            else:
+                internal_from, internal_to = internal_entity_id, port_entity_id
+                external_from, external_to = port_entity_id, external_entity_id
+                direction = "two_way"
+            common_attributes = {
+                "rootModuleId": module_id,
+                "moduleLogicSource": "current_observation",
+                "moduleLogicBindingKey": binding_key,
+                "observationId": observation_id,
+                "boundaryPortId": port["id"],
+                "bindingKind": port["bindingKind"],
+                "bindingId": port["bindingId"],
+                "portDirection": port["direction"],
+            }
+            relations.extend(
+                [
+                    {
+                        "id": _stable_derived_id(
+                            "MLREL",
+                            {"binding": binding_key, "port": port["id"], "side": "internal"},
+                        ),
+                        "kind": "port_binding",
+                        "name": port["name"],
+                        "fromEntityId": internal_from,
+                        "toEntityId": internal_to,
+                        "direction": direction,
+                        "architectureScopes": ["current"],
+                        "factStatus": port["factStatus"],
+                        "authority": port["authority"],
+                        "confidence": port["confidence"],
+                        "evidencePins": port_pins,
+                        "semantics": _relation_semantics(
+                            mode="internal_port_binding",
+                            protocol=port.get("protocol"),
+                            data_summary=port.get("dataSummary"),
+                        ),
+                        "attributes": {**common_attributes, "boundarySide": "internal"},
+                    },
+                    {
+                        "id": _stable_derived_id(
+                            "MLREL",
+                            {"binding": binding_key, "port": port["id"], "side": "external"},
+                        ),
+                        "kind": (
+                            "resource_usage"
+                            if port["bindingKind"] == "resource_usage"
+                            else "port_binding"
+                        ),
+                        "name": port["name"],
+                        "fromEntityId": external_from,
+                        "toEntityId": external_to,
+                        "direction": direction,
+                        "architectureScopes": ["current"],
+                        "factStatus": port["factStatus"],
+                        "authority": port["authority"],
+                        "confidence": port["confidence"],
+                        "evidencePins": port_pins,
+                        "semantics": _relation_semantics(
+                            mode=port["bindingKind"],
+                            protocol=port.get("protocol"),
+                            data_summary=port.get("dataSummary"),
+                        ),
+                        "attributes": {**common_attributes, "boundarySide": "external"},
+                    },
+                ]
+            )
+        module_logic_observation_gaps.update(observation["informationGaps"])
+        if logic_coverage != "complete":
+            module_logic_observation_gaps.add(
+                f"module_logic_coverage_partial:{module_id}"
+            )
+        if source_coverage != "complete":
+            module_logic_observation_gaps.add(
+                f"module_logic_source_coverage_partial:{module_id}"
+            )
+        if currentness != "current":
+            module_logic_observation_gaps.add(
+                f"module_logic_currentness_recorded_as_of:{module_id}"
+            )
+        module_logic_observation_gaps.update(
+            f"module_logic_unresolved:{module_id}:{item['kind']}"
+            for item in observation["unresolved"]
+        )
+        module_logic_observation_gaps.update(
+            f"module_logic_transformation_loss:{module_id}:{item['code']}"
+            for item in observation["transformationLoss"]
+        )
+    entities.sort(key=lambda item: item["id"])
+    relations.sort(key=lambda item: item["id"])
+    module_logic_bindings.sort(
+        key=lambda item: (item["moduleId"], item["architectureScope"], item["source"])
+    )
+
     event_projection_gaps: set[str] = set()
     event_checkpoint_binding: dict[str, Any] | None = None
     if event_checkpoint is None:
@@ -1108,6 +1643,7 @@ def compile_model_ir(
             "projectBinding": project_binding,
             "sourceBinding": source_binding,
             "eventBinding": event_binding,
+            "moduleLogicBindings": module_logic_bindings,
             "asOf": as_of,
         },
     )
@@ -1120,6 +1656,13 @@ def compile_model_ir(
         information_gaps.append("source_currentness_not_verified")
     if source_observation is not None:
         information_gaps.extend(source_observation["informationGaps"])
+    information_gaps.extend(sorted(module_logic_observation_gaps))
+    for layer in architecture.get("layers", []):
+        if not isinstance(layer.get("displayName"), str) or not layer["displayName"].strip():
+            information_gaps.append(f"display_name_missing:layer:{layer.get('id', 'unknown')}")
+    for module in architecture.get("modules", []):
+        if not isinstance(module.get("displayName"), str) or not module["displayName"].strip():
+            information_gaps.append(f"display_name_missing:module:{module.get('id', 'unknown')}")
 
     model: dict[str, Any] = {
         "formatVersion": "panorama-model-ir.v0.1",
@@ -1133,6 +1676,7 @@ def compile_model_ir(
         "layers": layers,
         "entities": entities,
         "relations": relations,
+        "moduleLogicBindings": module_logic_bindings,
         "informationGaps": sorted(information_gaps),
         "extensions": {
             **(
@@ -1193,6 +1737,55 @@ def validate_model_ir(model: dict[str, Any]) -> list[str]:
             errors.append(
                 f"/relations/{relation['id']}: 未知 toEntityId {relation['toEntityId']}"
             )
+    module_ids = {
+        item["id"] for item in model["entities"] if item["kind"] == "module"
+    }
+    binding_keys: set[tuple[str, str]] = set()
+    for index, binding in enumerate(model.get("moduleLogicBindings", [])):
+        module_id = binding["moduleId"]
+        scope = binding["architectureScope"]
+        key = (module_id, scope)
+        if key in binding_keys:
+            errors.append(
+                f"/moduleLogicBindings/{index}: 同一 Module/Scope 存在重复 Binding"
+            )
+        binding_keys.add(key)
+        if module_id not in module_ids:
+            errors.append(
+                f"/moduleLogicBindings/{index}/moduleId: 未知 Module {module_id}"
+            )
+        if binding["source"] == "current_observation":
+            binding_key = (
+                f"current_observation:{binding['observationId']}:{binding['semanticHash']}"
+            )
+        else:
+            binding_key = (
+                f"formal_design:{binding['designId']}:{binding['designDigest']}"
+            )
+        bound_entities = [
+            item
+            for item in model["entities"]
+            if item.get("attributes", {}).get("moduleLogicBindingKey") == binding_key
+        ]
+        if not any(item["kind"] == "module_logic_node" for item in bound_entities):
+            errors.append(
+                f"/moduleLogicBindings/{index}: 未找到绑定的 Module Logic Node"
+            )
+        if any(
+            item.get("attributes", {}).get("rootModuleId") != module_id
+            or scope not in item["architectureScopes"]
+            for item in bound_entities
+        ):
+            errors.append(
+                f"/moduleLogicBindings/{index}: Entity Root Module 或 Scope 与 Binding 不匹配"
+            )
+    for entity in model["entities"]:
+        if entity["kind"] in {"module_logic_node", "boundary_port"}:
+            root_module_id = entity.get("attributes", {}).get("rootModuleId")
+            if root_module_id not in module_ids:
+                errors.append(
+                    f"/entities/{entity['id']}: Module Logic Entity 未绑定正式 Module"
+                )
     return errors
 
 
@@ -1247,7 +1840,7 @@ def compile_module_view_ir(
                 "groupType": "layer",
                 "groupRef": layer["id"],
                 "layerId": layer["id"],
-                "label": layer["name"],
+                "label": layer.get("displayLabel", layer["name"]),
                 "order": layer["order"],
             }
         )
@@ -1261,7 +1854,7 @@ def compile_module_view_ir(
             {
                 "id": node_id,
                 "entityRef": {"type": "entity", "id": entity["id"]},
-                "label": entity["name"],
+                "label": entity.get("displayLabel", entity["name"]),
                 "kind": entity["kind"],
                 "groupId": group_by_layer.get(
                     entity["layerBindings"].get(selected_scope)
@@ -1355,6 +1948,272 @@ def compile_module_view_ir(
     return view
 
 
+def _module_logic_binding_key(binding: dict[str, Any]) -> str:
+    if binding["source"] == "current_observation":
+        return (
+            f"current_observation:{binding['observationId']}:{binding['semanticHash']}"
+        )
+    return f"formal_design:{binding['designId']}:{binding['designDigest']}"
+
+
+def compile_module_logic_view_ir(
+    model: dict[str, Any],
+    *,
+    parent_view: dict[str, Any],
+    root_module_id: str,
+    architecture_scopes: list[str] | None = None,
+) -> dict[str, Any]:
+    """Compile one evidence-bound module child canvas from the shared Model IR."""
+    model_errors = validate_model_ir(model)
+    if model_errors:
+        raise PanoramaViewIRError("Model IR 无效：" + "; ".join(model_errors[:10]))
+    parent_errors = validate_view_ir(parent_view, model)
+    if parent_errors:
+        raise PanoramaViewIRError(
+            "父架构 View IR 无效：" + "; ".join(parent_errors[:10])
+        )
+    if parent_view["profile"] != "module" or parent_view["viewType"] != "architecture":
+        raise PanoramaViewIRError("Module Logic 子画布必须绑定 module 架构父 View。")
+    scopes = _checked_single_scope(architecture_scopes, profile="module_logic")
+    scope = scopes[0]
+    if parent_view["filters"]["architectureScopes"] != scopes:
+        raise PanoramaViewIRError("Module Logic Scope 必须与父架构 View 精确一致。")
+    parent_entity_ids = {
+        node["entityRef"]["id"] for node in parent_view["nodes"]
+    }
+    if root_module_id not in parent_entity_ids:
+        raise PanoramaViewIRError(
+            f"父架构 View 未投影 Root Module：{root_module_id}"
+        )
+    entity_by_id = {item["id"]: item for item in model["entities"]}
+    root_module = entity_by_id.get(root_module_id)
+    if root_module is None or root_module["kind"] != "module":
+        raise PanoramaViewIRError(f"未知正式 Root Module：{root_module_id}")
+
+    matches = [
+        item
+        for item in model.get("moduleLogicBindings", [])
+        if item["moduleId"] == root_module_id
+        and item["architectureScope"] == scope
+    ]
+    if len(matches) != 1:
+        raise PanoramaViewIRError(
+            f"Root Module/Scope 必须精确绑定一个 Module Logic 数据源："
+            f"{root_module_id}/{scope}，实际 {len(matches)} 个"
+        )
+    binding = matches[0]
+    if scope == "current" and binding["source"] != "current_observation":
+        raise PanoramaViewIRError("Current Module Logic 只能来自源码 Observation。")
+    if scope in {"target", "historical"} and binding["source"] != "formal_design":
+        raise PanoramaViewIRError("Target/Historical Module Logic 只能来自正式 Design。")
+    binding_key = _module_logic_binding_key(binding)
+    internal_entities = [
+        item
+        for item in model["entities"]
+        if item.get("attributes", {}).get("moduleLogicBindingKey") == binding_key
+    ]
+    internal_ids = {item["id"] for item in internal_entities}
+    selected_relations = [
+        item
+        for item in model["relations"]
+        if item.get("attributes", {}).get("moduleLogicBindingKey") == binding_key
+    ]
+    selected_ids = set(internal_ids)
+    for relation in selected_relations:
+        selected_ids.add(relation["fromEntityId"])
+        selected_ids.add(relation["toEntityId"])
+    external_ids = selected_ids - internal_ids
+    for external_id in external_ids:
+        external = entity_by_id.get(external_id)
+        if external is None or external["kind"] not in {
+            "module",
+            "resource",
+            "data_store",
+        }:
+            raise PanoramaViewIRError(
+                f"Module Logic 外部端点只能复用正式 Module/Resource：{external_id}"
+            )
+    selected_entities = [entity_by_id[item] for item in sorted(selected_ids)]
+
+    group_specs = [
+        (
+            "internal",
+            f"{root_module.get('displayLabel', root_module['name'])} · 内部逻辑",
+            0,
+        ),
+        ("boundary", "模块边界端口", 1),
+        ("external", "外部交互模块与资源", 2),
+    ]
+    group_ids: dict[str, str] = {}
+    groups: list[dict[str, Any]] = []
+    for role, label, order in group_specs:
+        group_id = _stable_derived_id(
+            "GROUP",
+            {"rootModuleId": root_module_id, "scope": scope, "role": role},
+            20,
+        )
+        group_ids[role] = group_id
+        groups.append(
+            {
+                "id": group_id,
+                "groupType": "source_kind",
+                "groupRef": _stable_derived_id(
+                    "MLGROUP",
+                    {"rootModuleId": root_module_id, "scope": scope, "role": role},
+                    20,
+                ),
+                "layerId": None,
+                "label": label,
+                "order": order,
+            }
+        )
+
+    node_by_entity: dict[str, str] = {}
+    nodes: list[dict[str, Any]] = []
+    for entity in selected_entities:
+        if entity["id"] in external_ids:
+            role = "external"
+        elif entity["kind"] == "boundary_port":
+            role = "boundary"
+        else:
+            role = "internal"
+        node = _view_node(entity, group_id=group_ids[role])
+        if role == "boundary":
+            node["emphasis"] = "primary"
+        node_by_entity[entity["id"]] = node["id"]
+        nodes.append(node)
+    nodes.sort(key=lambda item: item["entityRef"]["id"])
+
+    edges: list[dict[str, Any]] = []
+    for relation in selected_relations:
+        edges.append(
+            {
+                "id": _stable_derived_id(
+                    "EDGE", {"relationId": relation["id"]}, 20
+                ),
+                "relationRef": {"type": "relation", "id": relation["id"]},
+                "fromNodeId": node_by_entity[relation["fromEntityId"]],
+                "toNodeId": node_by_entity[relation["toEntityId"]],
+                "label": relation["name"],
+                "kind": relation["kind"],
+                "direction": relation["direction"],
+                "order": relation["semantics"]["order"],
+                "evidencePinIds": sorted(
+                    pin["evidenceId"] for pin in relation["evidencePins"]
+                ),
+            }
+        )
+    edges.sort(key=lambda item: item["relationRef"]["id"])
+
+    model_binding = {
+        "modelId": model["modelId"],
+        "modelSemanticHash": model["integrity"]["semanticHash"],
+        "projectId": model["projectBinding"]["projectId"],
+        "panoramaDataHash": model["projectBinding"]["dataHash"],
+        "asOf": model["asOf"]["value"],
+    }
+    parent_binding = {
+        "viewId": parent_view["viewId"],
+        "semanticHash": parent_view["integrity"]["semanticHash"],
+    }
+    if binding["source"] == "current_observation":
+        view_logic_binding = {
+            "source": "current_observation",
+            "moduleId": root_module_id,
+            "observationId": binding["observationId"],
+            "semanticHash": binding["semanticHash"],
+            "coverage": binding["coverage"],
+            "sourceCoverage": binding["sourceCoverage"],
+            "currentness": binding["currentness"],
+        }
+    else:
+        view_logic_binding = {
+            "source": "formal_design",
+            "moduleId": root_module_id,
+            "designId": binding["designId"],
+            "designDigest": binding["designDigest"],
+        }
+    view_id = _stable_derived_id(
+        "VIEW",
+        {
+            "compiler": MODULE_LOGIC_VIEW_COMPILER,
+            "modelSemanticHash": model_binding["modelSemanticHash"],
+            "parentViewBinding": parent_binding,
+            "moduleLogicBinding": view_logic_binding,
+            "architectureScopes": scopes,
+        },
+    )
+    layout = {"strategy": "auto_layered", "positions": []}
+    view: dict[str, Any] = {
+        "formatVersion": "panorama-view-ir.v0.1",
+        "viewId": view_id,
+        "generatedAt": model["compiledAt"],
+        "compiler": MODULE_LOGIC_VIEW_COMPILER,
+        "modelBinding": model_binding,
+        "viewType": "module_logic",
+        "profile": "module_logic",
+        "title": f"{root_module.get('displayLabel', root_module['name'])} · 模块内部逻辑",
+        "description": (
+            "同一全景画布中的模块子画布；内部逻辑来自绑定数据源，"
+            "外部模块与资源仅显示紧凑引用。"
+            + (
+                " 当前为局部、按时点记录的只读源码归纳；未证明部分以信息缺口披露。"
+                if binding["source"] == "current_observation"
+                and (
+                    binding["coverage"] != "complete"
+                    or binding["currentness"] != "current"
+                )
+                else ""
+            )
+        ),
+        "rootModuleId": root_module_id,
+        "parentViewBinding": parent_binding,
+        "moduleLogicBinding": view_logic_binding,
+        "filters": {
+            "architectureScopes": scopes,
+            "factStatuses": [
+                "observed",
+                "declared",
+                "derived",
+                "unknown",
+                "conflict",
+            ],
+        },
+        "groups": groups,
+        "nodes": nodes,
+        "edges": edges,
+        "informationGaps": list(model["informationGaps"]),
+        "layout": layout,
+        "extensions": {
+            "canvasLevel": "module_logic",
+            "internalEntityIds": sorted(internal_ids),
+            "boundaryPortEntityIds": sorted(
+                item["id"]
+                for item in internal_entities
+                if item["kind"] == "boundary_port"
+            ),
+            "externalEntityIds": sorted(external_ids),
+            "navigation": {
+                "enterGesture": "double_click_module",
+                "backTargetViewId": parent_view["viewId"],
+            },
+        },
+    }
+    view["integrity"] = {
+        "hashAlgorithm": "sha256",
+        "semanticHash": compute_view_semantic_hash(view),
+        "semanticHashScope": "view_without_layout_or_integrity",
+        "layoutHash": compute_view_layout_hash(view),
+        "layoutHashScope": "layout_only",
+    }
+    errors = validate_view_ir(view, model, parent_view=parent_view)
+    if errors:
+        raise PanoramaViewIRError(
+            "Module Logic View IR 编译结果无效：" + "; ".join(errors[:10])
+        )
+    return view
+
+
 def _checked_single_scope(
     architecture_scopes: list[str] | None, *, profile: str
 ) -> list[str]:
@@ -1377,7 +2236,7 @@ def _view_node(entity: dict[str, Any], *, group_id: str | None) -> dict[str, Any
     return {
         "id": _stable_derived_id("NODE", {"entityId": entity["id"]}, 20),
         "entityRef": {"type": "entity", "id": entity["id"]},
-        "label": entity["name"],
+        "label": entity.get("displayLabel", entity["name"]),
         "kind": entity["kind"],
         "groupId": group_id,
         "factStatus": entity["factStatus"],
@@ -2054,7 +2913,12 @@ def compile_evolution_risk_view_ir(
     )
 
 
-def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
+def validate_view_ir(
+    view: dict[str, Any],
+    model: dict[str, Any],
+    *,
+    parent_view: dict[str, Any] | None = None,
+) -> list[str]:
     errors = _schema_errors(view, VIEW_SCHEMA)
     if errors:
         return errors
@@ -2077,6 +2941,7 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
     expected_view_types = {
         "system_context": "architecture",
         "module": "architecture",
+        "module_logic": "module_logic",
         "dependency_dataflow": "dataflow",
         "deployment_runtime": "deployment",
         "sequence": "sequence",
@@ -2087,6 +2952,7 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
         errors.append("/viewType: 与 profile 不匹配")
     expected_compilers = {
         "module": VIEW_COMPILER,
+        "module_logic": MODULE_LOGIC_VIEW_COMPILER,
         "dependency_dataflow": DEPENDENCY_VIEW_COMPILER,
         "deployment_runtime": DEPLOYMENT_VIEW_COMPILER,
         "sequence": SEQUENCE_VIEW_COMPILER,
@@ -2135,9 +3001,15 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
         node_by_entity[entity_id] = node["id"]
         if node["groupId"] is not None and node["groupId"] not in group_set:
             errors.append(f"/nodes/{node['id']}: 未知 groupId {node['groupId']}")
-        for field in ("name", "kind", "factStatus", "authority", "confidence"):
-            node_field = "label" if field == "name" else field
-            if node[node_field] != entity[field]:
+        expected_node_fields = {
+            "label": entity.get("displayLabel", entity["name"]),
+            "kind": entity["kind"],
+            "factStatus": entity["factStatus"],
+            "authority": entity["authority"],
+            "confidence": entity["confidence"],
+        }
+        for node_field, expected_value in expected_node_fields.items():
+            if node[node_field] != expected_value:
                 errors.append(
                     f"/nodes/{node['id']}: {node_field} 与绑定 Entity 不匹配"
                 )
@@ -2172,6 +3044,7 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
             errors.append(f"/edges/{edge['id']}: Evidence Pin 不属于绑定 Relation")
     allowed_relation_kinds = {
         "module": {"communication"},
+        "module_logic": {"logic_flow", "port_binding", "resource_usage"},
         "dependency_dataflow": {"dependency", "data_flow"},
         "deployment_runtime": {"deployment"},
         "sequence": {"sequence_message"},
@@ -2203,6 +3076,95 @@ def validate_view_ir(view: dict[str, Any], model: dict[str, Any]) -> list[str]:
                 entity["architectureScopes"]
             ):
                 errors.append(f"/nodes/{node['id']}: Entity 不属于所选 scope")
+    if view["profile"] == "module_logic":
+        root_module_id = view["rootModuleId"]
+        root_module = model_entities.get(root_module_id)
+        if root_module is None or root_module["kind"] != "module":
+            errors.append("/rootModuleId: 未绑定正式 Module Entity")
+        scope_values = view["filters"]["architectureScopes"]
+        model_bindings = [
+            item
+            for item in model.get("moduleLogicBindings", [])
+            if item["moduleId"] == root_module_id
+            and item["architectureScope"] in scope_values
+        ]
+        if len(model_bindings) != 1:
+            errors.append(
+                "/moduleLogicBinding: Model 中不存在唯一的 Root Module/Scope Binding"
+            )
+        else:
+            model_logic_binding = model_bindings[0]
+            if model_logic_binding["source"] == "current_observation":
+                expected_logic_binding = {
+                    "source": "current_observation",
+                    "moduleId": root_module_id,
+                    "observationId": model_logic_binding["observationId"],
+                    "semanticHash": model_logic_binding["semanticHash"],
+                    "coverage": model_logic_binding["coverage"],
+                    "sourceCoverage": model_logic_binding["sourceCoverage"],
+                    "currentness": model_logic_binding["currentness"],
+                }
+            else:
+                expected_logic_binding = {
+                    "source": "formal_design",
+                    "moduleId": root_module_id,
+                    "designId": model_logic_binding["designId"],
+                    "designDigest": model_logic_binding["designDigest"],
+                }
+            if view["moduleLogicBinding"] != expected_logic_binding:
+                errors.append("/moduleLogicBinding: 与 Model Module Logic Binding 不匹配")
+            binding_key = _module_logic_binding_key(model_logic_binding)
+            internal_ids = {
+                item["id"]
+                for item in model["entities"]
+                if item.get("attributes", {}).get("moduleLogicBindingKey")
+                == binding_key
+            }
+            projected_ids = set(node_by_entity)
+            if not internal_ids <= projected_ids:
+                errors.append("/nodes: 未完整投影绑定的内部 Logic/Boundary Entity")
+            external_ids = projected_ids - internal_ids
+            if any(
+                model_entities[item]["kind"]
+                not in {"module", "resource", "data_store"}
+                for item in external_ids
+                if item in model_entities
+            ):
+                errors.append("/nodes: 外部引用展开了其他模块内部逻辑")
+            for edge in view["edges"]:
+                relation = model_relations.get(edge["relationRef"]["id"])
+                if (
+                    relation is not None
+                    and relation.get("attributes", {}).get(
+                        "moduleLogicBindingKey"
+                    )
+                    != binding_key
+                ):
+                    errors.append(
+                        f"/edges/{edge['id']}: Relation 不属于绑定的 Module Logic"
+                    )
+        if parent_view is not None:
+            parent_errors = validate_view_ir(parent_view, model)
+            if parent_errors:
+                errors.append("/parentViewBinding: 父 View 本身无效")
+            expected_parent_binding = {
+                "viewId": parent_view.get("viewId"),
+                "semanticHash": parent_view.get("integrity", {}).get(
+                    "semanticHash"
+                ),
+            }
+            if view["parentViewBinding"] != expected_parent_binding:
+                errors.append("/parentViewBinding: 与提供的父 View 不匹配")
+            if parent_view.get("profile") != "module":
+                errors.append("/parentViewBinding: 父 View 必须是 module profile")
+            parent_entity_ids = {
+                item["entityRef"]["id"]
+                for item in parent_view.get("nodes", [])
+            }
+            if root_module_id not in parent_entity_ids:
+                errors.append("/rootModuleId: 父 View 未包含 Root Module")
+            if parent_view.get("filters", {}).get("architectureScopes") != scope_values:
+                errors.append("/filters/architectureScopes: 与父 View Scope 不匹配")
     for position in view["layout"]["positions"]:
         if position["nodeId"] not in node_set:
             errors.append(
@@ -2216,6 +3178,7 @@ def load_and_compile_model_ir(
     *,
     source_observation_path: Path | None = None,
     event_store_path: Path | None = None,
+    module_logic_observation_paths: list[Path] | None = None,
 ) -> dict[str, Any]:
     data, _ = load_panorama(path)
     source_observation = None
@@ -2235,8 +3198,17 @@ def load_and_compile_model_ir(
             )
         except EventProjectionError as exc:
             raise PanoramaViewIRError(str(exc)) from exc
+    module_logic_observations: list[dict[str, Any]] = []
+    for observation_path in module_logic_observation_paths or []:
+        observation = json.loads(observation_path.read_text(encoding="utf-8"))
+        if not isinstance(observation, dict):
+            raise PanoramaViewIRError(
+                f"Module Logic Observation 根必须是 JSON object：{observation_path}"
+            )
+        module_logic_observations.append(observation)
     return compile_model_ir(
         data,
         source_observation=source_observation,
         event_checkpoint=event_checkpoint,
+        module_logic_observations=module_logic_observations,
     )

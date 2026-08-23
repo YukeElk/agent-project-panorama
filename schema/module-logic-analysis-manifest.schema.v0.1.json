@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/schemas/module-logic-analysis-manifest.schema.v0.1.json",
+  "title": "Panorama Module Logic Analysis Manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "manifestId",
+    "preparedAt",
+    "producer",
+    "projectBinding",
+    "moduleBinding",
+    "sourceObservationBinding",
+    "scope",
+    "files",
+    "informationGaps",
+    "privacyBoundary",
+    "integrity",
+    "extensions"
+  ],
+  "properties": {
+    "formatVersion": { "const": "module-logic-analysis-manifest.v0.1" },
+    "manifestId": { "type": "string", "pattern": "^MLM-[A-F0-9]{24}$" },
+    "preparedAt": { "type": "string", "format": "date-time" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "panorama-module-logic-preparer" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "projectBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectId", "panoramaSchemaVersion", "revision", "dataHash"],
+      "properties": {
+        "projectId": { "$ref": "#/$defs/stableId" },
+        "panoramaSchemaVersion": { "enum": ["0.1", "0.2"] },
+        "revision": { "type": "integer", "minimum": 0 },
+        "dataHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "moduleBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleId", "moduleDigest", "codePath"],
+      "properties": {
+        "moduleId": { "$ref": "#/$defs/stableId" },
+        "moduleDigest": { "$ref": "#/$defs/sha256" },
+        "codePath": { "type": "string", "maxLength": 2048 }
+      }
+    },
+    "sourceObservationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observationId",
+        "semanticHash",
+        "observedAt",
+        "mode",
+        "gitHead",
+        "contentDigest",
+        "coverage",
+        "currentness"
+      ],
+      "properties": {
+        "observationId": { "type": "string", "pattern": "^SRCOBS-[A-F0-9]{24}$" },
+        "semanticHash": { "$ref": "#/$defs/sha256" },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "mode": { "enum": ["git", "content_digest"] },
+        "gitHead": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[a-fA-F0-9]{40}([a-fA-F0-9]{24})?$" },
+            { "type": "null" }
+          ]
+        },
+        "contentDigest": { "$ref": "#/$defs/sha256" },
+        "coverage": { "enum": ["complete", "partial"] },
+        "currentness": { "enum": ["current", "unknown"] }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "filesMatched",
+        "filesIncluded",
+        "bytesIncluded",
+        "maxFiles",
+        "maxBytes",
+        "truncated"
+      ],
+      "properties": {
+        "status": { "enum": ["complete", "partial", "blocked"] },
+        "filesMatched": { "type": "integer", "minimum": 0 },
+        "filesIncluded": { "type": "integer", "minimum": 0 },
+        "bytesIncluded": { "type": "integer", "minimum": 0 },
+        "maxFiles": { "type": "integer", "minimum": 1 },
+        "maxBytes": { "type": "integer", "minimum": 1 },
+        "truncated": { "type": "boolean" }
+      }
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "$ref": "#/$defs/file" }
+    },
+    "informationGaps": {
+      "type": "array",
+      "maxItems": 1024,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1024 }
+    },
+    "privacyBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceBodiesPersisted",
+        "projectCodeExecuted",
+        "networkRequired",
+        "allowedTransientReads",
+        "candidateOutputContract"
+      ],
+      "properties": {
+        "sourceBodiesPersisted": { "const": false },
+        "projectCodeExecuted": { "const": false },
+        "networkRequired": { "const": false },
+        "allowedTransientReads": { "const": "manifest_files_only" },
+        "candidateOutputContract": { "const": "module-logic-observation-candidate.v0.1" }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["semanticHash", "hashScope"],
+      "properties": {
+        "semanticHash": { "$ref": "#/$defs/sha256" },
+        "hashScope": { "const": "manifest_without_integrity" }
+      }
+    },
+    "extensions": { "type": "object" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "stableId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "language", "size", "sha256", "parseStatus"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "kind": { "enum": ["source", "manifest", "configuration"] },
+        "language": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "size": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "parseStatus": { "enum": ["parsed", "partial", "failed", "not_applicable"] }
+      }
+    }
+  }
+}

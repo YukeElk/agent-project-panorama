@@ -30,12 +30,13 @@
     "compiler": {"$ref": "#/$defs/compiler"},
     "modelBinding": {"$ref": "#/$defs/modelBinding"},
     "viewType": {
-      "enum": ["architecture", "dataflow", "deployment", "sequence", "lifecycle", "evolution"]
+      "enum": ["architecture", "module_logic", "dataflow", "deployment", "sequence", "lifecycle", "evolution"]
     },
     "profile": {
       "enum": [
         "system_context",
         "module",
+        "module_logic",
         "dependency_dataflow",
         "deployment_runtime",
         "sequence",
@@ -45,6 +46,9 @@
     },
     "title": {"type": "string", "minLength": 1, "maxLength": 512},
     "description": {"type": "string", "maxLength": 2048},
+    "rootModuleId": {"$ref": "#/$defs/stableId"},
+    "parentViewBinding": {"$ref": "#/$defs/parentViewBinding"},
+    "moduleLogicBinding": {"$ref": "#/$defs/moduleLogicBinding"},
     "filters": {"$ref": "#/$defs/filters"},
     "groups": {
       "type": "array",
@@ -71,6 +75,18 @@
     "integrity": {"$ref": "#/$defs/integrity"},
     "extensions": {"type": "object"}
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"profile": {"const": "module_logic"}},
+        "required": ["profile"]
+      },
+      "then": {
+        "required": ["rootModuleId", "parentViewBinding", "moduleLogicBinding"],
+        "properties": {"viewType": {"const": "module_logic"}}
+      }
+    }
+  ],
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
     "stableId": {
@@ -85,6 +101,44 @@
         "id": {"$ref": "#/$defs/stableId"},
         "version": {"type": "string", "minLength": 1, "maxLength": 128}
       }
+    },
+    "parentViewBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["viewId", "semanticHash"],
+      "properties": {
+        "viewId": {"type": "string", "pattern": "^VIEW-[A-F0-9]{24}$"},
+        "semanticHash": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "moduleLogicBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "moduleId", "observationId", "semanticHash", "coverage", "sourceCoverage", "currentness"],
+          "properties": {
+            "source": {"const": "current_observation"},
+            "moduleId": {"$ref": "#/$defs/stableId"},
+            "observationId": {"type": "string", "pattern": "^MLO-[A-F0-9]{24}$"},
+            "semanticHash": {"$ref": "#/$defs/sha256"},
+            "coverage": {"enum": ["complete", "partial"]},
+            "sourceCoverage": {"enum": ["complete", "partial"]},
+            "currentness": {"enum": ["current", "recorded_as_of"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "moduleId", "designId", "designDigest"],
+          "properties": {
+            "source": {"const": "formal_design"},
+            "moduleId": {"$ref": "#/$defs/stableId"},
+            "designId": {"$ref": "#/$defs/stableId"},
+            "designDigest": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
     },
     "modelBinding": {
       "type": "object",

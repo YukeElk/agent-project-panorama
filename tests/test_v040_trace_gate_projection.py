@@ -27,9 +27,10 @@ def test_trace_route_uses_only_declared_id_fields_and_shows_json_pointers(
     ):
         assert token in source
 
-    assert "Trace 只读取正式 ID 字段" in source
+    assert "追踪只读取正式 ID 字段" in source
     assert "不执行 Mission、调度或治理决策" in source
-    assert "data-entity-type='requirement'><span class='mono'>" in source
+    assert "function traceEntityButton(type, id)" in source
+    assert "data-entity-type='\" + e(type)" in source
 
 
 def test_multi_hop_routes_keep_intermediate_entities_and_each_hop_source(
@@ -41,8 +42,8 @@ def test_multi_hop_routes_keep_intermediate_entities_and_each_hop_source(
         "function traceRoutes(",
         "nodes: route.nodes.concat([next])",
         "edges: route.edges.concat([edge])",
-        "多跳 Route · 保留中间实体",
-        '"<div>Hop " + (index + 1)',
+        "多跳追踪路径 · 保留中间实体",
+        '"<div>第 " + (index + 1) + " 跳',
         'e(edge.sourcePath)',
     ):
         assert token in source
@@ -56,10 +57,10 @@ def test_trace_gap_candidates_are_not_formal_findings(template_path: Path):
         "uncovered_requirement",
         "orphan_work_item",
         "evidence_gap",
-        "△ Trace Gap Candidate",
+        "△ 追踪缺口候选",
         "function traceFormalFindings(",
-        "Formal Finding ·",
-        "Candidate 与 Formal Finding 保持语义分离",
+        "正式校验发现 ·",
+        "缺口候选与正式校验发现保持语义分离",
         "not_detected 不等于 absent",
     ):
         assert token in source
@@ -85,7 +86,7 @@ def test_gate_acceptance_and_deployment_projections_are_evidence_gated(
         'verified: { state: !gates.length ? "unknown"',
         'accepted: { state: !acceptances.length ? "unknown"',
         "deployed_observed",
-        "V0.4 不使用 integrated",
+        "只用于判断线索，不回写治理事实",
     ):
         assert token in source
 

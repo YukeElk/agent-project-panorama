@@ -41,7 +41,7 @@ def test_gate_and_acceptance_drawers_show_deduplicated_receipt_timeline(
         "function verificationReceiptReferences(type, id)",
         "verificationReceiptHash",
         "function verificationReceiptTimelineHtml(type, id)",
-        'drawerSection("Verification Receipt Timeline"',
+        'drawerSection("验证回执时间线"',
         "External Finding ·",
         "不是 Panorama Formal Finding",
         "Isolation 原样披露",

@@ -120,6 +120,132 @@ def _target_modules(data: dict[str, Any]) -> list[dict[str, Any]]:
     return target or list(modules)
 
 
+def _baseline_module_logic_canvases(
+    data: dict[str, Any], module_ids: set[str], now: str
+) -> list[dict[str, Any]]:
+    """Copy formal Target Module Logic into an isolated Studio candidate.
+
+    Current observations deliberately never enter the Studio session.  Formal
+    identities are retained through ``entityRef`` while layout is initialized
+    locally, so an untouched candidate materializes byte-for-byte.
+    """
+
+    designs = data.get("architecture", {}).get("moduleLogicDesigns", [])
+    canvases: list[dict[str, Any]] = []
+    for design in designs if isinstance(designs, list) else []:
+        if (
+            not isinstance(design, dict)
+            or design.get("architectureScope") != "target"
+            or design.get("moduleId") not in module_ids
+        ):
+            continue
+        design_id = _id(design.get("id"), "moduleLogicDesign.id")
+        nodes = []
+        node_ids: set[str] = set()
+        for index, node in enumerate(design.get("nodes", [])):
+            logic_id = _id(node.get("id"), "moduleLogicNode.id")
+            node_ids.add(logic_id)
+            nodes.append(
+                {
+                    "nodeId": _slug(logic_id, "NODE"),
+                    "entityRef": {"type": "logic_node", "id": logic_id},
+                    "name": node.get("name", logic_id),
+                    "displayName": node.get("displayName"),
+                    "type": node.get("type", "processing"),
+                    "purpose": node.get("purpose", ""),
+                    "rationale": node.get("rationale", ""),
+                    "implementationSummary": node.get("implementationSummary", ""),
+                    "loopExitCondition": node.get("loopExitCondition"),
+                    "requirementIds": _clone(node.get("requirementIds", [])),
+                    "decisionIds": _clone(node.get("decisionIds", [])),
+                    "riskIds": _clone(node.get("riskIds", [])),
+                    "referenceIds": _clone(node.get("referenceIds", [])),
+                    "isDraft": False,
+                    "x": 160 + (index % 3) * 230,
+                    "y": 100 + (index // 3) * 150,
+                    "extensions": _clone(node.get("extensions", {})),
+                }
+            )
+        local_node = {
+            item["entityRef"]["id"]: item["nodeId"] for item in nodes
+        }
+        edges = []
+        for edge in design.get("edges", []):
+            edge_id = _id(edge.get("id"), "moduleLogicEdge.id")
+            edges.append(
+                {
+                    "edgeId": _slug(edge_id, "EDGE"),
+                    "entityRef": {"type": "logic_edge", "id": edge_id},
+                    "fromNodeId": local_node.get(edge.get("fromNodeId"), ""),
+                    "toNodeId": local_node.get(edge.get("toNodeId"), ""),
+                    "kind": edge.get("kind", "flow"),
+                    "condition": edge.get("condition", ""),
+                    "dataSummary": edge.get("dataSummary", ""),
+                    "order": edge.get("order"),
+                    "referenceIds": _clone(edge.get("referenceIds", [])),
+                    "isDraft": False,
+                    "extensions": _clone(edge.get("extensions", {})),
+                }
+            )
+        ports = []
+        external_refs: list[dict[str, str]] = []
+        seen_external: set[tuple[str, str]] = set()
+        for index, port in enumerate(design.get("boundaryPorts", [])):
+            port_id = _id(port.get("id"), "moduleLogicBoundaryPort.id")
+            external = _clone(port.get("externalEntityRef", {}))
+            key = (str(external.get("type", "")), str(external.get("id", "")))
+            if key not in seen_external:
+                seen_external.add(key)
+                external_refs.append(external)
+            ports.append(
+                {
+                    "portId": _slug(port_id, "PORT"),
+                    "entityRef": {"type": "boundary_port", "id": port_id},
+                    "name": port.get("name", port_id),
+                    "direction": port.get("direction", "input"),
+                    "internalNodeId": local_node.get(port.get("internalNodeId"), ""),
+                    "externalEntityRef": external,
+                    "bindingKind": port.get("bindingKind", "connection"),
+                    "bindingId": port.get("bindingId"),
+                    "dataSummary": port.get("dataSummary", ""),
+                    "protocol": port.get("protocol", ""),
+                    "referenceIds": _clone(port.get("referenceIds", [])),
+                    "isDraft": False,
+                    "x": 60 if port.get("direction") == "input" else 900,
+                    "y": 100 + index * 90,
+                    "extensions": _clone(port.get("extensions", {})),
+                }
+            )
+        canvases.append(
+            {
+                "canvasId": _slug(design_id, "CANVAS"),
+                "rootModuleId": design["moduleId"],
+                "architectureScope": "target",
+                "currentObservationBinding": None,
+                "baseTargetDesignId": design_id,
+                "name": design.get("name", design_id),
+                "displayName": design.get("displayName"),
+                "summary": design.get("summary", ""),
+                "requirementIds": _clone(design.get("requirementIds", [])),
+                "decisionIds": _clone(design.get("decisionIds", [])),
+                "riskIds": _clone(design.get("riskIds", [])),
+                "acceptanceCriteriaIds": _clone(
+                    design.get("acceptanceCriteriaIds", [])
+                ),
+                "gateIds": _clone(design.get("gateIds", [])),
+                "referenceIds": _clone(design.get("referenceIds", [])),
+                "nodes": nodes,
+                "edges": edges,
+                "boundaryPorts": ports,
+                "externalEntityRefs": external_refs,
+                "createdAt": now,
+                "updatedAt": now,
+                "extensions": _clone(design.get("extensions", {})),
+            }
+        )
+    return canvases
+
+
 def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
     architecture = data.get("architecture", {})
     layers = sorted(architecture.get("layers", []), key=lambda item: item.get("order", 0))
@@ -148,6 +274,7 @@ def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
             "nodeId": node_id,
             "entityRef": {"type": "module", "id": module_id},
             "name": module.get("name", module_id),
+            "displayName": module.get("displayName"),
             "purpose": module.get("purpose", ""),
             "responsibilities": _clone(design.get("responsibilities", [])),
             "nonResponsibilities": _clone(design.get("nonResponsibilities", [])),
@@ -170,7 +297,7 @@ def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
             "category": module.get("category", "supporting"),
             "isDraft": False,
             "x": 145 + (slot % 3) * 205,
-            "y": 20 + layer_index.get(layer_id, 0) * 122 + (slot // 3) * 86,
+            "y": 24 + layer_index.get(layer_id, 0) * 142 + (slot // 3) * 96,
         })
     edges: list[dict[str, Any]] = []
     for connection in architecture.get("connections", []):
@@ -198,11 +325,17 @@ def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
             "extensions": _clone(connection.get("extensions", {})),
             "isDraft": False,
         })
-    return {
+    candidate = {
         "candidateId": "CANDIDATE-BASE", "label": "Target architecture copy",
         "kind": "baseline_copy", "status": "active", "assumptions": [], "unknowns": [],
+        "architectureLayers": _clone(layers),
         "nodes": nodes, "edges": edges, "createdAt": now, "updatedAt": now,
     }
+    module_ids = set(node_for_module)
+    canvases = _baseline_module_logic_canvases(data, module_ids, now)
+    if canvases:
+        candidate["moduleLogicCanvases"] = canvases
+    return candidate
 
 
 def _semantic_projection(candidate: dict[str, Any]) -> dict[str, Any]:
@@ -213,17 +346,67 @@ def _semantic_projection(candidate: dict[str, Any]) -> dict[str, Any]:
             if key not in {"x", "y", "selected", "collapsed", "width", "height"}
         })
     edges = [_clone(item) for item in candidate.get("edges", [])]
+    layers = []
+    for layer in candidate.get("architectureLayers", []):
+        layers.append({
+            key: _clone(value) for key, value in layer.items()
+            if key not in {"layoutHeight", "selected", "collapsed"}
+        })
     nodes.sort(key=lambda item: str(item.get("nodeId", "")))
     edges.sort(key=lambda item: str(item.get("edgeId", "")))
-    return {
+    layers.sort(key=lambda item: (int(item.get("order", 0)), str(item.get("id", ""))))
+    projection = {
         "assumptions": _clone(candidate.get("assumptions", [])),
         "unknowns": _clone(candidate.get("unknowns", [])),
+        "architectureLayers": layers,
         "nodes": nodes, "edges": edges,
     }
+    if "moduleLogicCanvases" in candidate:
+        canvases = []
+        for canvas in candidate.get("moduleLogicCanvases", []):
+            projected_canvas = {
+                key: _clone(value)
+                for key, value in canvas.items()
+                if key not in {"viewerState", "camera", "createdAt", "updatedAt"}
+            }
+            projected_canvas["nodes"] = sorted(
+                [
+                    {
+                        key: _clone(value)
+                        for key, value in node.items()
+                        if key
+                        not in {
+                            "x", "y", "selected", "collapsed", "width", "height"
+                        }
+                    }
+                    for node in canvas.get("nodes", [])
+                ],
+                key=lambda item: str(item.get("nodeId", "")),
+            )
+            projected_canvas["boundaryPorts"] = sorted(
+                [
+                    {
+                        key: _clone(value)
+                        for key, value in port.items()
+                        if key not in {"x", "y", "selected"}
+                    }
+                    for port in canvas.get("boundaryPorts", [])
+                ],
+                key=lambda item: str(item.get("portId", "")),
+            )
+            projected_canvas["edges"] = sorted(
+                [_clone(edge) for edge in canvas.get("edges", [])],
+                key=lambda item: str(item.get("edgeId", "")),
+            )
+            canvases.append(projected_canvas)
+        projection["moduleLogicCanvases"] = sorted(
+            canvases, key=lambda item: str(item.get("canvasId", ""))
+        )
+    return projection
 
 
 def _layout_projection(candidate: dict[str, Any]) -> dict[str, Any]:
-    return {
+    projection = {
         "nodes": sorted(
             [
                 {"nodeId": item.get("nodeId"), "x": item.get("x", 0), "y": item.get("y", 0)}
@@ -231,6 +414,39 @@ def _layout_projection(candidate: dict[str, Any]) -> dict[str, Any]:
             ], key=lambda item: str(item.get("nodeId", "")),
         )
     }
+    if "moduleLogicCanvases" in candidate:
+        projection["moduleLogicCanvases"] = sorted(
+            [
+                {
+                    "canvasId": canvas.get("canvasId"),
+                    "nodes": sorted(
+                        [
+                            {
+                                "nodeId": item.get("nodeId"),
+                                "x": item.get("x", 0),
+                                "y": item.get("y", 0),
+                            }
+                            for item in canvas.get("nodes", [])
+                        ],
+                        key=lambda item: str(item.get("nodeId", "")),
+                    ),
+                    "boundaryPorts": sorted(
+                        [
+                            {
+                                "portId": item.get("portId"),
+                                "x": item.get("x", 0),
+                                "y": item.get("y", 0),
+                            }
+                            for item in canvas.get("boundaryPorts", [])
+                        ],
+                        key=lambda item: str(item.get("portId", "")),
+                    ),
+                }
+                for canvas in candidate.get("moduleLogicCanvases", [])
+            ],
+            key=lambda item: str(item.get("canvasId", "")),
+        )
+    return projection
 
 
 def semantic_hash(candidate: dict[str, Any]) -> str:
@@ -279,7 +495,7 @@ def candidate_semantic_diff(
         raise StudioSessionError("candidates must be objects")
 
     node_fields = (
-        "name", "purpose", "responsibilities", "nonResponsibilities",
+        "name", "displayName", "purpose", "responsibilities", "nonResponsibilities",
         "stateOwnership", "layerId", "category", "technologies", "dataHandled",
         "interfaceSummary", "deploymentRole", "referenceIds", "notes",
         "designExtensions", "rationale", "requirementIds", "isDraft",
@@ -336,8 +552,29 @@ def candidate_semantic_diff(
 
     node_diff = entity_diff(nodes(base_candidate), nodes(compare_candidate), node_fields)
     edge_diff = entity_diff(edges(base_candidate), edges(compare_candidate), edge_fields)
+    def logic_canvases(candidate: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        projected = _semantic_projection(candidate).get("moduleLogicCanvases", [])
+        return {
+            (
+                f"design:{item.get('baseTargetDesignId')}"
+                if item.get("baseTargetDesignId")
+                else f"module:{item.get('rootModuleId')}"
+            ): item
+            for item in projected
+        }
+
+    logic_fields = (
+        "rootModuleId", "architectureScope", "currentObservationBinding",
+        "baseTargetDesignId", "name", "displayName", "summary",
+        "requirementIds", "decisionIds", "riskIds", "acceptanceCriteriaIds",
+        "gateIds", "referenceIds", "nodes", "edges", "boundaryPorts",
+        "externalEntityRefs", "extensions",
+    )
+    logic_diff = entity_diff(
+        logic_canvases(base_candidate), logic_canvases(compare_candidate), logic_fields
+    )
     candidate_changes = _semantic_field_changes(
-        base_candidate, compare_candidate, ("assumptions", "unknowns")
+        base_candidate, compare_candidate, ("assumptions", "unknowns", "architectureLayers")
     )
     summary = {
         "candidateFieldsModified": len(candidate_changes),
@@ -347,6 +584,9 @@ def candidate_semantic_diff(
         "edgesAdded": len(edge_diff["added"]),
         "edgesRemoved": len(edge_diff["removed"]),
         "edgesModified": len(edge_diff["modified"]),
+        "moduleLogicCanvasesAdded": len(logic_diff["added"]),
+        "moduleLogicCanvasesRemoved": len(logic_diff["removed"]),
+        "moduleLogicCanvasesModified": len(logic_diff["modified"]),
     }
     return {
         "baseCandidateId": base_candidate.get("candidateId"),
@@ -354,6 +594,7 @@ def candidate_semantic_diff(
         "candidateFields": candidate_changes,
         "nodes": node_diff,
         "edges": edge_diff,
+        "moduleLogicCanvases": logic_diff,
         "summary": summary,
         "hasChanges": any(summary.values()),
     }
@@ -461,6 +702,30 @@ def validate_session(session: dict[str, Any]) -> list[dict[str, Any]]:
         if candidate_id in candidate_ids:
             findings.append(_finding("error", "CLIENT_DUPLICATE_CANDIDATE", f"duplicate candidate ID: {candidate_id}", f"/candidates/{index}/candidateId", candidate_id))
         candidate_ids.add(candidate_id)
+        layers = candidate.get("architectureLayers", session.get("layers", []))
+        layer_ids: set[str] = set()
+        layer_parent: dict[str, str] = {}
+        for layer_index, layer in enumerate(layers):
+            layer_id = layer.get("id")
+            if layer_id in layer_ids:
+                findings.append(_finding("error", "CLIENT_DUPLICATE_LAYER", f"duplicate layer ID: {layer_id}", f"/candidates/{index}/architectureLayers/{layer_index}/id", candidate_id))
+            layer_ids.add(layer_id)
+        for layer_index, layer in enumerate(layers):
+            layer_id = layer.get("id")
+            parent_id = layer.get("parentLayerId")
+            if parent_id is not None and parent_id not in layer_ids:
+                findings.append(_finding("error", "CLIENT_LAYER_PARENT", f"{layer_id} has an unknown parent layer: {parent_id}", f"/candidates/{index}/architectureLayers/{layer_index}/parentLayerId", candidate_id))
+            if isinstance(layer_id, str) and isinstance(parent_id, str):
+                layer_parent[layer_id] = parent_id
+        for layer_id in sorted(layer_parent):
+            visited: set[str] = set()
+            current = layer_id
+            while current in layer_parent:
+                if current in visited:
+                    findings.append(_finding("error", "CLIENT_LAYER_CYCLE", f"layer hierarchy contains a cycle from {layer_id}", f"/candidates/{index}/architectureLayers", candidate_id))
+                    break
+                visited.add(current)
+                current = layer_parent[current]
         node_ids: set[str] = set()
         for node_index, node in enumerate(candidate.get("nodes", [])):
             node_id = node.get("nodeId")
@@ -473,6 +738,8 @@ def validate_session(session: dict[str, Any]) -> list[dict[str, Any]]:
                 findings.append(_finding("warning", "CLIENT_NODE_PURPOSE", f"{node_id} has no purpose", candidate_id=candidate_id))
             if not str(node.get("stateOwnership", "")).strip():
                 findings.append(_finding("warning", "CLIENT_STATE_OWNERSHIP", f"{node_id} has no state ownership", candidate_id=candidate_id))
+            if node.get("layerId") not in layer_ids:
+                findings.append(_finding("error", "CLIENT_NODE_LAYER", f"{node_id} references an unknown layer: {node.get('layerId')}", f"/candidates/{index}/nodes/{node_index}/layerId", candidate_id))
         edge_ids: set[str] = set()
         for edge_index, edge in enumerate(candidate.get("edges", [])):
             edge_id = edge.get("edgeId")
@@ -483,6 +750,107 @@ def validate_session(session: dict[str, Any]) -> list[dict[str, Any]]:
                 findings.append(_finding("error", "CLIENT_EDGE_ENDPOINT", f"{edge_id} has a missing endpoint", candidate_id=candidate_id))
             if edge.get("fromNodeId") == edge.get("toNodeId"):
                 findings.append(_finding("warning", "CLIENT_EDGE_SELF_LOOP", f"{edge_id} is a self-loop", candidate_id=candidate_id))
+        formal_module_ids = {
+            node.get("entityRef", {}).get("id")
+            for node in candidate.get("nodes", [])
+            if isinstance(node.get("entityRef"), dict)
+            and node.get("entityRef", {}).get("type") == "module"
+        }
+        valid_root_ids = formal_module_ids | node_ids
+        canvas_ids: set[str] = set()
+        canvas_roots: set[str] = set()
+        for canvas_index, canvas in enumerate(candidate.get("moduleLogicCanvases", [])):
+            canvas_id = canvas.get("canvasId")
+            canvas_path = f"/candidates/{index}/moduleLogicCanvases/{canvas_index}"
+            if canvas_id in canvas_ids:
+                findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_CANVAS", f"duplicate Module Logic canvas ID: {canvas_id}", f"{canvas_path}/canvasId", candidate_id))
+            canvas_ids.add(canvas_id)
+            root_id = canvas.get("rootModuleId")
+            if root_id in canvas_roots:
+                findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_ROOT", f"module {root_id} has more than one Target Module Logic canvas", f"{canvas_path}/rootModuleId", candidate_id))
+            canvas_roots.add(root_id)
+            if root_id not in valid_root_ids:
+                findings.append(_finding("error", "CLIENT_LOGIC_ROOT", f"Module Logic root does not exist in the candidate: {root_id}", f"{canvas_path}/rootModuleId", candidate_id))
+            observation = canvas.get("currentObservationBinding")
+            if isinstance(observation, dict) and observation.get("currentness") != "match":
+                findings.append(_finding("warning", "CLIENT_LOGIC_OBSERVATION_STALE", f"Module Logic source observation is {observation.get('currentness')}", f"{canvas_path}/currentObservationBinding/currentness", candidate_id))
+
+            logic_node_ids: set[str] = set()
+            logic_formal_ids: set[str] = set()
+            loop_ids: set[str] = set()
+            loop_back_ids: set[str] = set()
+            for logic_index, logic_node in enumerate(canvas.get("nodes", [])):
+                logic_id = logic_node.get("nodeId")
+                if logic_id in logic_node_ids:
+                    findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_NODE", f"duplicate Module Logic node ID: {logic_id}", f"{canvas_path}/nodes/{logic_index}/nodeId", candidate_id))
+                logic_node_ids.add(logic_id)
+                entity_ref = logic_node.get("entityRef")
+                if isinstance(entity_ref, dict):
+                    formal_id = entity_ref.get("id")
+                    if formal_id in logic_formal_ids:
+                        findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_ENTITY", f"duplicate formal Module Logic node reference: {formal_id}", f"{canvas_path}/nodes/{logic_index}/entityRef/id", candidate_id))
+                    logic_formal_ids.add(formal_id)
+                if logic_node.get("type") == "loop":
+                    loop_ids.add(logic_id)
+                    if not str(logic_node.get("loopExitCondition", "")).strip():
+                        findings.append(_finding("error", "CLIENT_LOGIC_LOOP_EXIT", f"Loop node {logic_id} requires an exit condition", f"{canvas_path}/nodes/{logic_index}/loopExitCondition", candidate_id))
+                elif logic_node.get("loopExitCondition") is not None:
+                    findings.append(_finding("error", "CLIENT_LOGIC_NON_LOOP_EXIT", f"Non-loop node {logic_id} cannot declare a loop exit condition", f"{canvas_path}/nodes/{logic_index}/loopExitCondition", candidate_id))
+
+            logic_edge_ids: set[str] = set()
+            logic_edge_formal_ids: set[str] = set()
+            for logic_edge_index, logic_edge in enumerate(canvas.get("edges", [])):
+                logic_edge_id = logic_edge.get("edgeId")
+                edge_path = f"{canvas_path}/edges/{logic_edge_index}"
+                if logic_edge_id in logic_edge_ids:
+                    findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_EDGE", f"duplicate Module Logic edge ID: {logic_edge_id}", f"{edge_path}/edgeId", candidate_id))
+                logic_edge_ids.add(logic_edge_id)
+                entity_ref = logic_edge.get("entityRef")
+                if isinstance(entity_ref, dict):
+                    formal_id = entity_ref.get("id")
+                    if formal_id in logic_edge_formal_ids:
+                        findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_EDGE_ENTITY", f"duplicate formal Module Logic edge reference: {formal_id}", f"{edge_path}/entityRef/id", candidate_id))
+                    logic_edge_formal_ids.add(formal_id)
+                from_id = logic_edge.get("fromNodeId")
+                to_id = logic_edge.get("toNodeId")
+                if from_id not in logic_node_ids or to_id not in logic_node_ids:
+                    findings.append(_finding("error", "CLIENT_LOGIC_EDGE_ENDPOINT", f"Module Logic edge {logic_edge_id} has a missing endpoint", edge_path, candidate_id))
+                if from_id == to_id:
+                    findings.append(_finding("error", "CLIENT_LOGIC_SELF_EDGE", f"Module Logic edge {logic_edge_id} is a self-loop", edge_path, candidate_id))
+                if logic_edge.get("kind") == "loop_back":
+                    touching = {from_id, to_id} & loop_ids
+                    if not touching:
+                        findings.append(_finding("error", "CLIENT_LOGIC_LOOP_BACK", f"loop_back edge {logic_edge_id} does not touch a Loop node", f"{edge_path}/kind", candidate_id))
+                    loop_back_ids.update(touching)
+            for loop_id in sorted(loop_ids - loop_back_ids):
+                findings.append(_finding("error", "CLIENT_LOGIC_LOOP_BACK_MISSING", f"Loop node {loop_id} requires a loop_back edge", f"{canvas_path}/edges", candidate_id))
+
+            external_keys = {
+                (item.get("type"), item.get("id"))
+                for item in canvas.get("externalEntityRefs", [])
+                if isinstance(item, dict)
+            }
+            port_ids: set[str] = set()
+            for port_index, port in enumerate(canvas.get("boundaryPorts", [])):
+                port_id = port.get("portId")
+                port_path = f"{canvas_path}/boundaryPorts/{port_index}"
+                if port_id in port_ids:
+                    findings.append(_finding("error", "CLIENT_DUPLICATE_LOGIC_PORT", f"duplicate boundary port ID: {port_id}", f"{port_path}/portId", candidate_id))
+                port_ids.add(port_id)
+                if port.get("internalNodeId") not in logic_node_ids:
+                    findings.append(_finding("error", "CLIENT_LOGIC_PORT_NODE", f"boundary port {port_id} references a missing internal node", f"{port_path}/internalNodeId", candidate_id))
+                external_ref = port.get("externalEntityRef", {})
+                external_key = (external_ref.get("type"), external_ref.get("id")) if isinstance(external_ref, dict) else (None, None)
+                if external_key not in external_keys:
+                    findings.append(_finding("error", "CLIENT_LOGIC_EXTERNAL_REF", f"boundary port {port_id} is missing its compact external reference", f"{port_path}/externalEntityRef", candidate_id))
+                if external_key == ("module", root_id):
+                    findings.append(_finding("error", "CLIENT_LOGIC_SELF_EXTERNAL_REF", f"boundary port {port_id} references its own root module", f"{port_path}/externalEntityRef/id", candidate_id))
+                binding_kind = port.get("bindingKind")
+                binding_id = port.get("bindingId")
+                if binding_kind == "unbound_candidate" and binding_id is not None:
+                    findings.append(_finding("error", "CLIENT_LOGIC_UNBOUND_ID", f"unbound candidate port {port_id} cannot carry a binding ID", f"{port_path}/bindingId", candidate_id))
+                if binding_kind in {"connection", "resource_usage"} and not binding_id:
+                    findings.append(_finding("error", "CLIENT_LOGIC_BINDING_MISSING", f"boundary port {port_id} requires a binding ID", f"{port_path}/bindingId", candidate_id))
     if session.get("activeCandidateId") not in candidate_ids:
         findings.append(_finding("error", "CLIENT_ACTIVE_CANDIDATE", "activeCandidateId does not exist", "/activeCandidateId"))
     if any(
@@ -542,7 +910,7 @@ def create_candidate(session: dict[str, Any], label: str, *, clone_from: str | N
         item = _clone(_candidate(session, clone_from))
         item.update({"candidateId": candidate_id, "label": label.strip(), "kind": "alternative", "status": "active", "createdAt": now, "updatedAt": now})
     else:
-        item = {"candidateId": candidate_id, "label": label.strip(), "kind": "alternative", "status": "active", "assumptions": [], "unknowns": [], "nodes": [], "edges": [], "createdAt": now, "updatedAt": now}
+        item = {"candidateId": candidate_id, "label": label.strip(), "kind": "alternative", "status": "active", "assumptions": [], "unknowns": [], "architectureLayers": _clone(session.get("layers", [])), "nodes": [], "edges": [], "createdAt": now, "updatedAt": now}
     session["candidates"].append(item)
     session["activeCandidateId"] = candidate_id
     _append_operation(session, "candidate.create", {"candidateId": candidate_id}, None, {"label": item["label"]}, semantic=True)
@@ -773,7 +1141,7 @@ def _updated_module_design(module: dict[str, Any], node: dict[str, Any]) -> dict
 
 def _new_module(node: dict[str, Any], module_id: str, now: str) -> dict[str, Any]:
     category = node.get("category") if node.get("category") in {"core", "supporting", "integration", "data", "infrastructure", "external"} else "supporting"
-    return {
+    result = {
         "id": module_id, "name": str(node.get("name", "")).strip(), "layerId": node.get("layerId"),
         "architectureScope": "target", "targetLayerId": None, "category": category,
         "purpose": str(node.get("purpose", "")), "rationale": str(node.get("rationale", "Architecture Studio draft candidate.")),
@@ -784,6 +1152,9 @@ def _new_module(node: dict[str, Any], module_id: str, now: str) -> dict[str, Any
         "codePath": "", "decisionIds": [], "riskIds": [], "acceptanceCriteriaIds": [], "gateIds": [], "workItemIds": [], "reviewIds": [],
         "createdAt": now, "updatedAt": now, "extensions": _clone(node.get("extensions", {})),
     }
+    if node.get("displayName"):
+        result["displayName"] = str(node["displayName"]).strip()
+    return result
 
 
 def _new_connection(edge: dict[str, Any], connection_id: str, from_id: str, to_id: str) -> dict[str, Any]:
@@ -800,6 +1171,320 @@ def _new_connection(edge: dict[str, Any], connection_id: str, from_id: str, to_i
     }
 
 
+def _occupied_formal_ids(data: dict[str, Any]) -> set[str]:
+    occupied: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            item_id = value.get("id")
+            if isinstance(item_id, str) and _ID_RE.fullmatch(item_id):
+                occupied.add(item_id)
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(data)
+    return occupied
+
+
+def _logic_node_payload(
+    node: dict[str, Any], formal_id: str
+) -> dict[str, Any]:
+    result = {
+        "id": formal_id,
+        "name": str(node.get("name", "")).strip(),
+        "type": node.get("type", "processing"),
+        "purpose": str(node.get("purpose", "")),
+        "rationale": str(node.get("rationale", "")),
+        "implementationSummary": str(node.get("implementationSummary", "")),
+        "loopExitCondition": node.get("loopExitCondition"),
+        "requirementIds": _clone(node.get("requirementIds", [])),
+        "decisionIds": _clone(node.get("decisionIds", [])),
+        "riskIds": _clone(node.get("riskIds", [])),
+        "referenceIds": _clone(node.get("referenceIds", [])),
+        "extensions": _clone(node.get("extensions", {})),
+    }
+    if node.get("displayName") is not None:
+        result["displayName"] = str(node["displayName"])
+    return result
+
+
+def _materialize_module_logic_designs(
+    architecture: dict[str, Any],
+    resources: list[dict[str, Any]],
+    candidate: dict[str, Any],
+    session_id: str,
+    candidate_id: str,
+    node_module: dict[str, str],
+    edge_connection: dict[str, str],
+    occupied: set[str],
+) -> None:
+    canvases = candidate.get("moduleLogicCanvases", [])
+    if not canvases and "moduleLogicDesigns" not in architecture:
+        return
+    designs = architecture.setdefault("moduleLogicDesigns", [])
+    design_by_id = {
+        item.get("id"): item for item in designs if isinstance(item, dict)
+    }
+    module_by_id = {
+        item.get("id"): item
+        for item in architecture.get("modules", [])
+        if isinstance(item, dict)
+    }
+    connection_ids = {
+        item.get("id")
+        for item in architecture.get("connections", [])
+        if isinstance(item, dict)
+    }
+    resource_ids = {
+        item.get("id")
+        for item in resources
+        if isinstance(item, dict)
+    }
+
+    for canvas in canvases:
+        canvas_id = canvas.get("canvasId")
+        observation = canvas.get("currentObservationBinding")
+        if isinstance(observation, dict) and observation.get("currentness") != "match":
+            raise StudioSessionError(
+                f"Module Logic canvas {canvas_id} is based on a "
+                f"{observation.get('currentness')} Current observation"
+            )
+        root_token = canvas.get("rootModuleId")
+        root_module_id = node_module.get(root_token, root_token)
+        root_module = module_by_id.get(root_module_id)
+        if root_module is None:
+            raise StudioSessionError(
+                f"Module Logic canvas {canvas_id} has an invalid root module"
+            )
+
+        base_id = canvas.get("baseTargetDesignId")
+        base = design_by_id.get(base_id) if base_id else None
+        if base_id and (
+            base is None
+            or base.get("architectureScope") != "target"
+            or base.get("moduleId") != root_module_id
+        ):
+            raise StudioSessionError(
+                f"Module Logic canvas {canvas_id} has an invalid base Target design"
+            )
+        if not canvas.get("nodes"):
+            raise StudioSessionError(
+                f"Module Logic canvas {canvas_id} must contain at least one logic node"
+            )
+
+        base_nodes = {
+            item.get("id"): item for item in (base or {}).get("nodes", [])
+        }
+        base_edges = {
+            item.get("id"): item for item in (base or {}).get("edges", [])
+        }
+        base_ports = {
+            item.get("id"): item for item in (base or {}).get("boundaryPorts", [])
+        }
+        logic_node_ids: dict[str, str] = {}
+        materialized_nodes: list[dict[str, Any]] = []
+        for node in canvas.get("nodes", []):
+            entity_ref = node.get("entityRef")
+            if isinstance(entity_ref, dict):
+                formal_id = entity_ref.get("id")
+                if entity_ref.get("type") != "logic_node" or formal_id not in base_nodes:
+                    raise StudioSessionError(
+                        f"Module Logic node {node.get('nodeId')} has an invalid formal reference"
+                    )
+            else:
+                formal_id = _unique_id(
+                    "MLN-STUDIO",
+                    {
+                        "session": session_id,
+                        "candidate": candidate_id,
+                        "canvas": canvas_id,
+                        "node": {
+                            key: _clone(value)
+                            for key, value in node.items()
+                            if key not in {"x", "y", "selected", "collapsed", "width", "height"}
+                        },
+                    },
+                    occupied,
+                )
+            logic_node_ids[node["nodeId"]] = formal_id
+            materialized_nodes.append(_logic_node_payload(node, formal_id))
+
+        materialized_edges: list[dict[str, Any]] = []
+        for edge in canvas.get("edges", []):
+            from_id = logic_node_ids.get(edge.get("fromNodeId"))
+            to_id = logic_node_ids.get(edge.get("toNodeId"))
+            if not from_id or not to_id:
+                raise StudioSessionError(
+                    f"Module Logic edge {edge.get('edgeId')} has an invalid endpoint"
+                )
+            entity_ref = edge.get("entityRef")
+            if isinstance(entity_ref, dict):
+                formal_id = entity_ref.get("id")
+                if entity_ref.get("type") != "logic_edge" or formal_id not in base_edges:
+                    raise StudioSessionError(
+                        f"Module Logic edge {edge.get('edgeId')} has an invalid formal reference"
+                    )
+            else:
+                formal_id = _unique_id(
+                    "MLE-STUDIO",
+                    {
+                        "session": session_id,
+                        "candidate": candidate_id,
+                        "canvas": canvas_id,
+                        "edge": {
+                            key: _clone(value)
+                            for key, value in edge.items()
+                            if key not in {"selected"}
+                        },
+                        "from": from_id,
+                        "to": to_id,
+                    },
+                    occupied,
+                )
+            materialized_edges.append(
+                {
+                    "id": formal_id,
+                    "fromNodeId": from_id,
+                    "toNodeId": to_id,
+                    "kind": edge.get("kind", "flow"),
+                    "condition": str(edge.get("condition", "")),
+                    "dataSummary": str(edge.get("dataSummary", "")),
+                    "order": edge.get("order"),
+                    "referenceIds": _clone(edge.get("referenceIds", [])),
+                    "extensions": _clone(edge.get("extensions", {})),
+                }
+            )
+
+        materialized_ports: list[dict[str, Any]] = []
+        for port in canvas.get("boundaryPorts", []):
+            internal_id = logic_node_ids.get(port.get("internalNodeId"))
+            if not internal_id:
+                raise StudioSessionError(
+                    f"Module Logic boundary port {port.get('portId')} has an invalid internal node"
+                )
+            entity_ref = port.get("entityRef")
+            if isinstance(entity_ref, dict):
+                formal_id = entity_ref.get("id")
+                if entity_ref.get("type") != "boundary_port" or formal_id not in base_ports:
+                    raise StudioSessionError(
+                        f"Module Logic boundary port {port.get('portId')} has an invalid formal reference"
+                    )
+            else:
+                formal_id = _unique_id(
+                    "MLP-STUDIO",
+                    {
+                        "session": session_id,
+                        "candidate": candidate_id,
+                        "canvas": canvas_id,
+                        "port": {
+                            key: _clone(value)
+                            for key, value in port.items()
+                            if key not in {"x", "y", "selected"}
+                        },
+                    },
+                    occupied,
+                )
+            binding_kind = port.get("bindingKind")
+            binding_token = port.get("bindingId")
+            if binding_kind == "unbound_candidate":
+                raise StudioSessionError(
+                    f"Module Logic boundary port {port.get('portId')} is not bound to a formal Candidate connection"
+                )
+            if binding_kind == "connection":
+                binding_id = edge_connection.get(binding_token, binding_token)
+                if binding_id not in connection_ids:
+                    raise StudioSessionError(
+                        f"Module Logic boundary port {port.get('portId')} references an unknown Candidate connection"
+                    )
+            elif binding_kind == "resource_usage":
+                binding_id = binding_token
+                if binding_id not in resource_ids:
+                    raise StudioSessionError(
+                        f"Module Logic boundary port {port.get('portId')} references an unknown resource"
+                    )
+            else:
+                raise StudioSessionError(
+                    f"Module Logic boundary port {port.get('portId')} has an invalid binding kind"
+                )
+            external = _clone(port.get("externalEntityRef", {}))
+            if external.get("type") == "module":
+                external["id"] = node_module.get(external.get("id"), external.get("id"))
+                if external.get("id") not in module_by_id:
+                    raise StudioSessionError(
+                        f"Module Logic boundary port {port.get('portId')} references an unknown external module"
+                    )
+            elif external.get("type") == "resource":
+                if external.get("id") not in resource_ids:
+                    raise StudioSessionError(
+                        f"Module Logic boundary port {port.get('portId')} references an unknown external resource"
+                    )
+            materialized_ports.append(
+                {
+                    "id": formal_id,
+                    "name": str(port.get("name", "")).strip(),
+                    "direction": port.get("direction", "input"),
+                    "internalNodeId": internal_id,
+                    "externalEntityRef": external,
+                    "bindingKind": binding_kind,
+                    "bindingId": binding_id,
+                    "dataSummary": str(port.get("dataSummary", "")),
+                    "protocol": str(port.get("protocol", "")),
+                    "referenceIds": _clone(port.get("referenceIds", [])),
+                    "extensions": _clone(port.get("extensions", {})),
+                }
+            )
+
+        if base is None:
+            design_id = _unique_id(
+                "MLD-STUDIO",
+                {
+                    "session": session_id,
+                    "candidate": candidate_id,
+                    "canvas": _semantic_projection(
+                        {"moduleLogicCanvases": [canvas]}
+                    ).get("moduleLogicCanvases", []),
+                    "module": root_module_id,
+                },
+                occupied,
+            )
+            design: dict[str, Any] = {"id": design_id}
+            designs.append(design)
+            design_by_id[design_id] = design
+        else:
+            design = base
+
+        design.update(
+            {
+                "moduleId": root_module_id,
+                "architectureScope": "target",
+                "name": str(
+                    canvas.get("name")
+                    or f"{root_module.get('name', root_module_id)} target logic"
+                ),
+                "summary": str(canvas.get("summary", root_module.get("purpose", ""))),
+                "nodes": materialized_nodes,
+                "edges": materialized_edges,
+                "boundaryPorts": materialized_ports,
+                "requirementIds": _clone(canvas.get("requirementIds", [])),
+                "decisionIds": _clone(canvas.get("decisionIds", [])),
+                "riskIds": _clone(canvas.get("riskIds", [])),
+                "acceptanceCriteriaIds": _clone(
+                    canvas.get("acceptanceCriteriaIds", [])
+                ),
+                "gateIds": _clone(canvas.get("gateIds", [])),
+                "referenceIds": _clone(canvas.get("referenceIds", [])),
+                "extensions": _clone(canvas.get("extensions", {})),
+            }
+        )
+        if canvas.get("displayName") is not None:
+            design["displayName"] = str(canvas["displayName"])
+        else:
+            design.pop("displayName", None)
+
+
 def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], candidate_id: str) -> dict[str, Any]:
     """Project one candidate into Panorama data without deleting formal entities."""
     _binding_matches(current, session)
@@ -811,11 +1496,25 @@ def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], cand
         raise StudioSessionError(f"session client validation failed: {errors[0]['message']}")
     result = _clone(current)
     architecture = result["architecture"]
+    candidate_layers = candidate.get("architectureLayers", session.get("layers", []))
+    if isinstance(candidate_layers, list) and candidate_layers:
+        architecture["layers"] = [
+            {
+                key: _clone(value)
+                for key, value in layer.items()
+                if key not in {"layoutHeight", "selected", "collapsed"}
+                and not (key == "displayName" and not value)
+            }
+            for layer in sorted(
+                candidate_layers,
+                key=lambda item: (int(item.get("order", 0)), str(item.get("id", ""))),
+            )
+        ]
     modules = architecture["modules"]
     connections = architecture["connections"]
     module_by_id = {item.get("id"): item for item in modules}
     connection_by_id = {item.get("id"): item for item in connections}
-    occupied = set(module_by_id) | set(connection_by_id)
+    occupied = _occupied_formal_ids(result)
     # Materialization is a pure projection of a frozen session. Repeating it
     # must yield byte-identical candidate data and proposal operations, so use
     # the recorded candidate/session time instead of a new wall-clock value.
@@ -840,6 +1539,10 @@ def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], cand
             )
             desired_design = _updated_module_design(module, node)
             module["name"] = str(node.get("name", module.get("name", ""))).strip()
+            if node.get("displayName"):
+                module["displayName"] = str(node["displayName"]).strip()
+            else:
+                module.pop("displayName", None)
             module["purpose"] = str(node.get("purpose", module.get("purpose", "")))
             module["category"] = node.get("category", module.get("category"))
             baseline_layer_id = node.get(
@@ -865,6 +1568,7 @@ def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], cand
             module = _new_module(node, module_id, now)
             modules.append(module); module_by_id[module_id] = module
         node_module[node["nodeId"]] = module_id
+    edge_connection: dict[str, str] = {}
     for edge in candidate.get("edges", []):
         from_id = node_module.get(edge.get("fromNodeId")); to_id = node_module.get(edge.get("toNodeId"))
         if not from_id or not to_id:
@@ -895,10 +1599,22 @@ def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], cand
                 connection["extensions"] = _clone(edge["extensions"])
             if connection.get("architectureScope") == "current":
                 connection["architectureScope"] = "both"
+            connection_id = connection["id"]
         else:
             connection_id = _unique_id("CONN-STUDIO", {"session": session.get("sessionId"), "candidate": candidate_id, "edge": _clone(edge), "from": from_id, "to": to_id}, occupied)
             connection = _new_connection(edge, connection_id, from_id, to_id)
             connections.append(connection); connection_by_id[connection_id] = connection
+        edge_connection[edge["edgeId"]] = connection_id
+    _materialize_module_logic_designs(
+        architecture,
+        result.get("resources", []),
+        candidate,
+        str(session.get("sessionId")),
+        candidate_id,
+        node_module,
+        edge_connection,
+        occupied,
+    )
     return result
 
 

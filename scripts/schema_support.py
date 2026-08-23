@@ -7,6 +7,9 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MODULE_LOGIC_OBSERVATION_SCHEMA = (
+    ROOT / "schema" / "module-logic-observation.schema.v0.1.json"
+)
 SCHEMA_BY_VERSION = {
     "0.1": ROOT / "schema" / "panorama.schema.v0.1.json",
     "0.2": ROOT / "schema" / "panorama.schema.v0.2.json",
@@ -25,4 +28,8 @@ def schema_for_data(
         raise ValueError(f"不支持的 Panorama Schema 版本：{version!r}") from exc
 
 
-__all__ = ["SCHEMA_BY_VERSION", "schema_for_data"]
+__all__ = [
+    "MODULE_LOGIC_OBSERVATION_SCHEMA",
+    "SCHEMA_BY_VERSION",
+    "schema_for_data",
+]

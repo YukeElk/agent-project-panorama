@@ -129,3 +129,38 @@ python scripts/compile_panorama_model_ir.py project-panorama.json `
 
 `--observed-at` 是显式 as-of 输入，避免运行时钟破坏可重算性。输出存在时默认拒绝覆盖；`--overwrite`
 只覆盖候选制品，不修改正式 Panorama 或业务源码。
+
+## 10. V0.8 Module Logic 有界归纳链
+
+Module Logic 不直接把 Source Topology 中的文件/import 变成内部流程。它使用三段只读流程：
+
+1. `prepare_module_logic_analysis.py` 验证 Panorama 和 Source Observation，根据正式 Module `codePath`
+   生成最多 256 文件 / 16 MiB 的元数据 allow-list，不持久化源码正文；
+2. Codex 只能瞬时读取 Manifest 列出的文件，输出受约束 Candidate；不执行项目代码、不安装依赖、
+   不使用网络、不读取 Manifest 外路径；
+3. `materialize_module_logic_observation.py` 核对文件/行/Evidence Digest、Manifest/Panorama/Module/Source
+   Binding、Coverage、Loss、敏感字段和 Hash；`reconcile_module_logic_observation.py` 后续比较实时文件摘要
+   与最新 Source Observation，只返回 `match|stale|incomplete|unknown`。
+
+```powershell
+python scripts/prepare_module_logic_analysis.py project-panorama.json `
+  .panorama-work/source-observation.json `
+  --module-id MOD-ID --prepared-at 2026-08-23T08:00:00Z `
+  --output .panorama-work/module-logic/MOD-ID.analysis-manifest.json
+
+python scripts/materialize_module_logic_observation.py project-panorama.json `
+  .panorama-work/module-logic/MOD-ID.analysis-manifest.json `
+  .panorama-work/module-logic/MOD-ID.candidate.json `
+  --generated-at 2026-08-23T08:05:00Z `
+  --output .panorama-work/module-logic/MOD-ID.observation.json
+
+python scripts/reconcile_module_logic_observation.py project-panorama.json `
+  .panorama-work/module-logic/MOD-ID.analysis-manifest.json `
+  .panorama-work/module-logic/MOD-ID.observation.json `
+  .panorama-work/source-observation.latest.json `
+  --project-root path/to/project --checked-at 2026-08-23T09:00:00Z
+```
+
+Manifest 被截断、Source 不完整、Candidate 未声明读取全部 allow-list 或存在 Unresolved/Loss/Gap 时，
+Observation 必须降为 `partial/recorded_as_of`。任何 Evidence 越出 Manifest、Digest 错配、Prompt/源码正文持久化、
+Panorama/Module/Source 绑定变化都 fail closed。

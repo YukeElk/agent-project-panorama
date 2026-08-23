@@ -1,6 +1,6 @@
 # Verified Projection Delivery Contract v0.1
 
-状态：V0.6.0 Machine Contract Implemented；V0.7 Explain Pack 兼容扩展已实现；独立人工视觉 Acceptance 必须继续外部 Hash-bound
+状态：V0.6.0 Machine Contract Implemented；V0.7 Explain Pack 与 V0.8 Same-page/Playback 兼容扩展已实现；独立人工视觉 Acceptance 必须继续外部 Hash-bound
 
 对应 Finding：SF-32、SF-36、SF-38、SF-43
 
@@ -29,12 +29,17 @@ fix、输入/制品 Hash、Compiler/Renderer Version、Source/Event/`asOf` Bindi
 ## 3. 视觉状态
 
 - `pending`：自动检查通过但无人完成视觉评审；
-- `accepted`：独立人工评审明确接受精确 Artifact Hash；
+- `accepted`：独立人工评审明确接受被冻结且唯一确定的 Artifact；Recorder 必须将判断绑定到精确 Artifact Hash；
 - `rejected`：人工拒绝，禁止 Promote；
 - `skipped`：环境无法采集浏览器证据，不得宣传交互/视觉通过。
 
 内部 last-good 可以在合同允许时接受 pending/skipped，但公开发布的代表性制品必须绑定 `accepted`。任何外部
 发布仍要求独立人工批准。
+
+Human Acceptance 的精确性来自 Recorder 的候选绑定，不来自用户手工抄写机器标识。当只有一个 immutable
+Candidate 已被展示或明确选中，用户说“批准发布”或“批准发布为 `<VERSION>`”即可同时形成发布授权和该候选的
+Human Acceptance；Recorder 自动保存 Delivery ID、SHA-256、字节数、版本、原文和时间。多个候选、候选变化、
+版本歧义或新重大风险必须重新确认。机器 Receipt 的 `visualReview` 仍保持机器事实，不因自然语言批准而反写。
 
 ## 4. Policy 与恢复
 
@@ -62,14 +67,20 @@ Candidate/Receipt/Browser Evidence/Transaction 篡改、缺失 viewport、overfl
 [V0.6 Human Visual Acceptance](v0.6-human-visual-acceptance.md) 绑定精确 Artifact Hash。不得把外部接受反写进
 机器 Receipt，也不得仅凭本地 last-good 宣称外部发布完成。
 
-## 5. V0.7 Explain Pack 兼容扩展
+## 5. V0.7–V0.8 Explain Pack 兼容扩展
 
 V0.7 不修改冻结的 `panorama-verified-delivery-receipt.v0.1` Schema。`prepare_delivery` 在调用方同时提供
 Panorama Core 与 Explain Pack 时，先执行完整 Core/Model/View/View Set/Explain Pack Binding 校验，再由
-Renderer 0.3 生成 `panorama-multi-view-bundle.v0.2`。Bundle Hash 的身份语义显式包含
+Renderer 0.4 生成 `panorama-multi-view-bundle.v0.2`。Bundle Hash 的身份语义显式包含
 `explainPackId + semanticHash`，因此 Receipt 的既有 `bundleBinding.bundleHash` 会传递绑定精确 Explain Pack；
 缺少 Core、包被篡改或任一输入漂移都在候选写入前失败。
 
-这一传递绑定不能被解释为人工视觉接受。带讲解 Dialog 的精确候选仍须经过 Browser/Viewport/Console 机器门禁，
+V0.8 的 `playbackScenarios` 继续通过 Explain Pack Semantic Hash 进入 Bundle/Artifact 绑定；播放速度、进度、
+当前步骤和动效开关仍是 Viewer State，不改变候选身份。这一传递绑定不能被解释为人工视觉接受。带同页讲解与
+有限流程动效的精确候选仍须经过 Browser/Viewport/Console 机器门禁，
 机器 Receipt 继续写 `visualReview=pending`；代表性公开制品只有在独立人工记录绑定其精确 Artifact SHA-256 后才可
 宣称接受。
+
+父子语义画布候选必须通过 `prepare_verified_delivery.py --child-view <MODULE_LOGIC_VIEW>` 显式传入全部子 View。
+子 View 不进入顶层 Guided View Set，也不扩展冻结的 Receipt v0.1 Schema；其身份由 Bundle Hash 传递绑定，Geometry
+Gate 必须同时验证顶层 View 与子 View。Explain Pack 若引用缺失、错父级或错 Hash 的子 View，候选写入前必须失败关闭。

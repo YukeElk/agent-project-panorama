@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
   <meta name="color-scheme" content="light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'">
   <title>Agent 项目全景</title>
@@ -108,6 +109,30 @@
     .focus-value { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .sensitive-flag { color: var(--critical); font-size: 12px; font-weight: 700; margin-top: 8px; display: flex; gap: 6px; align-items: center; }
     .environment-mini { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+
+    .decision-cockpit { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: #fff; }
+    .decision-roadmap { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-bottom: 1px solid var(--rule); }
+    .decision-stage { min-width: 0; padding: 13px 15px; border-right: 1px solid var(--rule); background: var(--band); }
+    .decision-stage:last-child { border-right: 0; }
+    .decision-stage.is-current { background: var(--primary-tint); box-shadow: inset 0 3px 0 var(--primary); }
+    .decision-stage-label { display: block; color: var(--muted); font-size: 11px; font-weight: 720; letter-spacing: .04em; margin-bottom: 5px; }
+    .decision-stage strong { display: block; margin-bottom: 5px; }
+    .decision-stage p { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+    .decision-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .decision-panel { min-width: 0; padding: 15px; border-right: 1px solid var(--rule); }
+    .decision-panel:last-child { border-right: 0; }
+    .decision-panel h3 { margin-bottom: 9px; }
+    .decision-metric { display: flex; align-items: baseline; gap: 7px; margin-bottom: 8px; }
+    .decision-metric strong { font: 800 22px/1 var(--mono); }
+    .decision-list { display: grid; gap: 7px; }
+    .decision-signal { border-left: 3px solid var(--rule-strong); padding-left: 9px; font-size: 12px; }
+    .decision-signal.is-warning { border-left-color: var(--warning); }
+    .decision-signal.is-critical { border-left-color: var(--critical); }
+    .decision-signal p { margin: 2px 0 0; color: var(--muted); }
+    .decision-cockpit-foot { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 11px 15px; border-top: 1px solid var(--rule); background: var(--band); }
+    .decision-cockpit-foot p { margin: 0; color: var(--muted); font-size: 12px; }
+    .primary-inline-btn { border: 1px solid var(--primary); border-radius: 5px; background: #fff; color: var(--primary); padding: 8px 11px; white-space: nowrap; }
+    .primary-inline-btn:hover { background: var(--primary-tint); }
 
     .control-grid { display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(285px, .95fr); gap: 18px; align-items: start; }
     .control-main, .attention-rail { min-width: 0; }
@@ -332,6 +357,10 @@
     .studio-library-section, .studio-inspector-section { padding: 13px; border-bottom: 1px solid var(--rule); }
     .studio-library-section h3, .studio-inspector-section h3 { color: var(--muted); font-size: 12px; letter-spacing: .045em; text-transform: uppercase; margin-bottom: 9px; }
     .studio-library-list { display: grid; gap: 7px; }
+    .studio-layer-controls { display: grid; gap: 7px; }
+    .studio-layer-control-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+    .studio-layer-control-grid .studio-library-btn { min-width: 0; }
+    .studio-layer-tree-note { margin: 7px 0 0; color: var(--muted); font-size: 11px; }
     .studio-library-btn { width: 100%; min-height: 44px; text-align: left; border: 1px solid var(--rule); border-radius: 4px; background: #fff; padding: 9px 10px; font-size: 13px; }
     .studio-library-btn:hover { color: var(--primary); border-color: var(--primary); background: var(--primary-tint); }
     .studio-requirements { list-style: none; padding: 0; max-height: 150px; overflow: auto; }
@@ -420,6 +449,26 @@
     .drawer-section { border-bottom: 1px solid var(--rule); padding: 15px 20px; }
     .drawer-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .045em; color: var(--muted); margin-bottom: 9px; }
     .drawer-section p:last-child { margin-bottom: 0; }
+    .drawer-story-intro { padding: 16px 20px; border-bottom: 1px solid var(--rule); background: linear-gradient(135deg,#f7f9ff,#fff); }
+    .drawer-story-intro strong { display: block; margin-bottom: 5px; font-size: 14px; }
+    .drawer-story-intro p { margin: 0; color: var(--muted); }
+    .drawer-story { counter-reset: drawer-story; }
+    .drawer-story-step { counter-increment: drawer-story; border-bottom: 1px solid var(--rule); background: #fff; }
+    .drawer-story-step > summary { list-style: none; cursor: pointer; padding: 15px 20px; display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 10px; align-items: start; }
+    .drawer-story-step > summary::-webkit-details-marker { display: none; }
+    .drawer-story-step > summary::before { content: counter(drawer-story); display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: var(--band); color: var(--primary); font: 750 12px/1 var(--mono); }
+    .drawer-story-step[open] > summary::before { color: #fff; background: var(--primary); }
+    .drawer-story-step > summary::after { content: "+"; color: var(--muted); font-size: 18px; }
+    .drawer-story-step[open] > summary::after { content: "−"; }
+    .drawer-story-title { display: block; font-weight: 780; }
+    .drawer-story-summary { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .drawer-story-body { padding: 0 20px 17px 60px; }
+    .drawer-story-body p { margin: 0 0 8px; }
+    .drawer-story-body .connection-story { margin-top: 8px; padding: 10px; border: 1px solid var(--rule); border-radius: 6px; background: #fbfcff; }
+    .drawer-story-body .connection-story strong { display: block; margin-bottom: 4px; }
+    .drawer-deep-evidence { border-bottom: 1px solid var(--rule); }
+    .drawer-deep-evidence > summary { cursor: pointer; padding: 15px 20px; color: var(--primary); font-weight: 760; }
+    .drawer-deep-evidence-content { padding: 0 20px 18px; }
     .drawer-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .design-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
     .design-column { background: #fff; padding: 12px; }
@@ -454,6 +503,15 @@
     .governance-card-head { display: flex; gap: 7px; justify-content: space-between; align-items: start; }
     .governance-card ul { margin: 8px 0 0 17px; padding: 0; font-size: 12px; }
     .governance-evidence { margin-top: 7px; color: var(--muted); font: 11px/1.45 var(--mono); overflow-wrap: anywhere; }
+    .requirement-impact-intro { border-left: 4px solid var(--primary); background: var(--primary-tint); padding: 11px 13px; margin-bottom: 12px; }
+    .requirement-impact-intro p { margin: 4px 0 0; color: var(--muted); }
+    .requirement-chain { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 20px; margin: 12px 0; }
+    .requirement-chain-step { position: relative; min-width: 0; border: 1px solid var(--rule); border-radius: 6px; padding: 10px; background: #fff; }
+    .requirement-chain-step:not(:last-child)::after { content: "→"; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); color: var(--primary); font-weight: 800; }
+    .requirement-chain-step h4 { margin: 0 0 7px; color: var(--muted); font-size: 11px; }
+    .requirement-chain-step p { margin: 0; font-size: 12px; }
+    .derived-badge { display: inline-flex; margin-left: 5px; padding: 2px 5px; border: 1px solid #cbd5f4; border-radius: 999px; color: var(--info); font: 650 10px/1.2 var(--sans); vertical-align: middle; }
+    .information-gap { border-left: 3px solid var(--warning); background: #fffaf1; color: #6c4810; padding: 8px 10px; font-size: 12px; }
     .proposal-projection { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(260px,.75fr); gap: 10px; margin-top: 8px; }
     .proposal-projection-panel { min-width: 0; border: 1px solid var(--rule); border-radius: 6px; padding: 10px; background: #fbfcff; }
     .proposal-projection-panel h4 { margin: 0 0 8px; font-size: 12px; }
@@ -584,6 +642,18 @@
     .stage-detail > div:last-child { border-right: 0; }
     .stage-detail h3 { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
     .stage-detail p, .stage-detail ul { margin-bottom: 0; font-size: 12px; }
+    .requirement-evolution-list { display: grid; gap: 10px; }
+    .requirement-evolution-card { border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; overflow: hidden; }
+    .requirement-evolution-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 12px 14px; background: var(--band); border-bottom: 1px solid var(--rule); }
+    .requirement-evolution-head h3 { margin: 2px 0 0; }
+    .requirement-evolution-status { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .requirement-evolution-body { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1.2fr; }
+    .requirement-evolution-cell { min-width: 0; padding: 12px 14px; border-right: 1px solid var(--rule); }
+    .requirement-evolution-cell:last-child { border-right: 0; }
+    .requirement-evolution-cell h4 { margin: 0 0 8px; color: var(--muted); font-size: 11px; letter-spacing: .035em; }
+    .requirement-evolution-cell p { margin: 0 0 6px; font-size: 12px; }
+    .requirement-evolution-cell .entity-links { margin-bottom: 7px; }
+    .requirement-evolution-note { padding: 10px 14px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 12px; }
 
     .toast {
       position: fixed; z-index: 120; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0;
@@ -600,6 +670,12 @@
       .project-strip .project-identity { grid-column: span 2; }
       .project-strip .meta-cell:nth-child(n+5) { border-top: 1px solid var(--rule); }
       .control-grid { grid-template-columns: 1fr; }
+      .decision-grid { grid-template-columns: 1fr; }
+      .decision-panel { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .decision-panel:last-child { border-bottom: 0; }
+      .requirement-evolution-body { grid-template-columns: 1fr 1fr; }
+      .requirement-evolution-cell:nth-child(2) { border-right: 0; }
+      .requirement-evolution-cell:nth-child(n+3) { border-top: 1px solid var(--rule); }
       .attention-rail { order: -1; }
       .runtime-grid { grid-template-columns: 1fr; }
       .studio-workspace { grid-template-columns: 190px minmax(430px, 1fr) 270px; }
@@ -627,6 +703,11 @@
       .project-strip .project-identity { grid-column: 1 / -1; }
       .meta-cell { border-top: 1px solid var(--rule); }
       .focus-body-grid, .drawer-two-col, .design-compare { grid-template-columns: 1fr; }
+      .decision-roadmap, .requirement-chain, .requirement-evolution-body { grid-template-columns: 1fr; }
+      .decision-stage, .requirement-evolution-cell { border-right: 0; border-bottom: 1px solid var(--rule); }
+      .decision-stage:last-child, .requirement-evolution-cell:last-child { border-bottom: 0; }
+      .requirement-chain-step:not(:last-child)::after { content: "↓"; right: auto; left: 50%; top: auto; bottom: -18px; transform: translateX(-50%); }
+      .decision-cockpit-foot { align-items: flex-start; flex-direction: column; }
       .governance-grid, .proposal-projection { grid-template-columns: 1fr; }
       .module-drawer { width: min(92vw,560px); min-width: 0; }
       .toolbar { align-items: flex-start; flex-direction: column; }
@@ -707,8 +788,8 @@
         <button class="subnav-btn" type="button" data-system-view="source" aria-selected="false">架构来源</button>
         <div class="system-mode-switch">
           <div class="mode-switch" aria-label="系统工作模式">
-            <button class="mode-switch-btn" type="button" data-studio-mode="view" aria-pressed="true">全景查看</button>
-            <button class="mode-switch-btn" type="button" data-studio-mode="studio" aria-pressed="false">架构设计 Studio</button>
+            <button class="mode-switch-btn" type="button" data-studio-mode="view" aria-pressed="true">阅读模式</button>
+            <button class="mode-switch-btn" type="button" data-studio-mode="studio" aria-pressed="false">编辑模式</button>
           </div>
         </div>
       </nav>
@@ -772,6 +853,7 @@
       studioSession: null,
       studioSelectedNodeId: null,
       studioSelectedEdgeId: null,
+      studioSelectedLayerId: null,
       studioUndoStack: [],
       studioRedoStack: [],
       studioStorage: "memory",
@@ -779,6 +861,7 @@
       studioCompareIds: [],
       studioCompareOpen: false,
       studioCandidateDraft: null,
+      studioLayerDraft: null,
       studioJournalTrack: "semantic",
       studioMobilePanel: "canvas",
       studioDialogReturnAction: null,
@@ -1112,19 +1195,23 @@
       });
       return findings;
     }
+    function traceRelationLabel(value) {
+      var labels = { Module: "功能模块", Acceptance: "验收标准", Reference: "参考资料", Review: "评审", Requirement: "需求", Decision: "决策", WorkItem: "工作项", Gate: "门禁", "Evidence Reference": "证据引用", Deployment: "部署", "Architecture Version": "架构版本", "Scoped Entity": "作用域实体", "Module Deployment": "模块部署" };
+      return labels[value] || value;
+    }
     function traceRouteHtml(type, id) {
       var direct = traceDirectEdges(type, id); var routes = traceRoutes(type, id, 3); var gaps = traceGapCandidates(type, id); var formal = traceFormalFindings(type, id);
       var directHtml = direct.length ? direct.map(function (edge) {
-        return "<article class='trace-edge'><div class='trace-edge-head'>" + traceEntityButton(edge.fromType, edge.fromId) + "<span class='trace-arrow' aria-hidden='true'>→</span>" + traceEntityButton(edge.toType, edge.toId) + "<span class='status tone-info'><span class='status-dot'></span>" + e(edge.relation) + "</span></div><code class='trace-pointer'>" + e(edge.sourcePath) + "</code></article>";
+        return "<article class='trace-edge'><div class='trace-edge-head'>" + traceEntityButton(edge.fromType, edge.fromId) + "<span class='trace-arrow' aria-hidden='true'>→</span>" + traceEntityButton(edge.toType, edge.toId) + "<span class='status tone-info'><span class='status-dot'></span>" + e(traceRelationLabel(edge.relation)) + "</span></div><code class='trace-pointer'>" + e(edge.sourcePath) + "</code></article>";
       }).join("") : "<p class='cell-sub'>未记录直接 ID 引用；not_detected 不等于 absent。</p>";
       var routeHtml = routes.length ? routes.map(function (route) {
         var chain = route.nodes.map(function (node) { return traceEntityButton(node.type, node.id); }).join("<span class='trace-arrow' aria-hidden='true'>→</span>");
-        var hops = route.edges.map(function (edge, index) { return "<div>Hop " + (index + 1) + " · " + e(edge.relation) + " · <code>" + e(edge.sourcePath) + "</code></div>"; }).join("");
+        var hops = route.edges.map(function (edge, index) { return "<div>第 " + (index + 1) + " 跳 · " + e(traceRelationLabel(edge.relation)) + " · <code>" + e(edge.sourcePath) + "</code></div>"; }).join("");
         return "<article class='trace-path'><div class='trace-node-chain'>" + chain + "</div><div class='trace-path-hops'>" + hops + "</div></article>";
-      }).join("") : "<p class='cell-sub'>没有可显示的多跳 Route。</p>";
-      var gapHtml = gaps.length ? gaps.map(function (gap) { return "<article class='trace-gap'><strong>△ Trace Gap Candidate · " + e(gap.kind) + "</strong><p>" + e(gap.message) + "</p><code class='trace-pointer'>" + e(gap.path) + "</code></article>"; }).join("") : "<p class='cell-sub'>Renderer 未派生 Trace Gap Candidate；这不等于 Formal Validator 已证明不存在缺口。</p>";
-      var formalHtml = formal.length ? formal.map(function (finding) { return "<article class='trace-edge'><strong>Formal Finding · <span class='mono'>" + e(finding.code) + "</span></strong><p>" + e(finding.message || finding.summary || "Validator finding") + "</p>" + (finding.path ? "<code class='trace-pointer'>" + e(finding.path) + "</code>" : "") + "</article>"; }).join("") : "<p class='cell-sub'>当前实体没有带精确 Entity Ref 的 Formal Finding 记录。</p>";
-      return "<div class='trace-route'><div class='trace-summary'><span class='status tone-info'><span class='status-dot'></span>" + direct.length + " 条直接边</span><span class='status tone-muted'><span class='status-dot'></span>" + routes.length + " 条多跳 Route</span></div><div><strong>直接 ID 边</strong>" + directHtml + "</div><div><strong>多跳 Route · 保留中间实体</strong>" + routeHtml + "</div><div><strong>Trace Gap Candidates</strong>" + gapHtml + "</div><div><strong>Formal Findings</strong>" + formalHtml + "</div><p class='trace-boundary'>Trace 只读取正式 ID 字段；Candidate 与 Formal Finding 保持语义分离，不执行 Mission、调度或治理决策。</p></div>";
+      }).join("") : "<p class='cell-sub'>没有可显示的多跳追踪路径。</p>";
+      var gapHtml = gaps.length ? gaps.map(function (gap) { return "<article class='trace-gap'><strong>△ 追踪缺口候选 · " + e(gap.kind) + "</strong><p>" + e(gap.message) + "</p><code class='trace-pointer'>" + e(gap.path) + "</code></article>"; }).join("") : "<p class='cell-sub'>Renderer 未派生追踪缺口候选；这不等于正式校验器已证明不存在缺口。</p>";
+      var formalHtml = formal.length ? formal.map(function (finding) { return "<article class='trace-edge'><strong>正式校验发现 · <span class='mono'>" + e(finding.code) + "</span></strong><p>" + e(finding.message || finding.summary || "校验器发现") + "</p>" + (finding.path ? "<code class='trace-pointer'>" + e(finding.path) + "</code>" : "") + "</article>"; }).join("") : "<p class='cell-sub'>当前实体没有带精确实体引用的正式校验发现。</p>";
+      return "<div class='trace-route'><div class='trace-summary'><span class='status tone-info'><span class='status-dot'></span>" + direct.length + " 条直接边</span><span class='status tone-muted'><span class='status-dot'></span>" + routes.length + " 条多跳路径</span></div><div><strong>直接 ID 边</strong>" + directHtml + "</div><div><strong>多跳追踪路径 · 保留中间实体</strong>" + routeHtml + "</div><div><strong>追踪缺口候选</strong>" + gapHtml + "</div><div><strong>正式校验发现</strong>" + formalHtml + "</div><p class='trace-boundary'>追踪只读取正式 ID 字段；缺口候选与正式校验发现保持语义分离，不执行 Mission、调度或治理决策。</p></div>";
     }
     function evidenceReferencesComplete(ids) {
       ids = arr(ids);
@@ -1183,18 +1270,18 @@
       var gates = relationships.gates.filter(function (gate) { return gate.required === true; });
       var releases = relationships.releases;
       var verifiedReasons = []; var verifiedEvidence = [];
-      if (!gates.length) verifiedReasons.push("未发现相关 required Gate ID Route");
+      if (!gates.length) verifiedReasons.push("未发现关联的必需门禁");
       gates.forEach(function (gate) {
-        if (gate.status !== "passed") verifiedReasons.push(gate.id + " status=" + gate.status);
-        if (!evidenceReferencesComplete(gate.evidenceReferenceIds)) verifiedReasons.push(gate.id + " Evidence Reference 不完整");
+        if (gate.status !== "passed") verifiedReasons.push(gate.id + " 尚未通过（" + humanize(gate.status) + "）");
+        if (!evidenceReferencesComplete(gate.evidenceReferenceIds)) verifiedReasons.push(gate.id + " 的证据引用不完整");
         else verifiedEvidence = verifiedEvidence.concat(gate.evidenceReferenceIds);
       });
       var acceptedReasons = []; var acceptedEvidence = [];
-      if (!acceptances.length) acceptedReasons.push("未发现相关 Acceptance ID Route");
+      if (!acceptances.length) acceptedReasons.push("未发现关联的验收标准");
       acceptances.forEach(function (acceptance) {
-        if (acceptance.status !== "accepted") acceptedReasons.push(acceptance.id + " status=" + acceptance.status);
-        if (acceptance.verificationStatus !== "passed") acceptedReasons.push(acceptance.id + " verificationStatus=" + acceptance.verificationStatus);
-        if (!evidenceReferencesComplete(acceptance.evidenceReferenceIds)) acceptedReasons.push(acceptance.id + " Evidence Reference 不完整");
+        if (acceptance.status !== "accepted") acceptedReasons.push(acceptance.id + " 尚未验收（" + humanize(acceptance.status) + "）");
+        if (acceptance.verificationStatus !== "passed") acceptedReasons.push(acceptance.id + " 尚未通过验证（" + humanize(acceptance.verificationStatus) + "）");
+        if (!evidenceReferencesComplete(acceptance.evidenceReferenceIds)) acceptedReasons.push(acceptance.id + " 的证据引用不完整");
         else acceptedEvidence = acceptedEvidence.concat(acceptance.evidenceReferenceIds);
       });
       var matchingDeployments = [];
@@ -1213,18 +1300,18 @@
       return {
         verified: { state: !gates.length ? "unknown" : (verifiedReasons.length ? "blocked" : "passed"), reasons: verifiedReasons, evidence: uniqueEntities(verifiedEvidence.map(function (evidenceId) { return byId("reference", evidenceId); })).map(function (item) { return item.id; }) },
         accepted: { state: !acceptances.length ? "unknown" : (acceptedReasons.length ? "blocked" : "passed"), reasons: acceptedReasons, evidence: uniqueEntities(acceptedEvidence.map(function (evidenceId) { return byId("reference", evidenceId); })).map(function (item) { return item.id; }) },
-        deployed_observed: { state: !releases.length && type !== "deployment" ? "unknown" : (matchingDeployments.length ? "passed" : "blocked"), reasons: matchingDeployments.length ? [] : [releases.length ? "未发现与 Release / Architecture 匹配的 active Deployment" : "没有可判定的 Release Route"], evidence: matchingDeployments.map(function (deployment) { return deployment.id + " · " + deployment.releaseId + " · " + deployment.architectureVersionId; }) }
+        deployed_observed: { state: !releases.length && type !== "deployment" ? "unknown" : (matchingDeployments.length ? "passed" : "blocked"), reasons: matchingDeployments.length ? [] : [releases.length ? "未发现与发布和架构版本一致的活动部署" : "没有可判定的目标发布"], evidence: matchingDeployments.map(function (deployment) { return deployment.id + " · " + deployment.releaseId + " · " + deployment.architectureVersionId; }) }
       };
     }
     function governanceCardHtml(name, projection) {
-      var passed = projection.state === "passed"; var label = passed ? name : projection.state;
+      var passed = projection.state === "passed"; var label = passed ? "已满足" : humanize(projection.state);
       var reasons = arr(projection.reasons).map(function (reason) { return "<li>" + e(reason) + "</li>"; }).join("");
-      var evidence = arr(projection.evidence).length ? arr(projection.evidence).join(" · ") : "no complete evidence";
-      return "<article class='governance-card is-" + e(projection.state) + "'><div class='governance-card-head'><strong>" + e(name) + "</strong>" + status(passed ? "passed" : projection.state, label) + "</div>" + (reasons ? "<ul>" + reasons + "</ul>" : "<p class='cell-sub'>全部派生条件满足。</p>") + "<div class='governance-evidence'>Evidence · " + e(evidence) + "</div></article>";
+      var evidence = arr(projection.evidence).length ? arr(projection.evidence).join(" · ") : "暂无完整证据";
+      return "<article class='governance-card is-" + e(projection.state) + "'><div class='governance-card-head'><strong>" + e(name) + "</strong>" + status(passed ? "passed" : projection.state, label) + "</div>" + (reasons ? "<ul>" + reasons + "</ul>" : "<p class='cell-sub'>全部派生条件满足。</p>") + "<div class='governance-evidence'>证据 · " + e(evidence) + "</div></article>";
     }
     function governanceProjectionHtml(type, id) {
       var projection = governanceProjection(type, id);
-      return "<div class='governance-grid' aria-label='验证与治理状态投影'>" + governanceCardHtml("verified", projection.verified) + governanceCardHtml("accepted", projection.accepted) + governanceCardHtml("deployed_observed", projection.deployed_observed) + "</div><p class='trace-boundary'>状态由 Gate、Acceptance、Evidence Reference、Release 与 active Deployment 的真实字段派生，不是客户端可写治理事实；V0.4 不使用 integrated。</p>";
+      return "<div class='governance-grid' aria-label='交付证据链'>" + governanceCardHtml("验证", projection.verified) + governanceCardHtml("验收", projection.accepted) + governanceCardHtml("部署", projection.deployed_observed) + "</div><p class='trace-boundary'>状态由门禁、验收标准、证据引用、发布与活动部署的真实字段派生，只用于判断线索，不回写治理事实。</p>";
     }
     function pendingReview(module) {
       return arr(module.reviewIds).some(function (id) {
@@ -1291,6 +1378,81 @@
       });
     }
 
+    function sortedStages() {
+      return arr(data.stages).slice().sort(function (a, b) { return Number(a.order || 0) - Number(b.order || 0); });
+    }
+    function requirementWorkItems(requirementId) {
+      return arr(data.workItems).filter(function (item) { return arr(item.requirementIds).indexOf(requirementId) >= 0; });
+    }
+    function requirementReleases(requirement) {
+      return entitiesByIds("release", requirement && requirement.targetReleaseIds);
+    }
+    function requirementStages(requirement) {
+      var stages = requirementWorkItems(requirement.id).map(function (item) { return byId("stage", item.stageId); });
+      stages = stages.concat(requirementReleases(requirement).map(function (release) { return byId("stage", release.stageId); }));
+      return uniqueEntities(stages).sort(function (a, b) { return Number(a.order || 0) - Number(b.order || 0); });
+    }
+    function requirementTransitions(requirement) {
+      var workIds = requirementWorkItems(requirement.id).map(function (item) { return item.id; });
+      return arr(data.architecture.transitions).filter(function (transition) {
+        return arr(transition.workItemIds).some(function (id) { return workIds.indexOf(id) >= 0; });
+      });
+    }
+    function requirementArchitectureVersions(requirement) {
+      var ids = [];
+      requirementReleases(requirement).forEach(function (release) { if (release.architectureVersionId) ids.push(release.architectureVersionId); });
+      requirementTransitions(requirement).forEach(function (transition) { if (transition.fromVersionId) ids.push(transition.fromVersionId); if (transition.toVersionId) ids.push(transition.toVersionId); });
+      return uniqueEntities(ids.map(function (id) { return byId("architecture_version", id); }));
+    }
+    function requirementLayers(requirement) {
+      return uniqueEntities(entitiesByIds("module", requirement.moduleIds).map(function (module) {
+        return byId("layer", module.targetLayerId || module.layerId);
+      }));
+    }
+    function requirementsForStage(stage) {
+      if (!stage) return [];
+      var ids = [];
+      arr(data.workItems).filter(function (item) { return item.stageId === stage.id; }).forEach(function (item) { ids = ids.concat(arr(item.requirementIds)); });
+      arr(data.releases).filter(function (release) { return release.stageId === stage.id; }).forEach(function (release) {
+        arr(data.requirements).forEach(function (requirement) { if (arr(requirement.targetReleaseIds).indexOf(release.id) >= 0) ids.push(requirement.id); });
+      });
+      return uniqueEntities(ids.map(function (id) { return byId("requirement", id); }));
+    }
+    function stageRoadmapCard(stage, label, current) {
+      if (!stage) return "<div class='decision-stage'><span class='decision-stage-label'>" + e(label) + "</span><strong>无</strong><p>路线图没有对应阶段。</p></div>";
+      return "<div class='decision-stage " + (current ? "is-current" : "") + "'><span class='decision-stage-label'>" + e(label) + "</span><strong>" + e(stage.name) + "</strong>" + status(stage.status) + "<p>" + e(stage.currentFocus || stage.purpose || "未记录阶段焦点。") + "</p><p class='mono'>" + e(stage.plannedStart || "—") + " → " + e(stage.plannedEnd || "—") + "</p></div>";
+    }
+    function controlStageDecisionSummary(stage) {
+      var stages = sortedStages();
+      var index = Math.max(0, stages.findIndex(function (item) { return stage && item.id === stage.id; }));
+      var previous = index > 0 ? stages[index - 1] : null;
+      var next = index >= 0 && index < stages.length - 1 ? stages[index + 1] : null;
+      var exitAcceptances = entitiesByIds("acceptance", stage && stage.exitAcceptanceIds);
+      var passedExit = exitAcceptances.filter(function (item) { return item.status === "accepted" && item.verificationStatus === "passed"; });
+      var blockers = entitiesByIds("decision", stage && stage.blockerDecisionIds).concat(entitiesByIds("risk", stage && stage.blockerRiskIds));
+      var stageRequirements = requirementsForStage(stage);
+      var unresolved = stageRequirements.filter(function (item) { return ["verified", "delivered"].indexOf(item.fulfillmentStatus) < 0; });
+      var workItems = arr(data.workItems).filter(function (item) { return stage && item.stageId === stage.id; });
+      var workItemIds = workItems.map(function (item) { return item.id; });
+      var transitions = arr(data.architecture.transitions).filter(function (transition) { return arr(transition.workItemIds).some(function (id) { return workItemIds.indexOf(id) >= 0; }); });
+      var exitSignals = exitAcceptances.length ? exitAcceptances.map(function (item) {
+        var ready = item.status === "accepted" && item.verificationStatus === "passed";
+        return "<div class='decision-signal " + (ready ? "" : "is-warning") + "'><strong>" + e(item.title) + "</strong><p>验收 " + e(humanize(item.status)) + " · 验证 " + e(humanize(item.verificationStatus)) + "</p></div>";
+      }).join("") : "<div class='information-gap'>未记录阶段退出验收，不能判断阶段是否可退出。</div>";
+      var requirementSignals = unresolved.length ? unresolved.slice(0, 4).map(function (item) {
+        return "<div class='decision-signal is-warning'>" + traceEntityButton("requirement", item.id) + "<p>实现状态：" + e(humanize(item.fulfillmentStatus)) + "</p></div>";
+      }).join("") : "<p class='cell-sub'>本阶段精确关联的需求均已验证或交付。</p>";
+      var transitionSignals = transitions.length ? transitions.map(function (transition) {
+        var related = entitiesByIds("risk", transition.riskIds).concat(entitiesByIds("decision", transition.decisionIds));
+        return "<div class='decision-signal " + (["completed", "closed"].indexOf(transition.state) >= 0 ? "" : "is-warning") + "'><strong>" + e(transition.summary) + "</strong><p>" + e(entityName("architecture_version", transition.fromVersionId)) + " → " + e(entityName("architecture_version", transition.toVersionId)) + " · " + e(humanize(transition.state)) + (related.length ? " · " + e(related.map(function (item) { return item.title || item.name; }).join("；")) : "") + "</p></div>";
+      }).join("") : "<p class='cell-sub'>本阶段工作项未精确关联架构迁移。</p>";
+      return "<div class='decision-cockpit'><div class='decision-roadmap'>" + stageRoadmapCard(previous, "上一阶段", false) + stageRoadmapCard(stage, "当前阶段", true) + stageRoadmapCard(next, "下一阶段", false) + "</div>" +
+        "<div class='decision-grid'><section class='decision-panel'><h3>阶段退出就绪度</h3><div class='decision-metric'><strong>" + passedExit.length + "/" + exitAcceptances.length + "</strong><span>退出验收满足</span></div><div class='decision-list'>" + exitSignals + "</div>" + (blockers.length ? "<div class='information-gap' style='margin-top:9px'>阻塞项：" + e(blockers.map(function (item) { return item.title || item.name; }).join("；")) + "</div>" : "") + "</section>" +
+        "<section class='decision-panel'><h3>本阶段需求健康度</h3><div class='decision-metric'><strong>" + (stageRequirements.length - unresolved.length) + "/" + stageRequirements.length + "</strong><span>已验证或交付</span></div><div class='decision-list'>" + requirementSignals + "</div><p class='cell-sub' style='margin-top:9px'>仅使用 WorkItem.stageId 与 Release.stageId 的精确 ID 链推导。</p></section>" +
+        "<section class='decision-panel'><h3>架构迁移与决策影响</h3><div class='decision-metric'><strong>" + transitions.length + "</strong><span>项关联迁移</span></div><div class='decision-list'>" + transitionSignals + "</div></section></div>" +
+        "<div class='decision-cockpit-foot'><p>控制台只保留当前判断所需摘要；完整需求、阶段、版本与历史记录在“演进”中维护。</p><button class='primary-inline-btn' type='button' data-action='open-evolution' data-evolution-stage-id='" + e(stage && stage.id || "") + "'>进入完整演进视图 →</button></div></div>";
+    }
+
     function renderControl() {
       var targetArch = byId("architecture_version", data.architecture.targetVersionId);
       var currentArch = byId("architecture_version", data.architecture.currentVersionId);
@@ -1340,9 +1502,11 @@
         (observation ? "<div class='cell-sub mono' style='margin-top:7px'>Observed " + e(String(observation.sourceCommitTo || "").slice(0, 8)) + " · " + e(arr(observation.standardAssessmentIds).length) + " 规范</div>" : "") +
         (containsEmbeddedSecret() ? "<div class='sensitive-flag'><span aria-hidden='true'>△</span> 包含敏感数据</div>" : "") + "</div></div>" +
         "<div class='control-grid'><div class='control-main'>" +
+        sectionHeading("阶段决策视图", currentStage ? currentStage.name : "未知") + controlStageDecisionSummary(currentStage) +
+        "<div class='section-rule'>" +
         sectionHeading("最近已评审更新", update ? update.id : "—") + "<div class='framed'><ul class='reviewed-list'>" + updateHtml + "</ul></div>" +
         "<div class='section-rule'>" + sectionHeading("下一步焦点", options.length + " 个选项") + "<div class='framed'>" + (focusHtml || "<div class='empty-state'>暂无建议。</div>") + "</div></div>" +
-        "<div class='section-rule'>" + requirementSnapshot() + "</div></div>" +
+        "</div></div>" +
         "<aside class='attention-rail'>" + sectionHeading("关注事项", attention.length) + "<div class='framed'>" + attentionHtml +
         (attention.length > 5 ? "<button class='text-btn' type='button' data-action='toggle-attention'>" + (state.attentionExpanded ? "只看前 5 项" : "查看全部") + "</button>" : "") + "</div></aside></div>";
     }
@@ -1358,23 +1522,6 @@
         return "<option value='" + e(value) + "'>" + (value === "all" ? "全部" : e((labeler || humanize)(value))) + "</option>";
       }).join("");
     }
-    function requirementSnapshot() {
-      var requirements = arr(data.requirements).filter(function (requirement) {
-        return (state.requirementFilters.type === "all" || requirement.type === state.requirementFilters.type) &&
-          (state.requirementFilters.definition === "all" || requirement.definitionStatus === state.requirementFilters.definition) &&
-          (state.requirementFilters.fulfillment === "all" || requirement.fulfillmentStatus === state.requirementFilters.fulfillment);
-      });
-      var rows = requirements.map(function (requirement) {
-        return "<tr><td><button class='entity-link' type='button' data-open-entity='" + e(requirement.id) + "' data-entity-type='requirement'><span class='mono'>" + e(requirement.id) + "</span><div class='cell-sub'>" + e(requirement.title) + "</div></button></td><td>" + e(requirementTypeLabel(requirement.type)) + "</td><td>" + status(requirement.definitionStatus) + "</td><td>" + status(requirement.fulfillmentStatus) + "</td><td>" +
-          arr(requirement.targetReleaseIds).map(function (id) { return "<span class='mono'>" + e(entityName("release", id)) + "</span>"; }).join(", ") +
-          "</td><td>" + (requirement.moduleIds.length ? e(requirement.moduleIds.length + " · " + requirement.moduleIds.map(function (id) { return entityName("module", id); }).join(", ")) : "<span class='severity-text'>未覆盖</span>") + "</td></tr>";
-      }).join("");
-      return "<div class='section-heading'><h2>需求快照</h2><div class='filter-row'>" +
-        selectControl("requirement-type", optionsFor(arr(data.requirements).map(function (r) { return r.type; }), requirementTypeLabel), state.requirementFilters.type, "类型") +
-        selectControl("requirement-definition", optionsFor(arr(data.requirements).map(function (r) { return r.definitionStatus; })), state.requirementFilters.definition, "定义状态") +
-        selectControl("requirement-fulfillment", optionsFor(arr(data.requirements).map(function (r) { return r.fulfillmentStatus; })), state.requirementFilters.fulfillment, "实现状态") +
-        "</div></div><div class='table-wrap'><table><thead><tr><th>ID / 需求</th><th>类型</th><th>定义状态</th><th>实现状态</th><th>目标发布</th><th>模块覆盖</th></tr></thead><tbody>" + (rows || "<tr><td colspan='6'>没有符合筛选条件的需求。</td></tr>") + "</tbody></table></div>";
-    }
     function selectControl(action, options, value, label) {
       return "<label><span class='meta-label' style='position:absolute;clip:rect(0 0 0 0)'>" + e(label) + "</span><select class='filter-control' data-filter='" + e(action) + "'>" +
         options.replace("value='" + e(value) + "'", "value='" + e(value) + "' selected") + "</select></label>";
@@ -1387,7 +1534,10 @@
       document.querySelectorAll("[data-studio-mode]").forEach(function (button) {
         button.setAttribute("aria-pressed", button.getAttribute("data-studio-mode") === state.studioMode ? "true" : "false");
       });
-      if (state.systemView === "logical" && state.studioMode === "studio") renderStudio();
+      if (state.systemView === "logical" && state.studioMode === "view" && window.PanoramaGuidedV08) {
+        window.PanoramaGuidedV08.mount(document.getElementById("system-content"));
+      }
+      else if (state.systemView === "logical" && state.studioMode === "studio") renderStudio();
       else if (state.systemView === "logical") renderLogical();
       if (state.systemView === "runtime") renderRuntime();
       if (state.systemView === "source") renderSource();
@@ -1645,12 +1795,40 @@
       return true;
     }
 
+    function hydrateStudioModuleSemantics(session) {
+      var moduleById = {};
+      arr(data.architecture && data.architecture.modules).forEach(function (module) { moduleById[module.id] = module; });
+      arr(session && session.candidates).forEach(function (candidate) {
+        arr(candidate.nodes).forEach(function (node) {
+          var formal = node.entityRef && node.entityRef.type === "module" ? moduleById[node.entityRef.id] : null;
+          var design = formal && (formal.targetDesign || formal.currentDesign) || {};
+          var defaults = {
+            displayName: formal ? (formal.displayName || null) : null,
+            nonResponsibilities: cloneForStudio(arr(design.nonResponsibilities)),
+            technologies: cloneForStudio(arr(design.technologies)),
+            dataHandled: cloneForStudio(arr(design.dataHandled)),
+            interfaceSummary: cloneForStudio(arr(design.interfaceSummary)),
+            deploymentRole: design.deploymentRole || "",
+            referenceIds: cloneForStudio(arr(design.referenceIds)),
+            notes: design.notes || "",
+            designExtensions: cloneForStudio(design.extensions || {}),
+            rationale: formal && formal.rationale || "",
+            requirementIds: cloneForStudio(arr(formal && formal.requirementIds)),
+            baselineLayerId: node.layerId
+          };
+          Object.keys(defaults).forEach(function (field) { if (!Object.prototype.hasOwnProperty.call(node, field)) node[field] = defaults[field]; });
+        });
+      });
+      return session;
+    }
+
     function loadStudioSession() {
       try {
         var serialized = window.localStorage.getItem(studioStorageKey());
         if (!serialized) return null;
         var restored = JSON.parse(serialized);
         if (!studioSessionShapeValid(restored)) return null;
+        restored = hydrateStudioModuleSemantics(restored);
         if (!state.studioBridge.capability && restored.mode === "bridge") restored.mode = "offline";
         if (restored.projectBinding.baseRevision !== data.meta.revision || (restored.projectBinding.gitHead || null) !== ((data.sourceBinding && data.sourceBinding.gitHead) || null)) {
           restored.status = "stale";
@@ -1695,14 +1873,26 @@
           nodeId: "NODE-" + module.id,
           entityRef: { type: "module", id: module.id },
           name: module.name,
+          displayName: module.displayName || null,
           purpose: module.purpose || "",
           responsibilities: cloneForStudio(arr(design.responsibilities)),
+          nonResponsibilities: cloneForStudio(arr(design.nonResponsibilities)),
+          technologies: cloneForStudio(arr(design.technologies)),
           stateOwnership: design.stateOwnership || "",
+          dataHandled: cloneForStudio(arr(design.dataHandled)),
+          interfaceSummary: cloneForStudio(arr(design.interfaceSummary)),
+          deploymentRole: design.deploymentRole || "",
+          referenceIds: cloneForStudio(arr(design.referenceIds)),
+          notes: design.notes || "",
+          designExtensions: cloneForStudio(design.extensions || {}),
+          rationale: module.rationale || "",
+          requirementIds: cloneForStudio(arr(module.requirementIds)),
           layerId: layerId,
+          baselineLayerId: layerId,
           category: module.category || "supporting",
           isDraft: false,
           x: 145 + (slot % 3) * 205,
-          y: 20 + lane * 122 + Math.floor(slot / 3) * 86
+          y: 24 + lane * 142 + Math.floor(slot / 3) * 96
         };
       });
       var nodeByEntity = {};
@@ -1721,6 +1911,23 @@
         };
       });
       var now = new Date().toISOString();
+      var moduleLogicCanvases = arr(data.architecture.moduleLogicDesigns).filter(function (design) {
+        return design.architectureScope === "target" && Boolean(nodeByEntity[design.moduleId]);
+      }).map(function (design) {
+        var localNode = {};
+        var logicNodes = arr(design.nodes).map(function (node, index) {
+          var localId = "NODE-" + node.id; localNode[node.id] = localId;
+          return { nodeId: localId, entityRef: { type: "logic_node", id: node.id }, name: node.name, displayName: node.displayName || null, type: node.type, purpose: node.purpose || "", rationale: node.rationale || "", implementationSummary: node.implementationSummary || "", loopExitCondition: node.loopExitCondition == null ? null : node.loopExitCondition, requirementIds: cloneForStudio(arr(node.requirementIds)), decisionIds: cloneForStudio(arr(node.decisionIds)), riskIds: cloneForStudio(arr(node.riskIds)), referenceIds: cloneForStudio(arr(node.referenceIds)), isDraft: false, x: 200 + (index % 3) * 230, y: 100 + Math.floor(index / 3) * 150, extensions: cloneForStudio(node.extensions || {}) };
+        });
+        var externalRefs = [];
+        var ports = arr(design.boundaryPorts).map(function (port, index) {
+          if (!externalRefs.some(function (ref) { return ref.type === port.externalEntityRef.type && ref.id === port.externalEntityRef.id; })) externalRefs.push(cloneForStudio(port.externalEntityRef));
+          return { portId: "PORT-" + port.id, entityRef: { type: "boundary_port", id: port.id }, name: port.name, direction: port.direction, internalNodeId: localNode[port.internalNodeId], externalEntityRef: cloneForStudio(port.externalEntityRef), bindingKind: port.bindingKind, bindingId: port.bindingId, dataSummary: port.dataSummary || "", protocol: port.protocol || "", referenceIds: cloneForStudio(arr(port.referenceIds)), isDraft: false, x: port.direction === "input" ? 40 : 900, y: 100 + index * 90, extensions: cloneForStudio(port.extensions || {}) };
+        });
+        return { canvasId: "CANVAS-" + design.id, rootModuleId: design.moduleId, architectureScope: "target", currentObservationBinding: null, baseTargetDesignId: design.id, name: design.name, displayName: design.displayName || null, summary: design.summary || "", requirementIds: cloneForStudio(arr(design.requirementIds)), decisionIds: cloneForStudio(arr(design.decisionIds)), riskIds: cloneForStudio(arr(design.riskIds)), acceptanceCriteriaIds: cloneForStudio(arr(design.acceptanceCriteriaIds)), gateIds: cloneForStudio(arr(design.gateIds)), referenceIds: cloneForStudio(arr(design.referenceIds)), nodes: logicNodes, edges: arr(design.edges).map(function (edge) { return { edgeId: "EDGE-" + edge.id, entityRef: { type: "logic_edge", id: edge.id }, fromNodeId: localNode[edge.fromNodeId], toNodeId: localNode[edge.toNodeId], kind: edge.kind, condition: edge.condition || "", dataSummary: edge.dataSummary || "", order: edge.order == null ? null : edge.order, referenceIds: cloneForStudio(arr(edge.referenceIds)), isDraft: false, extensions: cloneForStudio(edge.extensions || {}) }; }), boundaryPorts: ports, externalEntityRefs: externalRefs, createdAt: now, updatedAt: now, extensions: cloneForStudio(design.extensions || {}) };
+      });
+      var baselineCandidate = { candidateId: "CANDIDATE-BASE", label: "目标架构副本", kind: "baseline_copy", status: "active", assumptions: [], unknowns: [], architectureLayers: cloneForStudio(layers), nodes: nodes, edges: edges, createdAt: now, updatedAt: now };
+      if (moduleLogicCanvases.length) baselineCandidate.moduleLogicCanvases = moduleLogicCanvases;
       return {
         format: "panorama-architecture-session.v0.1",
         sessionId: "SESSION-" + data.project.id + "-" + String(Date.now()),
@@ -1742,7 +1949,7 @@
         status: "draft",
         scope: { level: "project", subjectRefs: [{ type: "project", id: data.project.id }] },
         layers: layers,
-        candidates: [{ candidateId: "CANDIDATE-BASE", label: "目标架构副本", kind: "baseline_copy", status: "active", assumptions: [], unknowns: [], nodes: nodes, edges: edges, createdAt: now, updatedAt: now }],
+        candidates: [baselineCandidate],
         activeCandidateId: "CANDIDATE-BASE",
         semanticOperations: [],
         layoutOperations: [],
@@ -1759,6 +1966,7 @@
       state.studioSession = loadStudioSession() || createStudioSession();
       var candidate = activeStudioCandidate();
       state.studioSelectedNodeId = candidate && candidate.nodes.length ? candidate.nodes[0].nodeId : null;
+      state.studioSelectedLayerId = candidate && studioLayers(candidate)[0] ? studioLayers(candidate)[0].id : null;
       validateStudioSession();
       return state.studioSession;
     }
@@ -1773,8 +1981,19 @@
       return candidate ? arr(candidate.nodes).find(function (node) { return node.nodeId === nodeId; }) : null;
     }
 
+    function studioLayers(candidate) {
+      candidate = candidate || activeStudioCandidate();
+      if (!candidate) return [];
+      if (!Array.isArray(candidate.architectureLayers) || !candidate.architectureLayers.length) {
+        candidate.architectureLayers = cloneForStudio(arr(state.studioSession && state.studioSession.layers));
+      }
+      candidate.architectureLayers.sort(function (a, b) { return Number(a.order || 0) - Number(b.order || 0); });
+      candidate.architectureLayers.forEach(function (layer, index) { layer.order = index; });
+      return candidate.architectureLayers;
+    }
+
     function studioSnapshot() {
-      return cloneForStudio({ session: state.studioSession, selected: state.studioSelectedNodeId });
+      return cloneForStudio({ session: state.studioSession, selected: state.studioSelectedNodeId, selectedLayer: state.studioSelectedLayerId });
     }
 
     function studioSemanticProjection(session) {
@@ -1784,9 +2003,10 @@
         candidates: arr(session && session.candidates).map(function (candidate) {
           return {
             candidateId: candidate.candidateId, label: candidate.label, kind: candidate.kind, status: candidate.status,
-            assumptions: candidate.assumptions, unknowns: candidate.unknowns,
+            assumptions: candidate.assumptions, unknowns: candidate.unknowns, architectureLayers: studioLayers(candidate),
             nodes: arr(candidate.nodes).map(function (node) { var copy = cloneForStudio(node); delete copy.x; delete copy.y; return copy; }),
-            edges: candidate.edges
+            edges: candidate.edges,
+            moduleLogicCanvases: arr(candidate.moduleLogicCanvases).map(function (canvas) { var copy = cloneForStudio(canvas); delete copy.camera; delete copy.viewerState; delete copy.createdAt; delete copy.updatedAt; copy.nodes = arr(copy.nodes).map(function (node) { delete node.x; delete node.y; delete node.width; delete node.height; return node; }); copy.boundaryPorts = arr(copy.boundaryPorts).map(function (port) { delete port.x; delete port.y; return port; }); return copy; })
           };
         })
       });
@@ -1796,6 +2016,7 @@
       var semanticChanged = studioSemanticProjection(state.studioSession) !== studioSemanticProjection(snapshot.session);
       state.studioSession = cloneForStudio(snapshot.session);
       state.studioSelectedNodeId = snapshot.selected;
+      state.studioSelectedLayerId = snapshot.selectedLayer || null;
       if (semanticChanged) invalidateStudioArtifacts("candidate_semantic_changed");
       validateStudioSession();
       persistStudioSession();
@@ -1832,10 +2053,27 @@
       var candidate = activeStudioCandidate();
       var checks = [];
       if (!candidate) return checks;
+      var layers = studioLayers(candidate);
+      var layerIds = new Set();
+      var parents = {};
+      layers.forEach(function (layer) {
+        if (!String(layer.name || "").trim()) checks.push({ level: "error", message: String(layer.id) + " 缺少层级名称" });
+        if (layerIds.has(layer.id)) checks.push({ level: "error", message: "架构层标识重复：" + layer.id });
+        layerIds.add(layer.id);
+      });
+      layers.forEach(function (layer) {
+        if (layer.parentLayerId && !layerIds.has(layer.parentLayerId)) checks.push({ level: "error", message: layer.id + " 的父层级不存在" });
+        if (layer.parentLayerId) parents[layer.id] = layer.parentLayerId;
+      });
+      Object.keys(parents).forEach(function (layerId) {
+        var visited = new Set(); var current = layerId;
+        while (parents[current]) { if (visited.has(current)) { checks.push({ level: "error", message: "架构层级存在循环：" + layerId }); break; } visited.add(current); current = parents[current]; }
+      });
       var ids = new Set();
       candidate.nodes.forEach(function (node) {
         if (!node.name.trim()) checks.push({ level: "error", message: node.nodeId + " 缺少名称" });
         if (!node.layerId) checks.push({ level: "error", message: node.name + " 缺少架构层" });
+        else if (!layerIds.has(node.layerId)) checks.push({ level: "error", message: node.name + " 引用了不存在的架构层 " + node.layerId });
         if (!node.purpose.trim()) checks.push({ level: "warning", message: node.name + " 缺少用途描述" });
         if (!node.stateOwnership.trim()) checks.push({ level: "warning", message: node.name + " 未说明状态所有权" });
         if (ids.has(node.nodeId)) checks.push({ level: "error", message: "草稿节点标识重复：" + node.nodeId });
@@ -1854,6 +2092,20 @@
       candidate.edges.forEach(function (edge) { linked.add(edge.fromNodeId); linked.add(edge.toNodeId); });
       candidate.nodes.forEach(function (node) {
         if (candidate.nodes.length > 1 && !linked.has(node.nodeId)) checks.push({ level: "warning", message: node.name + " 当前没有连接" });
+      });
+      var formalModuleIds = new Set(candidate.nodes.map(function (node) { return node.entityRef && node.entityRef.id; }).filter(Boolean));
+      var logicRoots = new Set();
+      arr(candidate.moduleLogicCanvases).forEach(function (canvas) {
+        if (logicRoots.has(canvas.rootModuleId)) checks.push({ level: "error", code: "CLIENT_DUPLICATE_LOGIC_ROOT", message: canvas.rootModuleId + " 存在多个 Target 内部逻辑画布" });
+        logicRoots.add(canvas.rootModuleId);
+        if (!formalModuleIds.has(canvas.rootModuleId) && !ids.has(canvas.rootModuleId)) checks.push({ level: "error", code: "CLIENT_LOGIC_ROOT", message: canvas.canvasId + " 的根模块不存在" });
+        if (canvas.currentObservationBinding && canvas.currentObservationBinding.currentness !== "match") checks.push({ level: "warning", code: "CLIENT_LOGIC_OBSERVATION_STALE", message: canvas.canvasId + " 绑定的 Current Observation 已过期" });
+        if (!arr(canvas.nodes).length) checks.push({ level: "error", code: "CLIENT_LOGIC_EMPTY", message: canvas.canvasId + " 尚无内部逻辑节点，不能进入正式校验" });
+        var logicIds = new Set(); var loopIds = new Set(); var loopBackIds = new Set();
+        arr(canvas.nodes).forEach(function (node) { if (logicIds.has(node.nodeId)) checks.push({ level: "error", code: "CLIENT_DUPLICATE_LOGIC_NODE", message: canvas.canvasId + " 内部节点标识重复：" + node.nodeId }); logicIds.add(node.nodeId); if (node.type === "loop") { loopIds.add(node.nodeId); if (!String(node.loopExitCondition || "").trim()) checks.push({ level: "error", code: "CLIENT_LOGIC_LOOP_EXIT", message: node.displayName + " 缺少循环退出条件" }); } });
+        arr(canvas.edges).forEach(function (edge) { if (!logicIds.has(edge.fromNodeId) || !logicIds.has(edge.toNodeId)) checks.push({ level: "error", code: "CLIENT_LOGIC_EDGE_ENDPOINT", message: edge.edgeId + " 引用了不存在的内部节点" }); if (edge.kind === "loop_back") { if (loopIds.has(edge.fromNodeId)) loopBackIds.add(edge.fromNodeId); if (loopIds.has(edge.toNodeId)) loopBackIds.add(edge.toNodeId); } });
+        loopIds.forEach(function (id) { if (!loopBackIds.has(id)) checks.push({ level: "error", code: "CLIENT_LOGIC_LOOP_BACK_MISSING", message: id + " 缺少 loop_back 连线" }); });
+        arr(canvas.boundaryPorts).forEach(function (port) { if (!logicIds.has(port.internalNodeId)) checks.push({ level: "error", code: "CLIENT_LOGIC_PORT_NODE", message: port.portId + " 引用了不存在的内部节点" }); if (port.bindingKind === "unbound_candidate" || !port.bindingId) checks.push({ level: "error", code: "CLIENT_LOGIC_UNBOUND_PORT", message: port.name + " 尚未绑定 Candidate Connection / Resource" }); });
       });
       checks.forEach(function (check, index) {
         if (!check.code) check.code = "CLIENT_BROWSER_CHECK";
@@ -2101,7 +2353,7 @@
     }
 
     function studioSemanticDiff(base, compare) {
-      var nodeFields = ["name", "purpose", "responsibilities", "nonResponsibilities", "stateOwnership", "layerId", "category", "technologies", "dataHandled", "interfaceSummary", "deploymentRole", "referenceIds", "notes", "designExtensions", "rationale", "requirementIds", "isDraft"];
+      var nodeFields = ["name", "displayName", "purpose", "responsibilities", "nonResponsibilities", "stateOwnership", "layerId", "category", "technologies", "dataHandled", "interfaceSummary", "deploymentRole", "referenceIds", "notes", "designExtensions", "rationale", "requirementIds", "isDraft"];
       var edgeFields = ["fromNodeRef", "toNodeRef", "name", "label", "protocol", "communicationMode", "flowDirection", "dataSummary", "contractReferenceIds", "authSummary", "reliabilitySummary", "rationale", "transitionId", "extensions", "isDraft"];
       function fieldChanges(before, after, fields) {
         return fields.filter(function (field) { return JSON.stringify(before[field]) !== JSON.stringify(after[field]); }).map(function (field) { return { field: field, before: cloneForStudio(before[field]), after: cloneForStudio(after[field]) }; });
@@ -2134,7 +2386,9 @@
         };
       }
       return {
-        candidateFields: fieldChanges(base, compare, ["assumptions", "unknowns"]),
+        candidateFields: fieldChanges(base, compare, ["assumptions", "unknowns"]).concat(
+          fieldChanges(base, compare, ["architectureLayers"])
+        ),
         nodes: entityDiff(nodeMap(base), nodeMap(compare), nodeFields),
         edges: entityDiff(edgeMap(base), edgeMap(compare), edgeFields)
       };
@@ -2193,6 +2447,13 @@
       return "<dialog class='studio-dialog' id='studio-candidate-dialog' aria-labelledby='studio-candidate-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-candidate-title'>" + e(titles[draft.mode] || "编辑候选") + "</h2></div><div class='studio-dialog-body'><p class='cell-sub'>候选只保存在隔离 Studio Session；不会直接修改正式 Target。</p><label class='studio-field'><span>候选名称</span><input class='studio-input' id='studio-candidate-label' maxlength='256' value='" + e(draft.label || "") + "' required></label></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-studio-action='cancel-candidate'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-candidate'>确认</button></div></form></dialog>";
     }
 
+    function studioLayerDialogHtml() {
+      var draft = state.studioLayerDraft;
+      if (!draft) return "";
+      var title = draft.mode === "rename" ? "重命名层级 / 功能区" : "新增层级 / 功能区";
+      return "<dialog class='studio-dialog' id='studio-layer-dialog' aria-labelledby='studio-layer-title'><form method='dialog'><div class='studio-dialog-head'><h2 id='studio-layer-title'>" + e(title) + "</h2></div><div class='studio-dialog-body'><p class='cell-sub'>层级名称、顺序和父子关系属于候选语义；不会绕过 Proposal / Apply 修改正式全景。</p><label class='studio-field'><span>名称</span><input class='studio-input' id='studio-layer-name' maxlength='256' value='" + e(draft.name || "") + "' required></label></div><div class='studio-dialog-actions'><button class='studio-action' type='button' data-studio-action='cancel-layer'>取消</button><button class='studio-action is-primary' type='button' data-studio-action='submit-layer'>确认</button></div></form></dialog>";
+    }
+
     function showStudioDialog(dialogId, returnAction, focusSelector) {
       state.studioDialogReturnAction = returnAction || null;
       var dialog = document.getElementById(dialogId);
@@ -2216,8 +2477,10 @@
       var returnAction = state.studioDialogReturnAction;
       var dialog = document.getElementById(dialogId); if (dialog && dialog.open) dialog.close();
       if (dialogId === "studio-candidate-dialog") state.studioCandidateDraft = null;
+      if (dialogId === "studio-layer-dialog") state.studioLayerDraft = null;
       if (dialogId === "studio-proposal-dialog") state.studioBridge.proposalDraft = null;
       state.studioDialogReturnAction = null;
+      if (dialog && dialog.parentElement === document.body) dialog.remove();
       renderStudio(); focusStudioReturn(returnAction);
     }
 
@@ -2247,13 +2510,14 @@
       var session = ensureStudioSession();
       pushStudioUndo();
       var now = new Date().toISOString();
-      var base = cloneActive ? cloneForStudio(activeStudioCandidate()) : { assumptions: [], unknowns: [], nodes: [], edges: [] };
+      var base = cloneActive ? cloneForStudio(activeStudioCandidate()) : { assumptions: [], unknowns: [], architectureLayers: cloneForStudio(studioLayers(activeStudioCandidate())), nodes: [], edges: [] };
       var occupied = new Set(session.candidates.map(function (item) { return item.candidateId; }));
       var candidateId = "CANDIDATE-" + String(Date.now());
       while (occupied.has(candidateId)) candidateId += "X";
       base.candidateId = candidateId; base.label = requested; base.kind = "alternative"; base.status = "active"; base.createdAt = now; base.updatedAt = now;
       session.candidates.push(base); session.activeCandidateId = candidateId;
       state.studioSelectedNodeId = base.nodes[0] ? base.nodes[0].nodeId : null;
+      state.studioSelectedLayerId = base.architectureLayers[0] ? base.architectureLayers[0].id : null;
       appendStudioOperation("candidate.create", { candidateId: candidateId }, null, { label: base.label, cloned: Boolean(cloneActive) }, true);
       state.studioCandidateDraft = null; state.studioDialogReturnAction = null;
       validateStudioSession(); persistStudioSession(); renderStudio(); focusStudioReturn(returnAction);
@@ -2265,6 +2529,7 @@
       if (!candidate) return;
       state.studioSession.activeCandidateId = candidateId;
       state.studioSelectedNodeId = candidate.nodes[0] ? candidate.nodes[0].nodeId : null;
+      state.studioSelectedLayerId = studioLayers(candidate)[0] ? studioLayers(candidate)[0].id : null;
       invalidateStudioArtifacts("candidate_switched");
       validateStudioSession(); persistStudioSession(); renderStudio();
       window.setTimeout(function () { var selectedTab = document.querySelector("[data-studio-candidate-tab][aria-selected='true']"); if (selectedTab) selectedTab.focus(); }, 0);
@@ -2377,17 +2642,19 @@
 
     async function openStudioProposalDialog() {
       if (!await studioEnsureSaved()) return;
-      state.studioBridge.proposalDraft = { summary: activeStudioCandidate().label + " 架构更新", reason: "基于 Architecture Studio 候选方案正式化" };
+      var defaults = { summary: activeStudioCandidate().label + " 架构更新", reason: "基于 Architecture Studio 候选方案正式化" };
+      state.studioBridge.proposalDraft = defaults;
       renderStudio();
+      if (!document.getElementById("studio-proposal-dialog")) document.body.insertAdjacentHTML("beforeend", studioProposalDialogHtml());
       var dialog = document.getElementById("studio-proposal-dialog");
       if (showStudioDialog("studio-proposal-dialog", "proposal", "#studio-proposal-summary")) { /* Focus managed by helper. */ }
       else { state.studioBridge.proposalDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法生成 Proposal"; renderStudio(); }
     }
 
-    async function submitStudioProposal() {
+    async function submitStudioProposal(summaryOverride, reasonOverride) {
       var returnAction = state.studioDialogReturnAction;
-      var summary = String((document.getElementById("studio-proposal-summary") || {}).value || "").trim();
-      var reason = String((document.getElementById("studio-proposal-reason") || {}).value || "").trim();
+      var summary = String(summaryOverride != null ? summaryOverride : (document.getElementById("studio-proposal-summary") || {}).value || "").trim();
+      var reason = String(reasonOverride != null ? reasonOverride : (document.getElementById("studio-proposal-reason") || {}).value || "").trim();
       if (!summary || !reason) { showToast("请填写 Proposal 摘要与变更原因"); return; }
       var requestBinding = studioRequestBinding();
       state.studioBridge.sessionMutationBusy = true;
@@ -2405,11 +2672,13 @@
         state.studioBridge.sessionMutationBusy = false; state.studioBridge.busy = null;
         state.studioDialogReturnAction = null;
         if (state.studioBridge.lastSavedGeneration < state.studioGeneration) scheduleStudioBridgeSave();
+        var detachedDialog = document.getElementById("studio-proposal-dialog"); if (detachedDialog && detachedDialog.parentElement === document.body) detachedDialog.remove();
         renderStudio(); focusStudioReturn(returnAction);
       }
     }
 
     function openStudioApprovalDialog() {
+      if (!document.getElementById("studio-approval-dialog")) document.body.insertAdjacentHTML("beforeend", studioApprovalDialogHtml());
       var dialog = document.getElementById("studio-approval-dialog");
       if (showStudioDialog("studio-approval-dialog", "approve", "#studio-approved-by")) { /* Focus managed by helper. */ }
       else showToast("当前浏览器不支持原生 dialog，无法批准");
@@ -2433,7 +2702,7 @@
         state.studioDialogReturnAction = null;
         showToast("批准已按 Proposal Hash 记录");
       } catch (error) { state.studioBridge.lastError = studioBridgeErrorMessage(error); }
-      finally { state.studioBridge.busy = null; state.studioDialogReturnAction = null; renderStudio(); focusStudioReturn(returnAction); }
+      finally { state.studioBridge.busy = null; state.studioDialogReturnAction = null; var detachedDialog = document.getElementById("studio-approval-dialog"); if (detachedDialog && detachedDialog.parentElement === document.body) detachedDialog.remove(); renderStudio(); focusStudioReturn(returnAction); }
     }
 
     async function applyStudioProposal() {
@@ -2469,17 +2738,263 @@
       window.location.reload();
     }
 
+    function unifiedStudioCanvas(candidate, rootModuleId) {
+      if (!Array.isArray(candidate.moduleLogicCanvases)) candidate.moduleLogicCanvases = [];
+      return candidate.moduleLogicCanvases.find(function (canvas) { return canvas.rootModuleId === rootModuleId; }) || null;
+    }
+
+    function seedUnifiedStudioCanvasFromCurrent(rootModuleId) {
+      var runtime = window.PanoramaGuidedV08 && window.PanoramaGuidedV08.bundle;
+      if (!runtime) return null;
+      var child = arr(runtime.childViews).find(function (view) { return view.rootModuleId === rootModuleId && view.moduleLogicBinding && view.moduleLogicBinding.source === "current_observation"; });
+      if (!child) return null;
+      var entityById = {}; arr(runtime.model && runtime.model.entities).forEach(function (entity) { entityById[entity.id] = entity; });
+      var localByEntity = {}, logicNodes = [], boundaryPorts = [], externalRefs = [];
+      arr(child.nodes).forEach(function (viewNode) {
+        var entity = entityById[viewNode.entityRef.id]; if (!entity) return;
+        if (entity.kind === "module_logic_node") {
+          var localId = "DRAFT-" + (entity.attributes.logicNodeId || entity.id); localByEntity[entity.id] = localId;
+          logicNodes.push({ nodeId: localId, entityRef: null, name: entity.name, displayName: entity.displayLabel || null, type: entity.attributes.logicType, purpose: entity.purpose || "", rationale: entity.attributes.rationale || "", implementationSummary: entity.attributes.implementationSummary || "", loopExitCondition: entity.attributes.loopExitCondition == null ? null : entity.attributes.loopExitCondition, requirementIds: [], decisionIds: [], riskIds: [], referenceIds: [], isDraft: true, x: 240 + (logicNodes.length % 3) * 230, y: 100 + Math.floor(logicNodes.length / 3) * 150, extensions: { copiedFromCurrentObservationEntityId: entity.id } });
+        }
+      });
+      arr(child.nodes).forEach(function (viewNode) {
+        var entity = entityById[viewNode.entityRef.id]; if (!entity || entity.kind !== "boundary_port") return;
+        var external = { type: entity.attributes.externalEntityType, id: entity.attributes.externalEntityId };
+        if (!externalRefs.some(function (ref) { return ref.type === external.type && ref.id === external.id; })) externalRefs.push(external);
+        var internalRelation = arr(runtime.model.relations).find(function (relation) { return relation.kind === "port_binding" && relation.attributes.boundarySide === "internal" && (relation.fromEntityId === entity.id || relation.toEntityId === entity.id); });
+        var internalEntityId = internalRelation && (internalRelation.fromEntityId === entity.id ? internalRelation.toEntityId : internalRelation.fromEntityId);
+        boundaryPorts.push({ portId: "DRAFT-" + (entity.attributes.boundaryPortId || entity.id), entityRef: null, name: entity.name, direction: entity.attributes.portDirection, internalNodeId: localByEntity[internalEntityId] || localByEntity[entity.attributes.internalNodeId], externalEntityRef: external, bindingKind: entity.attributes.bindingKind, bindingId: entity.attributes.bindingId, dataSummary: entity.attributes.dataSummary || entity.purpose || "", protocol: entity.attributes.protocol || "", referenceIds: [], isDraft: true, x: entity.attributes.portDirection === "input" ? 40 : 900, y: 100 + boundaryPorts.length * 90, extensions: { copiedFromCurrentObservationEntityId: entity.id } });
+      });
+      var logicEdges = arr(child.edges).map(function (viewEdge) { var relation = arr(runtime.model.relations).find(function (item) { return item.id === viewEdge.relationRef.id; }); if (!relation || relation.kind !== "logic_flow" || !localByEntity[relation.fromEntityId] || !localByEntity[relation.toEntityId]) return null; return { edgeId: "DRAFT-" + (relation.attributes.logicEdgeId || relation.id), entityRef: null, fromNodeId: localByEntity[relation.fromEntityId], toNodeId: localByEntity[relation.toEntityId], kind: relation.semantics.mode || "flow", condition: relation.attributes.condition || "", dataSummary: relation.semantics.dataSummary || "", order: relation.semantics.order == null ? null : relation.semantics.order, referenceIds: [], isDraft: true, extensions: { copiedFromCurrentObservationRelationId: relation.id } }; }).filter(Boolean);
+      var now = new Date().toISOString();
+      return { canvasId: "CANVAS-" + rootModuleId + "-TARGET", rootModuleId: rootModuleId, architectureScope: "target", currentObservationBinding: { observationId: child.moduleLogicBinding.observationId, semanticHash: child.moduleLogicBinding.semanticHash, currentness: "match" }, baseTargetDesignId: null, name: String(rootModuleId).toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_target_logic", displayName: (unifiedStudioCandidateNode(activeStudioCandidate(), rootModuleId) || {}).name + "内部逻辑", summary: "从当前源码 Observation 复制的 Target Candidate；编辑不改写 Current 事实。", requirementIds: [], decisionIds: [], riskIds: [], acceptanceCriteriaIds: [], gateIds: [], referenceIds: [], nodes: logicNodes, edges: logicEdges, boundaryPorts: boundaryPorts, externalEntityRefs: externalRefs, createdAt: now, updatedAt: now, extensions: { copiedFromCurrentObservationViewId: child.viewId } };
+    }
+
+    function ensureUnifiedStudioCanvas(candidate, rootModuleId) {
+      var existing = unifiedStudioCanvas(candidate, rootModuleId);
+      if (existing) return existing;
+      var now = new Date().toISOString();
+      var canvas = seedUnifiedStudioCanvasFromCurrent(rootModuleId) || {
+        canvasId: "CANVAS-" + rootModuleId + "-TARGET",
+        rootModuleId: rootModuleId,
+        architectureScope: "target",
+        currentObservationBinding: null,
+        baseTargetDesignId: null,
+        name: String(rootModuleId).toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_target_logic",
+        displayName: null,
+        summary: "",
+        requirementIds: [], decisionIds: [], riskIds: [], acceptanceCriteriaIds: [], gateIds: [], referenceIds: [],
+        nodes: [], edges: [], boundaryPorts: [], externalEntityRefs: [],
+        createdAt: now, updatedAt: now, extensions: {}
+      };
+      candidate.moduleLogicCanvases.push(canvas);
+      return canvas;
+    }
+
+    function unifiedStudioCandidateNode(candidate, token) {
+      return candidate.nodes.find(function (node) { return node.nodeId === token || (node.entityRef && node.entityRef.id === token); }) || null;
+    }
+
+    function unifiedStudioLayerFrame(candidate, layerId) {
+      var y = 12;
+      var layers = studioLayers(candidate);
+      for (var index = 0; index < layers.length; index += 1) {
+        var layer = layers[index];
+        var height = Number(layer.layoutHeight || 132);
+        if (layer.id === layerId) return { id: layer.id, y: y, height: height };
+        y += height + 10;
+      }
+      return null;
+    }
+
+    function unifiedStudioCommit(kind, target, before, after, semantic) {
+      appendStudioOperation(kind, target, before, after, semantic);
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function handleUnifiedStudioAction(detail, viewer) {
+      var session = ensureStudioSession();
+      var candidate = activeStudioCandidate();
+      if (!candidate || !detail) return;
+      var rootModuleId = detail.rootModuleId;
+      var canvas = rootModuleId ? unifiedStudioCanvas(candidate, rootModuleId) : null;
+      if (detail.action === "select-candidate") { selectStudioCandidate(detail.candidateId); return; }
+      if (detail.action === "ensure-canvas") {
+        if (unifiedStudioCanvas(candidate, detail.rootModuleId)) return;
+        pushStudioUndo();
+        var created = ensureUnifiedStudioCanvas(candidate, detail.rootModuleId);
+        unifiedStudioCommit("module_logic.canvas.create", { canvasId: created.canvasId, rootModuleId: detail.rootModuleId }, null, cloneForStudio(created), true);
+        return;
+      }
+      if (detail.action === "layout-move") {
+        var layoutItem = null;
+        if (detail.scope === "module_logic" && canvas) layoutItem = canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }) || canvas.boundaryPorts.find(function (port) { return port.portId === detail.nodeId; });
+        else layoutItem = candidate.nodes.find(function (node) { return node.nodeId === detail.nodeId; });
+        if (!layoutItem) return;
+        var nextLayerId = detail.scope === "architecture" && detail.layerId && studioLayers(candidate).some(function (layer) { return layer.id === detail.layerId; }) ? detail.layerId : layoutItem.layerId;
+        var layerBeforeId = layoutItem.layerId || null, layerChanged = detail.scope === "architecture" && Boolean(nextLayerId) && nextLayerId !== layerBeforeId;
+        pushStudioUndo(); var layoutBefore = { x: layoutItem.x, y: layoutItem.y };
+        layoutItem.x = Number(detail.x); layoutItem.y = Number(detail.y);
+        if (layerChanged) {
+          layoutItem.layerId = nextLayerId;
+          appendStudioOperation("layout.move", { nodeId: detail.nodeId, canvasId: canvas && canvas.canvasId }, layoutBefore, { x: layoutItem.x, y: layoutItem.y }, false);
+          unifiedStudioCommit("node.layer.snap", { nodeId: detail.nodeId, layerId: nextLayerId }, layerBeforeId, nextLayerId, true);
+        } else {
+          unifiedStudioCommit("layout.move", { nodeId: detail.nodeId, canvasId: canvas && canvas.canvasId }, layoutBefore, { x: layoutItem.x, y: layoutItem.y }, false);
+        }
+        return;
+      }
+      if (detail.action === "update-field") {
+        var item = detail.scope === "module_logic" && canvas ? canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }) : candidate.nodes.find(function (node) { return node.nodeId === detail.nodeId; });
+        if (!item) return;
+        var rawBeforeValue = item[detail.field], beforeValue = rawBeforeValue === undefined ? null : cloneForStudio(rawBeforeValue);
+        var nextValue = detail.value;
+        if (detail.valueType === "string-list") nextValue = String(detail.value || "").split(/\r?\n/).map(function (value) { return value.trim(); }).filter(Boolean);
+        if (detail.valueType === "technology-list") {
+          var priorTechnologies = arr(item.technologies);
+          nextValue = String(detail.value || "").split(/\r?\n/).map(function (line) { return line.split("|").map(function (part) { return part.trim(); }); }).filter(function (parts) { return Boolean(parts[0]); }).map(function (parts) { var prior = priorTechnologies.find(function (technology) { return technology.name === parts[0]; }) || {}; var status = ["current", "target", "experimental", "deprecated"].indexOf(parts[2]) >= 0 ? parts[2] : (prior.status || "target"); return { name: parts[0], role: parts[1] || prior.role || "待补充技术角色", decisionId: prior.decisionId || null, status: status }; });
+        }
+        if (detail.field === "displayName") nextValue = String(detail.value || "").trim() || null;
+        if (detail.field === "loopExitCondition" && item.type !== "loop") nextValue = null;
+        if (JSON.stringify(beforeValue) === JSON.stringify(nextValue)) return;
+        pushStudioUndo(); var fieldLayoutBefore = { x: item.x, y: item.y }; item[detail.field] = nextValue;
+        if (detail.field === "type" && nextValue !== "loop") item.loopExitCondition = null;
+        if (detail.field === "layerId" && detail.scope === "architecture") {
+          var selectedFrame = unifiedStudioLayerFrame(candidate, nextValue);
+          if (!selectedFrame) { restoreStudioSnapshot(state.studioUndoStack.pop()); showToast("目标层级不存在"); return; }
+          item.y = Math.round(selectedFrame.y + 8);
+          appendStudioOperation("layout.move", { nodeId: detail.nodeId, reason: "layer_selection" }, fieldLayoutBefore, { x: item.x, y: item.y }, false);
+        }
+        unifiedStudioCommit("node.update", { nodeId: detail.nodeId, canvasId: canvas && canvas.canvasId, field: detail.field }, beforeValue, cloneForStudio(nextValue), true);
+        return;
+      }
+      if (detail.action === "add-module") { addStudioNode("service"); return; }
+      if (detail.action === "add-layer") {
+        pushStudioUndo(); var layers = studioLayers(candidate); var nowId = String(Date.now());
+        var layer = { id: "LAYER-STUDIO-" + nowId, name: "新架构层级", order: layers.length, summary: "待补充该层的架构职责。", parentLayerId: null, kind: "layer", extensions: {}, layoutHeight: 132 };
+        layers.push(layer); state.studioSelectedLayerId = layer.id;
+        unifiedStudioCommit("layer.add", { layerId: layer.id }, null, cloneForStudio(layer), true); return;
+      }
+      if (detail.action === "update-layer") {
+        var editedLayer = studioLayers(candidate).find(function (item) { return item.id === detail.layerId; }); if (!editedLayer) return;
+        var nextLayerValue = detail.field === "parentLayerId" ? (detail.value || null) : (detail.field === "displayName" ? (String(detail.value || "").trim() || null) : String(detail.value));
+        if (detail.field === "parentLayerId" && nextLayerValue) {
+          var layerParents = {}; studioLayers(candidate).forEach(function (item) { if (item.parentLayerId) layerParents[item.id] = item.parentLayerId; });
+          layerParents[editedLayer.id] = nextLayerValue; var cursor = editedLayer.id, seenLayers = new Set();
+          while (cursor && layerParents[cursor]) { if (seenLayers.has(cursor)) { showToast("父层级不能形成循环"); return; } seenLayers.add(cursor); cursor = layerParents[cursor]; }
+        }
+        var rawLayerBefore = editedLayer[detail.field], layerBefore = rawLayerBefore === undefined ? null : cloneForStudio(rawLayerBefore); if ((layerBefore || null) === (nextLayerValue || null)) return;
+        pushStudioUndo(); editedLayer[detail.field] = nextLayerValue;
+        unifiedStudioCommit("layer.update", { layerId: editedLayer.id, field: detail.field }, layerBefore, editedLayer[detail.field], true); return;
+      }
+      if (detail.action === "layer-up" || detail.action === "layer-down") {
+        var orderedLayers = studioLayers(candidate), layerIndex = orderedLayers.findIndex(function (item) { return item.id === detail.layerId; }), nextIndex = detail.action === "layer-up" ? layerIndex - 1 : layerIndex + 1;
+        if (layerIndex < 0 || nextIndex < 0 || nextIndex >= orderedLayers.length) return;
+        pushStudioUndo(); var orderBefore = orderedLayers.map(function (item) { return item.id; }); var movingLayer = orderedLayers.splice(layerIndex, 1)[0]; orderedLayers.splice(nextIndex, 0, movingLayer); orderedLayers.forEach(function (item, index) { item.order = index; });
+        unifiedStudioCommit("layer.reorder", { layerId: movingLayer.id }, orderBefore, orderedLayers.map(function (item) { return item.id; }), true); return;
+      }
+      if (detail.action === "delete-layer") {
+        var deletingLayer = studioLayers(candidate).find(function (item) { return item.id === detail.layerId; }); if (!deletingLayer) return;
+        if (candidate.nodes.some(function (node) { return node.layerId === deletingLayer.id; }) || studioLayers(candidate).some(function (layer) { return layer.parentLayerId === deletingLayer.id; })) { showToast("该层级仍包含模块或子层，不能删除"); return; }
+        pushStudioUndo(); candidate.architectureLayers = studioLayers(candidate).filter(function (item) { return item.id !== deletingLayer.id; }); candidate.architectureLayers.forEach(function (item, index) { item.order = index; });
+        unifiedStudioCommit("layer.remove", { layerId: deletingLayer.id }, cloneForStudio(deletingLayer), null, true); return;
+      }
+      if (detail.action === "add-connection") {
+        var from = unifiedStudioCandidateNode(candidate, detail.nodeId), to = unifiedStudioCandidateNode(candidate, detail.targetNodeId);
+        if (!from || !to || from.nodeId === to.nodeId) return;
+        if (candidate.edges.some(function (edge) { return edge.fromNodeId === from.nodeId && edge.toNodeId === to.nodeId; })) { showToast("该数据流已存在"); return; }
+        pushStudioUndo(); var newEdge = { edgeId: "DRAFT-EDGE-" + String(Date.now()), entityRef: null, fromNodeId: from.nodeId, toNodeId: to.nodeId, name: from.name + " to " + to.name, label: "data", protocol: "", communicationMode: "direct", flowDirection: "one_way", dataSummary: "待补充数据契约", contractReferenceIds: [], authSummary: "", reliabilitySummary: "", rationale: "Studio Candidate data flow.", transitionId: null, extensions: {}, isDraft: true };
+        candidate.edges.push(newEdge); unifiedStudioCommit("edge.add", { edgeId: newEdge.edgeId }, null, cloneForStudio(newEdge), true); return;
+      }
+      if (detail.action === "add-logic-node") {
+        canvas = canvas || ensureUnifiedStudioCanvas(candidate, rootModuleId); pushStudioUndo();
+        var type = detail.logicType || "processing", logicId = "DRAFT-LOGIC-" + String(Date.now());
+        var logicNode = { nodeId: logicId, entityRef: null, name: "new_" + type, displayName: "新内部逻辑", type: type, purpose: "", rationale: "", implementationSummary: "", loopExitCondition: type === "loop" ? "达到明确终止条件" : null, requirementIds: [], decisionIds: [], riskIds: [], referenceIds: [], isDraft: true, x: 240 + (canvas.nodes.length % 3) * 230, y: 100 + Math.floor(canvas.nodes.length / 3) * 150, extensions: {} };
+        canvas.nodes.push(logicNode); canvas.updatedAt = new Date().toISOString();
+        unifiedStudioCommit("module_logic.node.add", { canvasId: canvas.canvasId, nodeId: logicId }, null, cloneForStudio(logicNode), true); return;
+      }
+      if (detail.action === "add-logic-edge" && canvas) {
+        var source = canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }), target = canvas.nodes.find(function (node) { return node.nodeId === detail.targetNodeId; });
+        if (!source || !target || source.nodeId === target.nodeId) return;
+        pushStudioUndo(); var logicEdge = { edgeId: "DRAFT-LOGIC-EDGE-" + String(Date.now()), entityRef: null, fromNodeId: source.nodeId, toNodeId: target.nodeId, kind: source.type === "loop" || target.type === "loop" ? "loop_back" : "flow", condition: "", dataSummary: "待补充内部数据", order: canvas.edges.length, referenceIds: [], isDraft: true, extensions: {} };
+        canvas.edges.push(logicEdge); unifiedStudioCommit("module_logic.edge.add", { canvasId: canvas.canvasId, edgeId: logicEdge.edgeId }, null, cloneForStudio(logicEdge), true); return;
+      }
+      if (detail.action === "add-boundary-port" && canvas) {
+        var internal = canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }), peer = unifiedStudioCandidateNode(candidate, detail.externalModuleId), rootNode = unifiedStudioCandidateNode(candidate, rootModuleId);
+        if (!internal || !peer || !rootNode) return;
+        var binding = candidate.edges.find(function (edge) { return edge.fromNodeId === peer.nodeId && edge.toNodeId === rootNode.nodeId; }) || null;
+        pushStudioUndo(); var externalId = peer.entityRef && peer.entityRef.id || peer.nodeId, portId = "DRAFT-PORT-" + String(Date.now());
+        if (!canvas.externalEntityRefs.some(function (ref) { return ref.type === "module" && ref.id === externalId; })) canvas.externalEntityRefs.push({ type: "module", id: externalId });
+        var port = { portId: portId, entityRef: null, name: "input_from_" + peer.name, direction: "input", internalNodeId: internal.nodeId, externalEntityRef: { type: "module", id: externalId }, bindingKind: binding ? "connection" : "unbound_candidate", bindingId: binding ? binding.edgeId : null, dataSummary: "待补充边界数据契约", protocol: binding && (binding.protocol || binding.label) || "", referenceIds: [], isDraft: true, x: 40, y: 100 + canvas.boundaryPorts.length * 90, extensions: {} };
+        canvas.boundaryPorts.push(port); unifiedStudioCommit("module_logic.port.add", { canvasId: canvas.canvasId, portId: portId, affectedModuleIds: [rootModuleId, externalId] }, null, cloneForStudio(port), true); return;
+      }
+      if (detail.action === "delete-node") {
+        if (detail.scope === "module_logic" && canvas) {
+          var logic = canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }); if (!logic || !logic.isDraft) return;
+          pushStudioUndo(); canvas.nodes = canvas.nodes.filter(function (node) { return node.nodeId !== logic.nodeId; }); canvas.edges = canvas.edges.filter(function (edge) { return edge.fromNodeId !== logic.nodeId && edge.toNodeId !== logic.nodeId; }); canvas.boundaryPorts = canvas.boundaryPorts.filter(function (port) { return port.internalNodeId !== logic.nodeId; });
+          unifiedStudioCommit("module_logic.node.remove", { canvasId: canvas.canvasId, nodeId: logic.nodeId }, cloneForStudio(logic), null, true); return;
+        }
+        state.studioSelectedNodeId = detail.nodeId; deleteStudioNode(); return;
+      }
+      if (detail.action === "command") {
+        if (detail.command === "undo" && state.studioUndoStack.length) { state.studioRedoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioUndoStack.pop()); return; }
+        if (detail.command === "redo" && state.studioRedoStack.length) { state.studioUndoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioRedoStack.pop()); return; }
+        if (detail.command === "formal-validate") { runStudioFormalValidation(); return; }
+        if (detail.command === "review") { runStudioReview(); return; }
+        if (detail.command === "proposal") { openStudioProposalDialog(); return; }
+        if (detail.command === "approve") { openStudioApprovalDialog(); return; }
+        if (detail.command === "apply") { applyStudioProposal(); return; }
+        if (detail.command === "save") { saveStudioSessionToBridge(true); return; }
+        if (detail.command === "export") { exportStudioSession(); return; }
+        if (detail.command === "new-candidate" || detail.command === "clone-candidate") {
+          if (session.candidates.length >= 12) return;
+          pushStudioUndo(); var nowCandidate = new Date().toISOString(), base = detail.command === "clone-candidate" ? cloneForStudio(candidate) : { assumptions: [], unknowns: [], architectureLayers: cloneForStudio(studioLayers(candidate)), nodes: [], edges: [], moduleLogicCanvases: [] };
+          base.candidateId = "CANDIDATE-" + String(Date.now()); base.label = detail.command === "clone-candidate" ? candidate.label + " 副本" : "新建架构方案"; base.kind = "alternative"; base.status = "active"; base.createdAt = nowCandidate; base.updatedAt = nowCandidate;
+          session.candidates.push(base); session.activeCandidateId = base.candidateId; unifiedStudioCommit("candidate.create", { candidateId: base.candidateId }, null, { label: base.label }, true); return;
+        }
+      }
+    }
+
     function renderStudio() {
+      var session = ensureStudioSession();
+      validateStudioSession();
+      if (!window.PanoramaGuidedV08) { renderLegacyStudio(); return; }
+      var bridge = state.studioBridge, online = studioBridgeOnline();
+      var errors = session.clientValidation.filter(function (item) { return item.level === "error"; }).length;
+      var formalCurrent = studioArtifactIsCurrent(bridge.formalValidation);
+      var formalValidation = bridge.formalValidation && (bridge.formalValidation.validation || (bridge.formalValidation.result && bridge.formalValidation.result.validation));
+      var formalPassed = formalCurrent && formalValidation && formalValidation.valid !== false && Number(((formalValidation.summary || {}).errors) || 0) === 0;
+      var proposalCurrent = studioArtifactIsCurrent(bridge.proposal);
+      var approvalCurrent = bridge.approval && bridge.proposal && bridge.approval.proposalHash === bridge.proposal.proposalHash;
+      var frozen = Boolean(bridge.applyResult), busy = Boolean(bridge.busy || bridge.sessionMutationBusy);
+      window.PanoramaGuidedV08.mount(document.getElementById("system-content"), {
+        mode: "edit", session: session, onAction: handleUnifiedStudioAction,
+        governance: {
+          bridgeStatus: online ? (bridge.busy || "Bridge 已连接") : "离线 Candidate；连接 Studio Bridge 后开放正式化",
+          notice: bridge.lastError || bridge.notice || "",
+          canFormal: online && studioBridgeFeature("formalValidation") && !busy && !errors && !frozen,
+          canReview: online && studioBridgeFeature("review") && !busy && formalPassed && !frozen,
+          canProposal: online && studioBridgeFeature("proposals") && !busy && formalPassed && !frozen,
+          canApprove: online && studioBridgeFeature("approvals") && !busy && proposalCurrent && !bridge.approval && !frozen,
+          canApply: online && studioBridgeFeature("apply") && !busy && proposalCurrent && approvalCurrent && !frozen,
+          canSave: online && !busy && !bridge.conflict && !frozen
+        }
+      });
+    }
+
+    function renderLegacyStudio() {
       var session = ensureStudioSession();
       var candidate = activeStudioCandidate();
       if (!candidate) {
         document.getElementById("system-content").innerHTML = "<div class='error-banner'>当前 Studio session 没有可用候选方案。</div>";
         return;
       }
-      var layers = arr(session.layers).slice().sort(function (a, b) { return a.order - b.order; });
+      var layers = studioLayers(candidate);
+      if (!layers.some(function (layer) { return layer.id === state.studioSelectedLayerId; })) state.studioSelectedLayerId = layers[0] ? layers[0].id : null;
+      var selectedLayer = layers.find(function (layer) { return layer.id === state.studioSelectedLayerId; }) || null;
       var surfaceHeight = Math.max(620, layers.length * 122);
       var bands = layers.map(function (layer, index) {
-        return "<div class='studio-layer-band' style='top:" + (index * 122) + "px;height:122px'><div class='studio-layer-label'><strong>" + e(layer.name) + "</strong><span class='mono'>" + e(layer.id) + "</span></div></div>";
+        return "<div class='studio-layer-band' style='top:" + (index * 122) + "px;height:122px'><div class='studio-layer-label'><strong>" + e(layer.name) + "</strong><span class='mono'>" + e(layer.id) + "</span>" + (layer.parentLayerId ? "<span class='cell-sub'>↳ " + e(entityName("layer", layer.parentLayerId)) + "</span>" : "") + "</div></div>";
       }).join("");
       var nodes = candidate.nodes.map(function (node) {
         var selectedNode = node.nodeId === state.studioSelectedNodeId;
@@ -2517,6 +3032,7 @@
         studioCandidateBarHtml(session) + studioCompareHtml(session) + studioHashStripHtml(session) + studioStaleStripHtml() + studioArtifactHtml() + studioMobileTabsHtml() +
         "<div class='studio-workspace' id='studio-candidate-panel' role='tabpanel' aria-labelledby='studio-candidate-tab-" + e(studioDomId(session.activeCandidateId)) + "'><aside class='studio-library " + (state.studioMobilePanel === "library" ? "" : "is-mobile-hidden") + "' id='studio-panel-library' data-studio-panel='library'><div class='studio-panel-head'><strong>组件库</strong><span class='count'>草稿</span></div>" +
         "<div class='studio-library-section'><h3>添加组件</h3><div class='studio-library-list'><button class='studio-library-btn' type='button' data-studio-add-node='agent'>＋ Agent</button><button class='studio-library-btn' type='button' data-studio-add-node='service'>＋ 服务</button><button class='studio-library-btn' type='button' data-studio-add-node='data'>＋ 数据存储</button></div></div>" +
+        "<div class='studio-library-section'><h3>层级 / 功能区</h3><div class='studio-layer-controls'><select class='studio-select' data-studio-layer-select aria-label='选择架构层'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === state.studioSelectedLayerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select><label class='studio-field'><span>父层级</span><select class='studio-select' data-studio-layer-parent " + (!selectedLayer ? "disabled" : "") + "><option value=''>无</option>" + layers.filter(function (layer) { return !selectedLayer || layer.id !== selectedLayer.id; }).map(function (layer) { return "<option value='" + e(layer.id) + "' " + (selectedLayer && selectedLayer.parentLayerId === layer.id ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></label><div class='studio-layer-control-grid'><button class='studio-library-btn' type='button' data-studio-layer-action='add'>＋ 新层级</button><button class='studio-library-btn' type='button' data-studio-layer-action='rename' " + (!selectedLayer ? "disabled" : "") + ">重命名</button><button class='studio-library-btn' type='button' data-studio-layer-action='up' " + (!selectedLayer || selectedLayer.order === 0 ? "disabled" : "") + ">上移</button><button class='studio-library-btn' type='button' data-studio-layer-action='down' " + (!selectedLayer || selectedLayer.order === layers.length - 1 ? "disabled" : "") + ">下移</button><button class='studio-library-btn' type='button' data-studio-layer-action='delete' " + (!selectedLayer ? "disabled" : "") + ">删除</button></div></div><p class='studio-layer-tree-note'>父子层级、名称与顺序影响语义；卡片坐标仍只影响布局。</p></div>" +
         "<div class='studio-library-section'><h3>需求基线</h3><ul class='studio-requirements'>" + requirements + "</ul></div></aside>" +
         "<div class='studio-canvas-wrap " + (state.studioMobilePanel === "canvas" ? "" : "is-mobile-hidden") + "' id='studio-panel-canvas' data-studio-panel='canvas'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动或使用 Alt + 方向键调整布局</span><span>布局操作不影响语义</span></div>" +
         "<div class='studio-canvas' id='studio-canvas'><div class='studio-canvas-surface' id='studio-canvas-surface' style='height:" + surfaceHeight + "px'>" + bands + "<svg class='studio-edge-svg' id='studio-edge-svg' aria-hidden='true' focusable='false'></svg>" + nodes + "</div></div>" + studioFlowListHtml(candidate) + "</div>" +
@@ -2528,7 +3044,7 @@
         "<button class='studio-action' type='button' data-studio-action='review' " + (!online || !studioBridgeFeature("review") || bridge.busy || !formalPassed ? "disabled" : "") + " title='在只读 sandbox 中请求 Codex 评审'>Codex 只读评审</button>" +
         "<button class='studio-action is-primary' type='button' data-studio-action='proposal' " + (!online || !studioBridgeFeature("proposals") || bridge.busy || !formalPassed ? "disabled" : "") + ">生成正式提案</button>" +
         "<button class='studio-action' type='button' data-studio-action='approve' " + (!online || !studioBridgeFeature("approvals") || bridge.busy || !proposalCurrent || bridge.approval ? "disabled" : "") + ">精确批准</button>" +
-        "<button class='studio-action is-primary' type='button' data-studio-action='apply' " + (!online || !studioBridgeFeature("apply") || bridge.busy || !proposalCurrent || !approvalCurrent || frozen ? "disabled" : "") + ">Apply</button></div></footer>" + studioCandidateDialogHtml() + studioProposalDialogHtml() + studioApprovalDialogHtml() + "</section>";
+        "<button class='studio-action is-primary' type='button' data-studio-action='apply' " + (!online || !studioBridgeFeature("apply") || bridge.busy || !proposalCurrent || !approvalCurrent || frozen ? "disabled" : "") + ">Apply</button></div></footer>" + studioCandidateDialogHtml() + studioLayerDialogHtml() + studioProposalDialogHtml() + studioApprovalDialogHtml() + "</section>";
       var scope = document.querySelector("[data-studio-scope]");
       if (scope) scope.value = session.scope.level;
       var candidateSelect = document.querySelector("[data-studio-candidate]");
@@ -2611,16 +3127,91 @@
       svg.innerHTML = defs + paths;
     }
 
+    function reflowStudioLayers(candidate) {
+      var layers = studioLayers(candidate);
+      layers.forEach(function (layer, index) { layer.order = index; });
+      var slots = {};
+      arr(candidate.nodes).forEach(function (node) {
+        var layerIndex = layers.findIndex(function (layer) { return layer.id === node.layerId; });
+        var slot = slots[node.layerId] || 0; slots[node.layerId] = slot + 1;
+        node.x = 145 + (slot % 3) * 205;
+        node.y = 20 + Math.max(0, layerIndex) * 122 + Math.floor(slot / 3) * 86;
+      });
+    }
+
+    function studioLayerAction(action) {
+      var candidate = activeStudioCandidate(); if (!candidate) return;
+      var layers = studioLayers(candidate);
+      var selected = layers.find(function (layer) { return layer.id === state.studioSelectedLayerId; }) || null;
+      if (action === "add" || (action === "rename" && selected)) {
+        state.studioLayerDraft = { mode: action, name: action === "rename" ? selected.name : "新功能区", parentLayerId: selected ? selected.id : null };
+        renderStudio();
+        if (!showStudioDialog("studio-layer-dialog", action === "add" ? "add-layer" : "rename-layer", "#studio-layer-name")) { state.studioLayerDraft = null; state.studioBridge.lastError = "当前浏览器不支持原生 dialog，无法编辑架构层"; renderStudio(); }
+        return;
+      } else if ((action === "up" || action === "down") && selected) {
+        var index = layers.indexOf(selected); var targetIndex = action === "up" ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= layers.length) return;
+        pushStudioUndo(); var beforeOrder = layers.map(function (layer) { return layer.id; });
+        layers.splice(index, 1); layers.splice(targetIndex, 0, selected); reflowStudioLayers(candidate);
+        appendStudioOperation("layer.reorder", { layerId: selected.id }, beforeOrder, layers.map(function (layer) { return layer.id; }), true);
+        appendStudioOperation("layout.reflow_layers", { layerId: selected.id }, null, "reflow", false);
+      } else if (action === "delete" && selected) {
+        if (candidate.nodes.some(function (node) { return node.layerId === selected.id; })) { showToast("该层级仍包含模块，不能删除"); return; }
+        if (layers.some(function (layer) { return layer.parentLayerId === selected.id; })) { showToast("该层级仍有子层级，不能删除"); return; }
+        if (layers.length <= 1) { showToast("至少保留一个架构层"); return; }
+        if (!window.confirm("删除层级 “" + selected.name + "”？该动作只进入候选草稿。")) return;
+        pushStudioUndo(); layers.splice(layers.indexOf(selected), 1); reflowStudioLayers(candidate);
+        appendStudioOperation("layer.remove", { layerId: selected.id }, cloneForStudio(selected), null, true);
+        state.studioSelectedLayerId = layers[0].id;
+      } else return;
+      candidate.updatedAt = new Date().toISOString();
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function submitStudioLayerDialog() {
+      var draft = state.studioLayerDraft; var candidate = activeStudioCandidate();
+      var name = String((document.getElementById("studio-layer-name") || {}).value || "").trim();
+      if (!draft || !candidate || !name) { showToast("请填写层级 / 功能区名称"); return; }
+      var layers = studioLayers(candidate); var selected = layers.find(function (layer) { return layer.id === state.studioSelectedLayerId; }) || null;
+      pushStudioUndo();
+      if (draft.mode === "add") {
+        var layer = { id: "LAYER-STUDIO-" + String(Date.now()), name: name, order: layers.length, summary: "Architecture Studio draft layer.", parentLayerId: draft.parentLayerId, kind: "capability", extensions: {} };
+        layers.push(layer); state.studioSelectedLayerId = layer.id;
+        appendStudioOperation("layer.add", { layerId: layer.id }, null, cloneForStudio(layer), true);
+      } else if (draft.mode === "rename" && selected) {
+        var beforeName = selected.name; selected.name = name;
+        appendStudioOperation("layer.rename", { layerId: selected.id }, beforeName, selected.name, true);
+      }
+      var dialog = document.getElementById("studio-layer-dialog"); if (dialog && dialog.open) dialog.close();
+      state.studioLayerDraft = null; state.studioDialogReturnAction = null; candidate.updatedAt = new Date().toISOString();
+      validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
+    function updateStudioLayerParent(parentLayerId) {
+      var candidate = activeStudioCandidate(); if (!candidate) return;
+      var layers = studioLayers(candidate); var selected = layers.find(function (layer) { return layer.id === state.studioSelectedLayerId; });
+      if (!selected) return;
+      var normalized = parentLayerId || null;
+      if (normalized === selected.id) { showToast("层级不能以自身作为父层级"); return; }
+      var current = normalized; var parents = {};
+      layers.forEach(function (layer) { if (layer.parentLayerId) parents[layer.id] = layer.parentLayerId; });
+      while (current) { if (current === selected.id) { showToast("该设置会形成层级循环"); renderStudio(); return; } current = parents[current]; }
+      if ((selected.parentLayerId || null) === normalized) return;
+      pushStudioUndo(); var before = selected.parentLayerId || null; selected.parentLayerId = normalized;
+      appendStudioOperation("layer.change_parent", { layerId: selected.id }, before, normalized, true);
+      candidate.updatedAt = new Date().toISOString(); validateStudioSession(); persistStudioSession(); renderStudio();
+    }
+
     function addStudioNode(kind) {
       var candidate = activeStudioCandidate();
       if (!candidate) return;
       pushStudioUndo();
-      var layers = state.studioSession.layers;
+      var layers = studioLayers(candidate);
       var layerId = kind === "data" ? layers[layers.length - 1].id : (kind === "agent" && layers.length > 2 ? layers[2].id : layers[Math.min(1, layers.length - 1)].id);
-      var layerIndex = layers.findIndex(function (layer) { return layer.id === layerId; });
       var layerSlot = candidate.nodes.filter(function (item) { return item.layerId === layerId; }).length;
       var nodeId = "DRAFT-NODE-" + String(Date.now());
-      var node = { nodeId: nodeId, entityRef: null, name: kind === "agent" ? "新 Agent" : (kind === "data" ? "新数据存储" : "新服务"), purpose: "", responsibilities: [], stateOwnership: "", layerId: layerId, category: kind, isDraft: true, x: 145 + (layerSlot % 3) * 205, y: 20 + Math.max(0, layerIndex) * 122 + Math.floor(layerSlot / 3) * 86 };
+      var frame = unifiedStudioLayerFrame(candidate, layerId);
+      var node = { nodeId: nodeId, entityRef: null, name: kind === "agent" ? "new_agent" : (kind === "data" ? "new_data_store" : "new_service"), displayName: kind === "agent" ? "新 Agent" : (kind === "data" ? "新数据存储" : "新服务"), purpose: "", responsibilities: [], nonResponsibilities: [], technologies: [], stateOwnership: "", dataHandled: [], interfaceSummary: [], deploymentRole: "", referenceIds: [], notes: "", designExtensions: {}, rationale: "", requirementIds: [], layerId: layerId, baselineLayerId: layerId, category: kind, isDraft: true, x: 145 + (layerSlot % 3) * 205, y: Math.round((frame ? frame.y + 8 : 24) + Math.floor(layerSlot / 3) * 96) };
       candidate.nodes.push(node);
       state.studioSelectedNodeId = nodeId;
       appendStudioOperation("node.add", { nodeId: nodeId }, null, cloneForStudio(node), true);
@@ -2637,11 +3228,11 @@
       pushStudioUndo();
       node[field] = normalized;
       if (field === "layerId") {
-        var index = state.studioSession.layers.findIndex(function (layer) { return layer.id === normalized; });
         var candidate = activeStudioCandidate();
         var slot = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId && item.layerId === normalized; }).length;
+        var targetFrame = unifiedStudioLayerFrame(candidate, normalized);
         node.x = 145 + (slot % 3) * 205;
-        node.y = 20 + Math.max(0, index) * 122 + Math.floor(slot / 3) * 86;
+        node.y = Math.round((targetFrame ? targetFrame.y + 8 : 24) + Math.floor(slot / 3) * 96);
       }
       appendStudioOperation(field === "layerId" ? "node.change_layer" : "node.update", { nodeId: node.nodeId, field: field }, before, cloneForStudio(normalized), true);
       validateStudioSession(); persistStudioSession(); renderStudio();
@@ -2900,20 +3491,11 @@
       var references = Array.from(referenceIds).map(function (id) { return byId("reference", id); }).filter(Boolean);
       var deployments = deploymentForModule(module.id);
       document.getElementById("drawer-body").innerHTML =
-        drawerSection("存在原因", "<p><strong>用途 — </strong>" + e(module.purpose) + "</p><p><strong>设计理由 — </strong>" + e(module.rationale) + "</p>") +
-        drawerSection("当前 / 目标设计", designCompare(module.currentDesign, module.targetDesign)) +
-        "<div class='drawer-two-col'>" +
-          drawerSection("职责", list((module.currentDesign || module.targetDesign || {}).responsibilities)) +
-          drawerSection("非职责", list((module.currentDesign || module.targetDesign || {}).nonResponsibilities)) +
-        "</div>" +
-        drawerSection("需求", entityLinks("requirement", module.requirementIds)) +
+        moduleDesignStoryHtml(module) +
+        "<details class='drawer-deep-evidence'><summary>深入证据与治理信息</summary>" +
+        drawerSection("当前 / 目标设计原始对照", designCompare(module.currentDesign, module.targetDesign)) +
         drawerSection("来源 / 基线", "<dl class='key-value'><dt>来源</dt><dd>" + e(humanize(module.source.origin)) + "</dd><dt>变更类型</dt><dd>" + e(humanize(module.source.changeType)) + "</dd><dt>基线</dt><dd>" + e(module.source.baselineId ? entityName("baseline", module.source.baselineId) : "无") + "</dd><dt>变更区域</dt><dd>" + e(module.source.changedAreas.join(", ") || "无") + "</dd><dt>升级影响</dt><dd>" + status(module.source.upgradeImpact) + "</dd></dl>") +
-        "<div class='drawer-two-col'>" +
-          drawerSection("决策", drawerEntities(decisions, "decision")) +
-          drawerSection("风险", drawerEntities(risks, "risk")) +
-          drawerSection("验收标准", drawerEntities(acceptance, "acceptance")) +
-          drawerSection("门禁", drawerEntities(gates, "gate")) +
-        "</div>" +
+        "<div class='drawer-two-col'>" + drawerSection("决策", drawerEntities(decisions, "decision")) + drawerSection("风险", drawerEntities(risks, "risk")) + drawerSection("验收标准", drawerEntities(acceptance, "acceptance")) + drawerSection("门禁", drawerEntities(gates, "gate")) + "</div>" +
         drawerSection("工作项", drawerEntities(workItems, "work_item")) +
         drawerSection("参考资料", references.length ? references.map(referenceLink).join("<br>") : "<span class='cell-sub'>没有关联参考资料。</span>") +
         drawerSection("代码路径", "<div class='copy-row'><code class='copy-value'>" + e(module.codePath || "未记录") + "</code><button class='small-btn' type='button' data-copy-value='" + e(module.codePath) + "'>复制</button></div>") +
@@ -2922,8 +3504,70 @@
           return "<p><strong>" + e(deployment.name) + "</strong> · " + status(deployment.status) + "<br><span class='mono'>" + e(moduleDeployment ? moduleDeployment.artifactVersion : "—") + "</span> · " + e(moduleDeployment ? moduleDeployment.resourceIds.map(function (id) { return entityName("resource", id); }).join(", ") : "无制品") + "</p>";
         }).join("") : "<span class='cell-sub'>尚未部署。</span>") +
         drawerSection("Trace Route", traceRouteHtml("module", module.id)) +
-        drawerSection("Gate / Acceptance Projection", governanceProjectionHtml("module", module.id));
+        drawerSection("Gate / Acceptance Projection", governanceProjectionHtml("module", module.id)) + "</details>";
       openDrawer();
+    }
+    function moduleStoryStep(title, summary, body, open) {
+      return "<details class='drawer-story-step' " + (open ? "open" : "") + "><summary><span><span class='drawer-story-title'>" + e(title) + "</span><span class='drawer-story-summary'>" + e(summary) + "</span></span></summary><div class='drawer-story-body'>" + body + "</div></details>";
+    }
+    function moduleTechnologyHtml(module) {
+      var designs = [["当前", module.currentDesign], ["目标", module.targetDesign]].filter(function (item) { return item[1]; });
+      if (!designs.length) return "<p class='cell-sub'>未记录技术选型。</p>";
+      return designs.map(function (entry) {
+        var technologies = arr(entry[1].technologies);
+        return "<p><strong>" + e(entry[0]) + "</strong></p>" + (technologies.length ? technologies.map(function (technology) {
+          return "<div class='connection-story'><strong>" + e(technology.name) + "</strong><span>用途：" + e(technology.role || "未记录") + " · 状态：" + e(humanize(technology.status || "unknown")) + "</span>" + (technology.decisionId ? "<br>依据：" + entityLinks("decision", [technology.decisionId]) : "<br><span class='cell-sub'>未绑定技术决策。</span>") + "</div>";
+        }).join("") : "<p class='cell-sub'>未记录技术。</p>");
+      }).join("");
+    }
+    function moduleInteractionHtml(module) {
+      var connections = arr(data.architecture.connections).filter(function (connection) { return connection.fromModuleId === module.id || connection.toModuleId === module.id; });
+      if (!connections.length) return "<p class='cell-sub'>未记录与其他模块的正式连接，不能从画布邻近推断交互。</p>";
+      return connections.map(function (connection) {
+        var outgoing = connection.fromModuleId === module.id;
+        var peer = outgoing ? connection.toModuleId : connection.fromModuleId;
+        return "<div class='connection-story'><strong>" + (outgoing ? "输出到 " : "输入自 ") + e(entityName("module", peer)) + "</strong><p>" + e(connection.protocol || "协议未记录") + " · " + e(humanize(connection.communicationMode || "unknown")) + " · " + e(connection.dataSummary || "数据未记录") + "</p><p><span class='cell-sub'>设计理由：</span> " + e(connection.rationale || "未记录") + "<br><span class='cell-sub'>可靠性：</span> " + e(connection.reliabilitySummary || "未记录") + "</p>" + entityLinks("connection", [connection.id]) + "</div>";
+      }).join("");
+    }
+    function moduleDesignStoryHtml(module) {
+      var design = module.targetDesign || module.currentDesign || {};
+      var layer = byId("layer", module.targetLayerId || module.layerId);
+      var role = "<dl class='key-value'>" + kvRow("架构层", layer ? layer.name : module.layerId) + kvRow("状态所有权", design.stateOwnership || "未记录") + kvRow("部署角色", design.deploymentRole || "未记录") + kvRow("处理数据", arr(design.dataHandled).join("；") || "未记录") + "</dl>";
+      var reason = "<p>" + e(module.rationale || "未记录设计理由。") + "</p><p><span class='cell-sub'>来源理由：</span> " + e((module.source || {}).rationale || "未记录") + "</p>" + (arr(module.decisionIds).length ? entityLinks("decision", module.decisionIds) : "<p class='cell-sub'>当前模块未绑定正式决策。</p>");
+      var functions = "<p>" + e(module.purpose || "未记录用途。") + "</p><strong>职责</strong>" + list(design.responsibilities, "未记录职责。") + "<strong>明确边界</strong>" + list(design.nonResponsibilities, "未记录非职责边界。");
+      var riskSummary = arr(module.riskIds).length ? "；另有 " + module.riskIds.length + " 个关联风险" : "；当前未绑定风险";
+      return "<div class='drawer-story-intro'><strong>先理解设计逻辑，再按需展开证据</strong><p>本模块承担什么、为何这样设计、如何交互与采用什么技术。" + e(riskSummary) + "。</p></div><div class='drawer-story'>" +
+        moduleStoryStep("设计需求", "它必须解决什么问题", entityLinks("requirement", module.requirementIds) || "<p class='cell-sub'>未绑定需求。</p>", true) +
+        moduleStoryStep("设计原因", "为什么选择当前职责与边界", reason, false) +
+        moduleStoryStep("实现功能", "对外提供什么，同时明确不负责什么", functions, false) +
+        moduleStoryStep("系统角色", "在架构、状态与部署中的位置", role, false) +
+        moduleStoryStep("交互方式", "沿正式连接说明输入、输出、协议与数据", moduleInteractionHtml(module), false) +
+        moduleStoryStep("技术选型", "技术用途、状态与决策依据", moduleTechnologyHtml(module), false) +
+        moduleStoryStep("决策与风险", "为什么仍需决策，风险为何存在及如何应对", "<div class='drawer-two-col'>" + drawerSection("待决策项", drawerEntities(arr(module.decisionIds).map(function (id) { return byId("decision", id); }).filter(Boolean), "decision")) + drawerSection("风险", drawerEntities(arr(module.riskIds).map(function (id) { return byId("risk", id); }).filter(Boolean), "risk")) + "</div>", false) + "</div>";
+    }
+    function requirementChainStep(title, body) {
+      return "<section class='requirement-chain-step'><h4>" + e(title) + "</h4>" + body + "</section>";
+    }
+    function requirementImpactHtml(requirement) {
+      var workItems = requirementWorkItems(requirement.id);
+      var stages = requirementStages(requirement);
+      var layers = requirementLayers(requirement);
+      var transitions = requirementTransitions(requirement);
+      var versions = requirementArchitectureVersions(requirement);
+      var releases = requirementReleases(requirement);
+      var stageBody = stages.length ? "<p>" + e(stages.map(function (stage) { return stage.name; }).join(" → ")) + " <span class='derived-badge'>由工作项 / 发布推导</span></p>" : "<div class='information-gap'>未记录直接阶段绑定，也无法从工作项或目标发布推导。</div>";
+      var moduleBody = arr(requirement.moduleIds).length ? "<p>" + e(layers.map(function (layer) { return layer.name; }).join("；") || "层级未记录") + " <span class='derived-badge'>层级由模块推导</span></p>" + entityLinks("module", requirement.moduleIds) : "<div class='information-gap'>未绑定功能模块，无法定位实现边界。</div>";
+      var versionBody = versions.length ? "<p>" + e(versions.map(function (version) { return version.label || version.version || version.id; }).join(" → ")) + "</p>" + (transitions.length ? "<p>" + e(transitions.map(function (transition) { return transition.summary; }).join("；")) + " <span class='derived-badge'>由工作项推导</span></p>" : "<p class='cell-sub'>未关联架构迁移。</p>") : "<div class='information-gap'>未关联架构版本。</div>";
+      var deliveryBody = (releases.length ? entityLinks("release", releases.map(function (release) { return release.id; })) : "<div class='information-gap'>未记录目标发布。</div>") + (arr(requirement.acceptanceCriteriaIds).length ? "<div style='height:7px'></div>" + entityLinks("acceptance", requirement.acceptanceCriteriaIds) : "<p class='cell-sub'>未记录需求验收标准。</p>");
+      var workBody = workItems.length ? "<div class='drawer-two-col'><div><h4>实际开发工作</h4>" + workItems.map(function (item) { return "<div class='decision-signal " + (["blocked", "failed"].indexOf(item.status) >= 0 ? "is-critical" : (["completed"].indexOf(item.status) >= 0 ? "" : "is-warning")) + "'>" + traceEntityButton("work_item", item.id) + "<p>" + e(entityName("stage", item.stageId)) + " · " + e(humanize(item.status)) + " · " + e(item.expectedImpact || item.purpose || "未记录预期影响") + "</p></div>"; }).join("") + "</div><div><h4>关联架构迁移</h4>" + (transitions.length ? transitions.map(function (transition) { return "<div class='decision-signal is-warning'><strong>" + e(transition.summary) + "</strong><p>原因：" + e(transition.reason || "未记录") + "<br>状态：" + e(humanize(transition.state)) + " · 目标 " + e(transition.targetDate || "未记录") + "</p></div>"; }).join("") : "<p class='cell-sub'>工作项未关联架构迁移。</p>") + "</div></div>" : "<div class='information-gap'>该需求未关联实际 WorkItem，无法判断 AI 开发工作推进到了哪里。</div>";
+      return "<div class='requirement-impact-intro'><strong>这条需求如何进入架构并形成交付</strong><p>主链只展示人需要判断的演进与影响；阶段、层级和迁移若由其他正式实体推导，会明确标注来源性质。</p></div>" +
+        "<div class='requirement-chain'>" +
+        requirementChainStep("1 · 需求定义", "<p><strong>" + e(requirement.title) + "</strong></p><p>" + e(requirement.summary || "未记录摘要") + "</p><p>" + status(requirement.definitionStatus) + " · " + status(requirement.fulfillmentStatus) + "</p>") +
+        requirementChainStep("2 · 演进阶段", stageBody) +
+        requirementChainStep("3 · 层级与模块", moduleBody) +
+        requirementChainStep("4 · 架构版本 / 迁移", versionBody) +
+        requirementChainStep("5 · 发布与验收", deliveryBody) + "</div>" + workBody +
+        (transitions.length ? "<div class='information-gap' style='margin-top:12px'><strong>完整架构快照尚不可重建：</strong>现有 Architecture Version 只有版本元数据与 Delta。本页面不会把迁移链伪装成该版本的完整架构。</div>" : "");
     }
     function renderEntityInspector(type, id) {
       if (type === "module") { renderDrawer(id); return; }
@@ -2934,8 +3578,8 @@
       var body = "";
       switch (type) {
         case "requirement":
-          body = drawerSection("Requirement", "<dl class='key-value'>" + kvRow("类型", requirementTypeLabel(item.type)) + kvRow("优先级", item.priority) + kvRow("定义状态", humanize(item.definitionStatus)) + kvRow("实现状态", humanize(item.fulfillmentStatus)) + kvRow("摘要", item.summary) + kvRow("备注", item.notes || "—") + "</dl>") +
-            drawerSection("目标发布 / 模块 / 验收", entityLinks("release", item.targetReleaseIds) + entityLinks("module", item.moduleIds) + entityLinks("acceptance", item.acceptanceCriteriaIds)) +
+          body = drawerSection("需求演进与影响", requirementImpactHtml(item)) +
+            drawerSection("需求定义", "<dl class='key-value'>" + kvRow("类型", requirementTypeLabel(item.type)) + kvRow("优先级", item.priority) + kvRow("定义状态", humanize(item.definitionStatus)) + kvRow("实现状态", humanize(item.fulfillmentStatus)) + kvRow("摘要", item.summary) + kvRow("备注", item.notes || "—") + "</dl>") +
             drawerSection("来源 / 评审", entityLinks("reference", item.sourceReferenceIds) + entityLinks("review", item.reviewId ? [item.reviewId] : []));
           break;
         case "work_item":
@@ -2977,11 +3621,11 @@
           body = drawerSection("实体", "<pre class='mono'>" + e(JSON.stringify(item, null, 2)) + "</pre>");
       }
       if (["requirement", "work_item", "acceptance", "gate", "release", "deployment"].indexOf(type) >= 0) {
-        body += drawerSection("Trace Route", traceRouteHtml(type, item.id));
-        body += drawerSection("Gate / Acceptance Projection", governanceProjectionHtml(type, item.id));
+        body += drawerSection("交付证据链", governanceProjectionHtml(type, item.id));
+        body += "<details class='drawer-deep-evidence'><summary>技术诊断：原始 Trace、字段路径与校验发现</summary><div class='drawer-deep-evidence-content'>" + traceRouteHtml(type, item.id) + "</div></details>";
       }
       if (["acceptance", "gate"].indexOf(type) >= 0) {
-        body += drawerSection("Verification Receipt Timeline", verificationReceiptTimelineHtml(type, item.id));
+        body += drawerSection("验证回执时间线", verificationReceiptTimelineHtml(type, item.id));
       }
       document.getElementById("drawer-body").innerHTML = body;
       openDrawer();
@@ -3426,8 +4070,45 @@
       document.getElementById("view-evolution").innerHTML =
         sectionHeading("架构时间线", versions.length + " 个版本") + "<div class='timeline' style='--timeline-columns:" + versions.length + "'>" + timelineHtml + "</div>" +
         "<div class='section-rule'>" + sectionHeading("阶段路线图", stages.length + " 个阶段") + "<div class='stage-rail' style='--stage-columns:" + stages.length + "'>" + stageRail + "</div>" + stageDetail(selectedStage) + "</div>" +
+        "<div class='section-rule'>" + requirementEvolutionBoard() + "</div>" +
         "<div class='section-rule'>" + sectionHeading("阶段 × 模块状态", selectedStage.name) + stageModuleTable(selectedStage) + "</div>" +
         "<div class='section-rule'>" + sectionHeading("发布与部署历史", data.releases.length + " 个发布") + releaseHistory() + "</div>";
+    }
+    function requirementEvolutionBoard() {
+      var requirements = arr(data.requirements).filter(function (requirement) {
+        return (state.requirementFilters.type === "all" || requirement.type === state.requirementFilters.type) &&
+          (state.requirementFilters.definition === "all" || requirement.definitionStatus === state.requirementFilters.definition) &&
+          (state.requirementFilters.fulfillment === "all" || requirement.fulfillmentStatus === state.requirementFilters.fulfillment);
+      });
+      var filters = "<div class='filter-row'>" +
+        selectControl("requirement-type", optionsFor(arr(data.requirements).map(function (item) { return item.type; }), requirementTypeLabel), state.requirementFilters.type, "需求类型") +
+        selectControl("requirement-definition", optionsFor(arr(data.requirements).map(function (item) { return item.definitionStatus; })), state.requirementFilters.definition, "定义状态") +
+        selectControl("requirement-fulfillment", optionsFor(arr(data.requirements).map(function (item) { return item.fulfillmentStatus; })), state.requirementFilters.fulfillment, "实现状态") + "</div>";
+      var cards = requirements.map(function (requirement) {
+        var workItems = requirementWorkItems(requirement.id);
+        var stages = requirementStages(requirement);
+        var layers = requirementLayers(requirement);
+        var transitions = requirementTransitions(requirement);
+        var versions = requirementArchitectureVersions(requirement);
+        var releases = requirementReleases(requirement);
+        var projection = governanceProjection("requirement", requirement.id);
+        var stageHtml = stages.length ? stages.map(function (stage) { return "<p><strong>" + e(stage.name) + "</strong> " + status(stage.status) + " <span class='derived-badge'>由工作项 / 发布推导</span></p>"; }).join("") : "<div class='information-gap'>缺少 Requirement → Stage 直接绑定，且无法从工作项或目标发布推导。</div>";
+        var workHtml = workItems.length ? entityLinks("work_item", workItems.map(function (item) { return item.id; })) : "<p class='cell-sub'>未关联工作项。</p>";
+        var layerHtml = layers.length ? "<p><strong>架构层级</strong> <span class='derived-badge'>由模块推导</span><br>" + e(layers.map(function (layer) { return layer.name; }).join("；")) + "</p>" : "<div class='information-gap'>未绑定模块，无法定位架构层级。</div>";
+        var moduleHtml = arr(requirement.moduleIds).length ? entityLinks("module", requirement.moduleIds) : "<p class='cell-sub'>未关联功能模块。</p>";
+        var transitionHtml = transitions.length ? transitions.map(function (transition) { return "<p><strong>" + e(transition.summary) + "</strong><br>" + e(entityName("architecture_version", transition.fromVersionId)) + " → " + e(entityName("architecture_version", transition.toVersionId)) + " · " + status(transition.state) + " <span class='derived-badge'>由工作项推导</span></p>"; }).join("") : "<p class='cell-sub'>没有从工作项精确关联到架构迁移。</p>";
+        var versionHtml = versions.length ? "<p><strong>涉及版本</strong><br>" + e(versions.map(function (version) { return version.label || version.version || version.id; }).join("；")) + "</p>" : "<p class='cell-sub'>未关联架构版本。</p>";
+        var deliveryHtml = (releases.length ? "<p><strong>目标发布</strong></p>" + entityLinks("release", releases.map(function (release) { return release.id; })) : "<div class='information-gap'>未记录目标发布。</div>") +
+          (arr(requirement.acceptanceCriteriaIds).length ? "<p style='margin-top:8px'><strong>验收标准</strong></p>" + entityLinks("acceptance", requirement.acceptanceCriteriaIds) : "<p class='cell-sub'>未记录需求验收标准。</p>") +
+          "<p style='margin-top:8px'>验证 " + status(projection.verified.state) + " · 验收 " + status(projection.accepted.state) + " · 部署 " + status(projection.deployed_observed.state) + "</p>";
+        var snapshotGap = transitions.length ? "<div class='requirement-evolution-note'><strong>架构快照信息缺口：</strong>现有 Architecture Version 仅记录版本元数据与 Delta；这里能显示迁移链，但不能据此重建该需求在每个版本下的完整架构。</div>" : "<div class='requirement-evolution-note'>阶段、层级、版本中的“推导”均来自精确 ID 链；未使用名称匹配或画布位置。</div>";
+        return "<article class='requirement-evolution-card'><div class='requirement-evolution-head'><div>" + traceEntityButton("requirement", requirement.id) + "<h3>" + e(requirement.title) + "</h3></div><div class='requirement-evolution-status'>" + status(requirement.definitionStatus) + status(requirement.fulfillmentStatus) + "</div></div>" +
+          "<div class='requirement-evolution-body'><section class='requirement-evolution-cell'><h4>阶段与执行工作</h4>" + stageHtml + workHtml + "</section>" +
+          "<section class='requirement-evolution-cell'><h4>架构层级与功能模块</h4>" + layerHtml + moduleHtml + "</section>" +
+          "<section class='requirement-evolution-cell'><h4>架构版本与迁移</h4>" + transitionHtml + versionHtml + "</section>" +
+          "<section class='requirement-evolution-cell'><h4>发布与交付证据</h4>" + deliveryHtml + "</section></div>" + snapshotGap + "</article>";
+      }).join("");
+      return "<div class='section-heading'><div><h2>需求演进板</h2><p class='cell-sub'>完整需求记录在演进中按“阶段 → 层级 / 模块 → 版本迁移 → 发布 / 证据”串联；推导关系均明确标注。</p></div>" + filters + "</div><div class='requirement-evolution-list'>" + (cards || "<div class='empty-state'>没有符合筛选条件的需求。</div>") + "</div>";
     }
     function acceptanceNames(ids) {
       return arr(ids).map(function (id) {
@@ -3490,13 +4171,14 @@
       if ((state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) && target.dataset.studioAction && ["reload-panorama", "export"].indexOf(target.dataset.studioAction) < 0) { showToast(state.studioBridge.applyResult ? "Apply 后 Studio 已冻结，请重新载入当前 Panorama" : "正式事务执行中，请等待完成"); return; }
       if (target.dataset.view) { state.view = target.dataset.view; updateVisibleView(); if (state.view === "system") renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
       if (target.dataset.systemView) { state.systemView = target.dataset.systemView; if (state.systemView !== "logical") state.studioMode = "view"; renderSystem(); window.scrollTo({ top: 0, behavior: "auto" }); return; }
-      if (target.dataset.studioMode) { state.studioMode = target.dataset.studioMode; if (state.studioMode === "studio") { state.systemView = "logical"; if (state.studioBridge.capability && state.studioBridge.status === "offline") connectStudioBridge(); } renderSystem(); return; }
+      if (target.dataset.studioMode) { state.studioMode = target.dataset.studioMode; if (state.studioMode === "studio" || state.studioMode === "explain") state.systemView = "logical"; if (state.studioMode === "studio" && state.studioBridge.capability && state.studioBridge.status === "offline") connectStudioBridge(); renderSystem(); return; }
       if (target.dataset.studioNodeId) { var selectedNodeId = target.dataset.studioNodeId; state.studioSelectedNodeId = selectedNodeId; state.studioSelectedEdgeId = null; renderStudio(); window.setTimeout(function () { var selectedNode = document.querySelector("[data-studio-node-id='" + cssEscape(selectedNodeId) + "']"); if (selectedNode) selectedNode.focus(); }, 0); return; }
       if (target.dataset.studioSelectEdge) { state.studioSelectedEdgeId = target.dataset.studioSelectEdge; state.studioMobilePanel = "inspector"; renderStudio(); window.setTimeout(function () { var edgeInspector = document.querySelector("[data-studio-edge-field]"); if (edgeInspector) edgeInspector.focus(); }, 0); return; }
       if (target.dataset.studioCandidateTab) { selectStudioCandidate(target.dataset.studioCandidateTab); return; }
       if (target.dataset.studioMobilePanel) { state.studioMobilePanel = target.dataset.studioMobilePanel; renderStudio(); window.setTimeout(function () { var selectedMobileTab = document.querySelector("[data-studio-mobile-panel][aria-selected='true']"); if (selectedMobileTab) selectedMobileTab.focus(); }, 0); return; }
       if (target.dataset.studioSelectCandidate) { selectStudioCandidate(target.dataset.studioSelectCandidate); return; }
       if (target.dataset.studioAddNode) { addStudioNode(target.dataset.studioAddNode); return; }
+      if (target.dataset.studioLayerAction) { studioLayerAction(target.dataset.studioLayerAction); return; }
       if (target.dataset.studioAction === "undo" && state.studioUndoStack.length) { state.studioRedoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioUndoStack.pop()); return; }
       if (target.dataset.studioAction === "redo" && state.studioRedoStack.length) { state.studioUndoStack.push(studioSnapshot()); restoreStudioSnapshot(state.studioRedoStack.pop()); return; }
       if (target.dataset.studioAction === "reset") { if (window.confirm(state.studioSession && state.studioSession.mode === "bridge" && studioBridgeOnline() ? "Bridge session 不能在前端重置。仍要继续检查？" : "重置当前离线草稿？正式全景不会受到影响。")) resetStudioSession(); return; }
@@ -3510,6 +4192,8 @@
       if (target.dataset.studioAction === "rename-candidate") { renameStudioCandidate(); return; }
       if (target.dataset.studioAction === "submit-candidate") { submitStudioCandidateDialog(); return; }
       if (target.dataset.studioAction === "cancel-candidate") { cancelStudioDialog("studio-candidate-dialog"); return; }
+      if (target.dataset.studioAction === "submit-layer") { submitStudioLayerDialog(); return; }
+      if (target.dataset.studioAction === "cancel-layer") { cancelStudioDialog("studio-layer-dialog"); return; }
       if (target.dataset.studioAction === "archive-candidate") { archiveStudioCandidate(); return; }
       if (target.dataset.studioAction === "compare") { state.studioCompareOpen = !state.studioCompareOpen; renderStudio(); return; }
       if (target.dataset.studioJournal) { state.studioJournalTrack = target.dataset.studioJournal; renderStudio(); return; }
@@ -3549,6 +4233,11 @@
       if (target.dataset.action === "close-drawer") { closeDrawer(); return; }
       if (target.dataset.action === "clear-module-filters") {
         state.moduleSearch = ""; state.layerFilter = "all"; state.sourceFilter = "all"; state.statusFilter = "all"; renderLogical(); return;
+      }
+      if (target.dataset.action === "open-evolution") {
+        state.view = "evolution";
+        if (target.dataset.evolutionStageId) state.selectedStageId = target.dataset.evolutionStageId;
+        renderEvolution(); updateVisibleView(); window.scrollTo({ top: 0, behavior: "auto" }); return;
       }
       if (target.dataset.action === "toggle-attention") { state.attentionExpanded = !state.attentionExpanded; renderControl(); return; }
       if (target.dataset.copyValue !== undefined) { copyText(target.dataset.copyValue); return; }
@@ -3619,6 +4308,8 @@
       }
       if (event.target.dataset.studioCandidateField) { updateStudioCandidateField(event.target.dataset.studioCandidateField, event.target.value); return; }
       if (event.target.dataset.studioEdgeField) { updateStudioEdgeField(event.target.dataset.studioEdgeField, event.target.value); return; }
+      if (event.target.dataset.studioLayerSelect !== undefined) { state.studioSelectedLayerId = event.target.value; renderStudio(); return; }
+      if (event.target.dataset.studioLayerParent !== undefined) { updateStudioLayerParent(event.target.value); return; }
       if (event.target.dataset.studioScope !== undefined) { pushStudioUndo(); var beforeScope = state.studioSession.scope.level; state.studioSession.scope.level = event.target.value; appendStudioOperation("session.change_scope", { sessionId: state.studioSession.sessionId }, beforeScope, event.target.value, true); persistStudioSession(); renderStudio(); return; }
       if (event.target.dataset.studioCandidate !== undefined) { selectStudioCandidate(event.target.value); return; }
       var filter = event.target.dataset.filter;
@@ -3634,7 +4325,7 @@
       if (filter === "resource-status") state.resourcePoolFilters.status = event.target.value;
       if (filter === "evidence-authority") state.evidenceAuthorityFilter = event.target.value;
       if (filter === "evidence-confidence") state.evidenceConfidenceFilter = event.target.value;
-      if (filter.indexOf("requirement-") === 0) renderControl();
+      if (filter.indexOf("requirement-") === 0) renderEvolution();
       else if (filter.indexOf("resource-") === 0) { state.selectedResourceId = null; renderRuntime(); }
       else if (filter.indexOf("evidence-") === 0) renderSource();
       else renderLogical();

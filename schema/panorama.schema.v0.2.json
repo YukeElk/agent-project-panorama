@@ -56,6 +56,13 @@
     "architecture": {
       "$ref": "#/$defs/architecture"
     },
+    "businessFlows": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/businessFlow"
+      }
+    },
     "stages": {
       "type": "array",
       "items": {
@@ -398,6 +405,46 @@
     "standardAssessment": { "$ref": "#/properties/standardAssessmentInlineDef" },
     "observationOperation": { "$ref": "#/properties/observationOperationInlineDef" },
     "observationBatch": { "$ref": "#/properties/observationBatchInlineDef" },
+    "businessFlowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "type", "moduleId", "connectionId", "action", "dataSummary", "result", "riskIds", "decisionIds", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "order": { "type": "integer", "minimum": 0, "maximum": 63 },
+        "type": { "type": "string", "enum": ["trigger", "processing", "data_transfer", "decision", "result", "failure", "compensation"] },
+        "moduleId": { "$ref": "#/$defs/entityId" },
+        "connectionId": { "anyOf": [{ "$ref": "#/$defs/entityId" }, { "type": "null" }] },
+        "action": { "$ref": "#/$defs/nonEmptyString" },
+        "dataSummary": { "type": "string", "maxLength": 4000 },
+        "result": { "type": "string", "maxLength": 4000 },
+        "riskIds": { "$ref": "#/$defs/idList" },
+        "decisionIds": { "$ref": "#/$defs/idList" },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "businessFlow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "summary", "architectureScope", "factStatus", "status", "isDefault", "trigger", "outcome", "steps", "riskIds", "decisionIds", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "type": "string", "maxLength": 4000 },
+        "architectureScope": { "type": "string", "enum": ["current", "target", "transition", "historical"] },
+        "factStatus": { "type": "string", "enum": ["observed", "declared", "derived", "inferred", "unknown"] },
+        "status": { "type": "string", "enum": ["draft", "active", "deprecated"] },
+        "isDefault": { "type": "boolean" },
+        "trigger": { "type": "string", "maxLength": 4000 },
+        "outcome": { "type": "string", "maxLength": 4000 },
+        "steps": { "type": "array", "minItems": 2, "maxItems": 64, "items": { "$ref": "#/$defs/businessFlowStep" } },
+        "riskIds": { "$ref": "#/$defs/idList" },
+        "decisionIds": { "$ref": "#/$defs/idList" },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
     "entityId": {
       "type": "string",
       "pattern": "^[A-Z][A-Z0-9._:-]{1,127}$"
@@ -842,9 +889,22 @@
         "name": {
           "$ref": "#/$defs/nonEmptyString"
         },
+        "displayName": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
         "order": {
           "type": "integer",
           "minimum": 0
+        },
+        "parentLayerId": {
+          "anyOf": [
+            { "$ref": "#/$defs/entityId" },
+            { "type": "null" }
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["layer", "domain", "capability", "runtime", "integration"]
         },
         "summary": {
           "type": "string"
@@ -936,6 +996,137 @@
         "extensions": {
           "$ref": "#/$defs/extensions"
         }
+      }
+    },
+    "architectureRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {
+          "enum": ["layer", "module", "connection", "module_logic_design", "logic_node", "logic_edge", "boundary_port", "resource"]
+        },
+        "id": { "$ref": "#/$defs/entityId" }
+      }
+    },
+    "moduleLogicNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "type", "purpose", "rationale", "implementationSummary", "loopExitCondition", "requirementIds", "decisionIds", "riskIds", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "type": {
+          "enum": ["input", "preprocess", "decision", "processing", "llm_call", "tool_call", "agent_call", "state_read", "state_write", "validation", "loop", "retry", "fallback", "output"]
+        },
+        "purpose": { "type": "string" },
+        "rationale": { "type": "string" },
+        "implementationSummary": { "type": "string" },
+        "loopExitCondition": {
+          "anyOf": [
+            { "type": "string", "minLength": 1 },
+            { "type": "null" }
+          ]
+        },
+        "requirementIds": { "$ref": "#/$defs/idList" },
+        "decisionIds": { "$ref": "#/$defs/idList" },
+        "riskIds": { "$ref": "#/$defs/idList" },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "loop" } } },
+          "then": { "properties": { "loopExitCondition": { "type": "string", "minLength": 1 } } }
+        },
+        {
+          "if": { "not": { "properties": { "type": { "const": "loop" } } } },
+          "then": { "properties": { "loopExitCondition": { "type": "null" } } }
+        }
+      ]
+    },
+    "moduleLogicEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromNodeId", "toNodeId", "kind", "condition", "dataSummary", "order", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "fromNodeId": { "$ref": "#/$defs/entityId" },
+        "toNodeId": { "$ref": "#/$defs/entityId" },
+        "kind": { "enum": ["flow", "conditional", "loop_back", "retry", "fallback"] },
+        "condition": { "type": "string" },
+        "dataSummary": { "type": "string" },
+        "order": {
+          "anyOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "moduleLogicBoundaryPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "direction", "internalNodeId", "externalEntityRef", "bindingKind", "bindingId", "dataSummary", "protocol", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "direction": { "enum": ["input", "output", "bidirectional"] },
+        "internalNodeId": { "$ref": "#/$defs/entityId" },
+        "externalEntityRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id"],
+          "properties": {
+            "type": { "enum": ["module", "resource"] },
+            "id": { "$ref": "#/$defs/entityId" }
+          }
+        },
+        "bindingKind": { "enum": ["connection", "resource_usage"] },
+        "bindingId": { "$ref": "#/$defs/entityId" },
+        "dataSummary": { "type": "string" },
+        "protocol": { "type": "string" },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      }
+    },
+    "moduleLogicDesign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "moduleId", "architectureScope", "name", "summary", "nodes", "edges", "boundaryPorts", "requirementIds", "decisionIds", "riskIds", "acceptanceCriteriaIds", "gateIds", "referenceIds", "extensions"],
+      "properties": {
+        "id": { "$ref": "#/$defs/entityId" },
+        "moduleId": { "$ref": "#/$defs/entityId" },
+        "architectureScope": { "enum": ["target", "historical"] },
+        "name": { "$ref": "#/$defs/nonEmptyString" },
+        "displayName": { "$ref": "#/$defs/nonEmptyString" },
+        "summary": { "type": "string" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": { "$ref": "#/$defs/moduleLogicNode" }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "$ref": "#/$defs/moduleLogicEdge" }
+        },
+        "boundaryPorts": {
+          "type": "array",
+          "maxItems": 256,
+          "items": { "$ref": "#/$defs/moduleLogicBoundaryPort" }
+        },
+        "requirementIds": { "$ref": "#/$defs/idList" },
+        "decisionIds": { "$ref": "#/$defs/idList" },
+        "riskIds": { "$ref": "#/$defs/idList" },
+        "acceptanceCriteriaIds": { "$ref": "#/$defs/idList" },
+        "gateIds": { "$ref": "#/$defs/idList" },
+        "referenceIds": { "$ref": "#/$defs/idList" },
+        "extensions": { "$ref": "#/$defs/extensions" }
       }
     },
     "moduleSource": {
@@ -1084,6 +1275,9 @@
           "$ref": "#/$defs/entityId"
         },
         "name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "displayName": {
           "$ref": "#/$defs/nonEmptyString"
         },
         "layerId": {
@@ -1550,6 +1744,13 @@
             "$ref": "#/$defs/connection"
           }
         },
+        "moduleLogicDesigns": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/moduleLogicDesign"
+          }
+        },
         "transitions": {
           "type": "array",
           "items": {
@@ -1742,6 +1943,13 @@
         },
         "moduleIds": {
           "$ref": "#/$defs/idList"
+        },
+        "relatedArchitectureRefs": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/architectureRef"
+          }
         },
         "requirementIds": {
           "$ref": "#/$defs/idList"
@@ -1951,6 +2159,13 @@
         "relatedModuleIds": {
           "$ref": "#/$defs/idList"
         },
+        "relatedArchitectureRefs": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/architectureRef"
+          }
+        },
         "relatedRequirementIds": {
           "$ref": "#/$defs/idList"
         },
@@ -2109,6 +2324,13 @@
         },
         "relatedModuleIds": {
           "$ref": "#/$defs/idList"
+        },
+        "relatedArchitectureRefs": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/architectureRef"
+          }
         },
         "relatedRequirementIds": {
           "$ref": "#/$defs/idList"

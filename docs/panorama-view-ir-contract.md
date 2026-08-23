@@ -1,6 +1,6 @@
 # Panorama View IR Contract v0.1
 
-状态：Implementation Slice D；已实现 Module、Dependency/Data Flow、Deployment/Runtime、Event Views
+状态：V0.6 顶层 Views 与 V0.81 发布的 `module_logic` 父子 Model/View 编译链、统一 Canvas Runtime 已完成
 
 对应 Finding：SF-34～SF-36、SF-41～SF-43、SF-46～SF-48
 
@@ -73,6 +73,16 @@ python scripts/compile_panorama_view_ir.py project.model-ir.json `
 python scripts/compile_panorama_view_ir.py project.event.model-ir.json `
   --profile sequence --correlation-id CORR-ID `
   --output .panorama-work/views/project.sequence.view-ir.json
+
+python scripts/compile_panorama_model_ir.py project.panorama.json `
+  --module-logic-observation project.orchestrator.module-logic.json `
+  --output .panorama-work/views/project.module-logic.model-ir.json
+
+python scripts/compile_panorama_view_ir.py project.module-logic.model-ir.json `
+  --profile module_logic --scope current `
+  --root-module MOD-ORCHESTRATOR `
+  --parent-view .panorama-work/views/project.current.module.view-ir.json `
+  --output .panorama-work/views/project.orchestrator.current.module-logic.view-ir.json
 ```
 
 输出已存在时默认停止。当前命令仍只生成 JSON Candidate，不生成 HTML、不替换 last-good，也不表示人工视觉通过。
@@ -80,3 +90,29 @@ python scripts/compile_panorama_view_ir.py project.event.model-ir.json `
 多个 single-scope View 的顺序与导航组合见
 [Panorama Guided View Set Contract](panorama-view-set-contract.md)。View Set 不能复制或改写本合同定义的
 Node/Edge/Group/Layout/Evidence。
+
+## 7. V0.8 Module Logic 子画布投影
+
+`module_logic` 是嵌套子画布 Profile，不得作为第七个顶层 Tab。它必须同时绑定：
+
+- `rootModuleId`：当前展开的正式 Module；
+- `parentViewBinding`：父架构 View ID 和 Semantic Hash；
+- `moduleLogicBinding`：二选一绑定当前 `module-logic-observation` 或正式 Target Design，禁止混合两者。
+
+子画布内部 Node/Edge 只来自该 Binding。Boundary Port 通过 `port_binding|resource_usage` 关系连到复用
+正式身份的外部 Module/Resource 紧凑 Node；外部 Node 不得携带对方的内部逻辑实体。旧 Observation、
+父 View Hash 或 Module Digest 不匹配时 fail closed，不按名称猜测对齐。
+
+Model IR 的 `moduleLogicBindings[]` 是子画布唯一索引。Current 接受两类已校验 Observation：
+
+- `complete/current`：完整当前归纳；
+- `partial/recorded_as_of`：局部、按时点记录的只读归纳，Binding 必须显式携带 `coverage`、
+  `sourceCoverage`、`currentness`，View 必须保留 Information Gap。
+
+`stale|unknown` Observation 失败关闭。Target/Historical 只接受正式 `architecture.moduleLogicDesigns[]`。
+同一 Module/Scope 多个绑定、父 View Scope 不一致、Root Module 未在父 View 中或外部端点不是正式
+Module/Resource 时，编译器必须停止。
+
+`module_logic` 不是 Guided View Set 顶层章节。Renderer 通过它的 `parentViewBinding` 和
+`extensions.navigation.enterGesture=double_click_module` 建立主子导航；该字段只是确定性交互契约，
+不代表 WP4 Canvas Runtime 已实现。

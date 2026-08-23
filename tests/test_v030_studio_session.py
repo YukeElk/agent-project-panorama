@@ -111,6 +111,9 @@ def test_candidate_semantic_diff_aligns_by_reference_and_excludes_layout(
         "edgesAdded": 0,
         "edgesRemoved": 0,
         "edgesModified": 0,
+        "moduleLogicCanvasesAdded": 0,
+        "moduleLogicCanvasesRemoved": 0,
+        "moduleLogicCanvasesModified": 0,
     }
     changed_fields = {
         item["field"] for item in result["nodes"]["modified"][0]["fields"]

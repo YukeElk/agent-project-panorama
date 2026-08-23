@@ -15,6 +15,7 @@ from panorama_view_ir import (
     compile_deployment_runtime_view_ir,
     compile_evolution_risk_view_ir,
     compile_lifecycle_view_ir,
+    compile_module_logic_view_ir,
     compile_module_view_ir,
     compile_sequence_view_ir,
 )
@@ -29,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         choices=[
             "module",
+            "module_logic",
             "dependency_dataflow",
             "deployment_runtime",
             "sequence",
@@ -49,6 +51,15 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         dest="root_entity_ids",
         help="Dependency/Data Flow 精确根实体；可重复指定",
+    )
+    parser.add_argument(
+        "--root-module",
+        help="Module Logic 子画布的正式 Root Module ID",
+    )
+    parser.add_argument(
+        "--parent-view",
+        type=Path,
+        help="Module Logic 子画布绑定的 module 架构父 View IR",
     )
     parser.add_argument(
         "--max-depth",
@@ -94,6 +105,12 @@ def main(argv: list[str] | None = None) -> int:
             else "current"
         )
         common = {"architecture_scopes": args.scopes or [default_scope]}
+        if args.profile != "module_logic" and (
+            args.root_module or args.parent_view is not None
+        ):
+            raise PanoramaViewIRError(
+                "--root-module/--parent-view 只适用于 module_logic profile。"
+            )
         if args.profile == "module":
             if (
                 args.root_entity_ids
@@ -101,9 +118,35 @@ def main(argv: list[str] | None = None) -> int:
                 or args.max_nodes is not None
                 or args.environments
                 or args.correlation_ids
+                or args.root_module
+                or args.parent_view
             ):
                 raise PanoramaViewIRError("module profile 不接受 focus/environment 参数。")
             view = compile_module_view_ir(model, **common)
+        elif args.profile == "module_logic":
+            if (
+                args.root_entity_ids
+                or args.max_depth is not None
+                or args.max_nodes is not None
+                or args.environments
+                or args.correlation_ids
+            ):
+                raise PanoramaViewIRError(
+                    "module_logic profile 不接受 focus/environment/correlation 参数。"
+                )
+            if not args.root_module or args.parent_view is None:
+                raise PanoramaViewIRError(
+                    "module_logic profile 必须同时提供 --root-module 与 --parent-view。"
+                )
+            parent_view = json.loads(args.parent_view.read_text(encoding="utf-8"))
+            if not isinstance(parent_view, dict):
+                raise PanoramaViewIRError("父 View IR 输入必须是 JSON 对象。")
+            view = compile_module_logic_view_ir(
+                model,
+                parent_view=parent_view,
+                root_module_id=args.root_module,
+                **common,
+            )
         elif args.profile == "dependency_dataflow":
             if args.environments:
                 raise PanoramaViewIRError(

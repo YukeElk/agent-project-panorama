@@ -649,3 +649,102 @@
   Delivery 传递 Hash Binding。受控项目生成 17 Story / 48 Step，四档桌面与 360/736px 交互无 Console/Geometry/
   Overflow Error；PetClinic、Backstage 与治理型/Event 型确定性 Fixture 共同关闭五 Case 机器门禁。精确代表
   Artifact SHA-256 `fd47f081eb15c00cb2bf59cea7f4bcda80715e74eae9dd047852c3a319a48e38` 仍等待独立人工接受。
+
+## SF-58 讲解页面不能替代正式全景的信息架构
+
+- 证据：V0.7 首版候选把独立 `panorama-multi-view-renderer` 呈现为新版完整全景；Core 事实仍在，但控制台、系统、
+  演进、Evidence Inspector 与 Architecture Studio 不可达，五个空章节还会残留上一章节 Drawer。
+- 影响：这是展示层信息覆盖和功能回归；用户会把“当前 View 没有节点”误解为项目没有事实，也无法继续架构设计。
+- 修复：V0.7 Guided Viewer 改为正式 Panorama Renderer 0.4.0 内嵌 Dialog，保留三主视图和 Studio。章节/空视图/
+  无效 Deep Link 统一清空选择；V0.6 无 Explain Pack 模式仍维持 standalone 兼容。
+
+## SF-59 概览式文案不能满足节点、风险、决策和持续演进讲解
+
+- 证据：首版 View Story 只说明“如何阅读”和聚合数量，没有覆盖全部节点职责；Risk 没有独立 Story，Decision
+  没有展开为什么需要决策与不同选项可能结果；界面还以英文枚举和 Enter 提示为主。
+- 影响：图可交互但无法解释“这个节点是什么、为什么有风险、怎么应对、为何要决策”；固定文案也会在项目进展后
+  变成过期结论。
+- 修复：每个 View Story 增加整图、关键关系、逐节点职责/状态、证据/时效与缺口；新增五步 Risk Story，并扩展
+  Decision Option 细节与结果。节点单击为主路径，扫描层中文化；Core/Event/Model/View 任一绑定变化都必须重新
+  编译 Explain Pack，旧 Revision/Object Digest/Hash 验证失败关闭，离线浏览器不得自由补事实。
+
+## SF-60 iframe/Dialog 宿主仍不等于体验集成
+
+- 证据：V0.7 维护版虽然保留正式 Panorama，但讲解仍通过 data URL iframe 和 Modal 打开，形成双导航、双画布和
+  独立上下文。
+- 影响：讲解仍被理解为附加功能，无法与全景查看和 Studio 形成连续工作流；空视图和选择状态也更容易残留。
+- V0.8 决策：Explain Pack 以原生 Shadow DOM 组件挂载到 System 页内 `全景讲解` 模式；禁止 iframe、data URL
+  和讲解 Modal。视图切换必须清空节点、Story 和播放上下文。
+
+## SF-61 字段堆叠不能表达模块设计逻辑
+
+- 证据：旧 Drawer 同时展开 Current/Target、职责、来源、治理、代码、部署和 Trace，信息完整但不能回答“为什么
+  这样设计、承担什么角色、怎样与其他模块交互”。
+- 影响：关键词聚合造成认知过载，用户难以从需求走到设计原因、功能、角色、交互和技术选型。
+- V0.8 决策：模块讲解和正式 Drawer 统一使用七段设计逻辑链；默认渐进展开，所有原始治理和证据信息保留在深入层。
+
+## SF-62 静态数据流不能提升为业务执行轨迹
+
+- 证据：Connection 只证明模块间存在声明关系，没有业务触发、顺序、结果和失败/补偿语义。
+- 影响：按拓扑自动播放会把设计关系伪装成真实业务调用，破坏 Runtime 与 Declared 边界。
+- V0.8 决策：新增显式 Business Flow 与确定性 Playback Scenario；每一步绑定 Module 和入站 Connection，校验方向、
+  范围和顺序。播放有限且由用户启动，Viewer State 不进入语义 Hash。
+
+## SF-63 固定层带不是可设计的架构画布
+
+- 证据：原 Studio 只允许模块在预定义 Layer 间移动，Layer 本身不能新增、重命名、排序或表达父子层级。
+- 影响：无法自由划分系统层级与功能区，候选方案对架构边界的表达能力不足。
+- V0.8 决策：Layer 进入 Candidate Semantic，支持新增、重命名、排序、父子关系和安全删除；循环、悬空引用和删除
+  仍含模块/子层的层级必须失败。坐标和显示高度继续只属于 Layout。
+
+## SF-64 Current 模块内部逻辑不能作为无源码绑定的正式 Core 事实
+
+- 证据：现有 Module Core 只描述职责、接口、技术与部署摘要，无法表达预处理、LLM/Tool 调用、Loop/
+  Retry/Fallback、状态读写和输入/输出边界；直接把 AI 归纳写入 Core 会丢失 Git/Content Digest、
+  Evidence、Coverage 和生产者版本的时效性边界。
+- 影响：用户会把可过期的源码归纳误读为已批准设计，Source Drift 后无法 fail closed，也无法区分
+  Current Observation 与 Target Design。
+- V0.8 决策：新增 `module-logic-observation.v0.1` 只读 Sidecar。Current 固定为
+  `derived/inferred`，绑定 Panorama Revision/Data Hash、Module Digest、Source Hash、Evidence Pin、Coverage、
+  Information Gap 与确定性 Semantic Hash；源码正文、Prompt 和模型输出不持久化。
+
+## SF-65 Target 内部逻辑与工作/风险/决策缺少稳定的精确关联对象
+
+- 证据：现有 WorkItem、Risk 和 Decision 最细只能关联 Module，无法表达“正在实现哪个模块内部
+  处理节点”、“风险位于哪个边界端口”或“决策改变哪条内部路径”；名称、坐标或 DOM 顺序都
+  不是可治理身份。
+- 影响：进度、风险和待决策项只能在主画布做粗粒度高亮，子画布讲解无法精确对应；重新布局
+  还可能改变错误的“关联”。
+- V0.8 决策：Core 以向后兼容可选字段新增 `architecture.moduleLogicDesigns[]` 和
+  `relatedArchitectureRefs[]`。Logic Design/Node/Edge/Boundary Port 使用全局唯一 ID，跨边界交互必须精确
+  绑定正式 Connection 或 Resource Usage。Current Observation Node 不得被 Core 引用。
+
+## SF-66 查看、讲解和 Studio 的并行图形运行时无法保证同一设计对象
+
+- 证据：V0.8 旧候选把查看、Studio 和讲解作为三个切换表面，讲解画布重新布局了另一组节点；
+  架构主画布与模块内部逻辑也被当作并列 View，不存在稳定的父子导航与相机恢复。
+- 影响：讲解高亮、节点详情、进度、风险和动效不能与用户正在阅读的架构一一对应；滚动条还代替了
+  画布平移，模式切换会丢失选择和上下文。
+- V0.8 决策：收敛为唯一 Canvas Runtime、`read|edit` 两种模式与
+  `architecture|module_logic(moduleId)` 两级语义场景。讲解、进度、风险/决策、证据和播放只是原场景的镜片；
+  主画布双击模块进入子画布，外部引用只显示紧凑的正式 Module/Resource 身份。
+
+## SF-67 Requirement 快照与 Architecture Delta 不能表达需求演进
+
+- 证据：Requirement 只有定义/实现状态、Module、目标 Release 和 Acceptance 引用，没有直接 Stage、Layer、
+  Architecture Version、Transition 或历史 realization；Architecture Version 只有 Delta，不能独立重建完整架构。
+- 影响：把完整 Requirement 库放在控制台只能说明“现在是什么”，不能回答需求处于哪个阶段、由哪些 AI 工作推进、
+  影响哪些层级/模块、为何跨版本重构及是否完成验证/部署；把 Trace JSON Pointer 直接铺在详情中又会淹没人类判断链。
+- V0.8 P0：不修改 Schema，只从 WorkItem、Release、Module、Transition 的精确 ID 链生成显式标注的只读推导；
+  控制台改为当前阶段决策摘要，完整需求演进板进入演进页，原始 Trace 默认折叠为技术诊断。
+- P1 计划：新增稳定身份的 Requirement Realization，并为 Architecture Version 增加不可变完整 Snapshot 或可确定性
+  物化的 Baseline + Delta Chain。完成前 Renderer 必须披露“完整架构快照不可重建”，不得把版本迁移链提升为完整架构。
+
+## SF-68 发布审批不应要求用户复述机器标识
+
+- 证据：发布候选已经唯一冻结且用户已明确说“批准发布为0.81”，流程仍要求复制完整 PVD 与 SHA-256 再批准一次。
+- 影响：同一风险边界形成两次人工门禁，把系统应承担的精确审计绑定转嫁给用户，也容易因复制错误制造无意义阻塞。
+- V0.81 决策：外部发布仍只允许一次人工 Decision Gate；若上下文中只有一个已展示/选中的 immutable Candidate，
+  “批准发布”或“批准发布为某版本”即有效，Recorder 自动保存 PVD、Artifact Hash、Bytes、版本、原文和时间。多个候选、
+  候选变化、版本歧义或未披露重大风险才重新确认。INIT、Studio Proposal、Approval Policy 与 Verification Receipt 的
+  精确 Hash 事务输入规则保持不变。

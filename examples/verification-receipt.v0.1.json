@@ -4,7 +4,7 @@
   "projectBinding": {
     "projectId": "PRJ-MARW",
     "panoramaRevision": 3,
-    "panoramaDataHash": "bce7b8ee51209399a117d54bffc62ca480ef866beda4b78305555200720c3b5f",
+    "panoramaDataHash": "8618ea505c11934abf48851ec998e09c9b7591a01d869dc64a95d70383c580c5",
     "gitHead": null,
     "sourceSnapshotHash": null,
     "environment": "test"
@@ -13,7 +13,7 @@
     "name": "external-verification-adapter",
     "version": "1.0.0",
     "generatedAt": "2026-08-13T14:00:00Z",
-    "receiptHash": "0edcbb361fa02294bee7c9221c52d5e562ffb65435204d3a5f2b9ce34b7f10e6"
+    "receiptHash": "4cfe4485a8fd607d482b517fa571a80d74a64fcba1fc00c10be5a27576fdb4bb"
   },
   "verifications": [
     {

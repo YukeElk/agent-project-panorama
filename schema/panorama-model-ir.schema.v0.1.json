@@ -44,6 +44,11 @@
       "maxItems": 500000,
       "items": {"$ref": "#/$defs/relation"}
     },
+    "moduleLogicBindings": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {"$ref": "#/$defs/moduleLogicBinding"}
+    },
     "informationGaps": {
       "type": "array",
       "maxItems": 10000,
@@ -204,6 +209,8 @@
       "properties": {
         "id": {"$ref": "#/$defs/stableId"},
         "name": {"type": "string", "minLength": 1, "maxLength": 256},
+        "displayLabel": {"type": "string", "minLength": 1, "maxLength": 512},
+        "technicalLabel": {"type": "string", "minLength": 1, "maxLength": 512},
         "order": {"type": "integer"},
         "summary": {"type": "string", "maxLength": 2048},
         "evidencePins": {
@@ -213,6 +220,37 @@
           "items": {"$ref": "#/$defs/evidencePin"}
         }
       }
+    },
+    "moduleLogicBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+            "required": ["source", "moduleId", "architectureScope", "observationId", "semanticHash", "coverage", "sourceCoverage", "currentness"],
+            "properties": {
+              "source": {"const": "current_observation"},
+              "moduleId": {"$ref": "#/$defs/stableId"},
+              "architectureScope": {"const": "current"},
+              "observationId": {"type": "string", "pattern": "^MLO-[A-F0-9]{24}$"},
+              "semanticHash": {"$ref": "#/$defs/sha256"},
+              "coverage": {"enum": ["complete", "partial"]},
+              "sourceCoverage": {"enum": ["complete", "partial"]},
+              "currentness": {"enum": ["current", "recorded_as_of"]}
+            }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "moduleId", "architectureScope", "designId", "designDigest"],
+          "properties": {
+            "source": {"const": "formal_design"},
+            "moduleId": {"$ref": "#/$defs/stableId"},
+            "architectureScope": {"enum": ["target", "historical"]},
+            "designId": {"$ref": "#/$defs/stableId"},
+            "designDigest": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
     },
     "entity": {
       "type": "object",
@@ -241,11 +279,15 @@
             "release",
             "data_store",
             "actor",
+            "module_logic_node",
+            "boundary_port",
             "source_element",
             "unknown"
           ]
         },
         "name": {"type": "string", "minLength": 1, "maxLength": 512},
+        "displayLabel": {"type": "string", "minLength": 1, "maxLength": 512},
+        "technicalLabel": {"type": "string", "minLength": 1, "maxLength": 512},
         "layerBindings": {"$ref": "#/$defs/layerBindings"},
         "architectureScopes": {"$ref": "#/$defs/architectureScopes"},
         "purpose": {"type": "string", "maxLength": 4096},
@@ -318,6 +360,9 @@
             "runtime_call",
             "sequence_message",
             "state_transition",
+            "logic_flow",
+            "port_binding",
+            "resource_usage",
             "trace",
             "unknown"
           ]

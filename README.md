@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.7.0（V0.6 Compatible）
+# Agent Project Panorama V0.81 父子语义画布（V0.7 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -66,12 +66,32 @@ V0.5.0 已发布 `Foundation Slice A + Approval Policy Core + opt-in Proposal/Ap
 外推为已经实现。完整 V0.6.0 规划与边界见
 [`docs/v0.6-multi-view-architecture-panorama-iteration-plan.md`](docs/v0.6-multi-view-architecture-panorama-iteration-plan.md)。
 
-V0.7.0 新增 `panorama-explain-pack.v0.1`：它把六类 View、Decision、Architecture Transition、
+V0.7.0 新增 `panorama-explain-pack.v0.1`：它把六类 View、Decision、Risk、Architecture Transition、
 Evidence/Freshness/Information Gap 与 Requirement→Acceptance/Gate 验证链编译为逐步讲解；同一个
-Explain Pack 同时驱动 Codex 对话内 Fragment、Markdown 降级和离线全景原生 Dialog。该能力不修改
+Explain Pack 同时驱动 Codex 对话内 Fragment、Markdown 降级和离线全景原生讲解画布。该能力不修改
 Panorama Core、Model/View IR 枚举或治理审批边界，也不把 `visualize` 插件源码、缓存路径或资源复制进 Skill。
 设计与事实边界见 [`docs/v0.7-design-closure.md`](docs/v0.7-design-closure.md) 和
 [`docs/panorama-explain-pack-contract.md`](docs/panorama-explain-pack-contract.md)。
+
+V0.81 发布批准的父子语义画布方案：只保留一套 Canvas Runtime 和 `read|edit` 两种模式，讲解、进度、
+风险/决策、证据与轨迹是原场景的镜片。主画布双击 Module 进入其内部逻辑子画布；Current 来自源码绑定的
+只读 Observation，Target 来自隔离 Candidate/正式 Design。WP0–WP8 已实现数据合同、有界源码归纳、父子
+Model/View 编译、自由平移缩放、父相机恢复、隔离 Target Candidate 编辑、完整讲解链、业务流动效和中文主扫描层。
+
+V0.81 同时关闭验收后发现的三个编辑缺陷：已有模块可编辑，拖动后连线实时重算，跨层拖动会吸附并更新候选层级归属；
+并把控制台收敛为阶段决策驾驶舱，把完整需求及其阶段、模块、版本迁移和交付证据链迁入演进页。代表制品为
+`PVD-2E32A984B6355D411AF96825` / `b1d28b90a964d3b8ac647617bcc2bedaef98e714f04320ca67120612043efc52`。
+用户已通过普通自然语言“批准发布”接受唯一冻结候选，系统自动绑定内部审计标识，不要求用户复述 PVD/Hash。
+本轮没有新的 Browser Evidence，Machine Receipt 如实保留 `browser.status=not_provided` 与
+`visualReview=pending`；该边界不被人工批准冒充。发布审核见
+[`docs/v0.81-release-audit.md`](docs/v0.81-release-audit.md)。
+设计闭合与契约见
+[`docs/v0.8-design-closure.md`](docs/v0.8-design-closure.md)、
+[`docs/module-logic-observation-contract.md`](docs/module-logic-observation-contract.md)、
+[`docs/module-logic-design-contract.md`](docs/module-logic-design-contract.md)、
+[`docs/panorama-business-flow-contract.md`](docs/panorama-business-flow-contract.md) 和
+[`docs/v0.8-unified-canvas-flow-iteration-plan.md`](docs/v0.8-unified-canvas-flow-iteration-plan.md)。当前实现验证见
+[`docs/v0.8-implementation-validation.md`](docs/v0.8-implementation-validation.md)。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
 
@@ -114,7 +134,7 @@ Capture Adapter、Redaction 执行器和 Dataset Export 不得被描述为可用
 
 V0.5 已完成审批门禁设计闭合并实现 Policy Core。合同将门禁分为 Decision、Delegated Policy、
 Automatic Quality 和 Read-only 四类：治理语义、Policy 自身、外部发布/导出、Hook、风险豁免和破坏性删除
-继续逐次精确批准；只读分析与自动质量检查不需要批准；Receipt Evidence、准确命令、Event Append、确定性
+继续逐次批准；外部发布只有一个冻结候选时，普通“批准发布”即足够，由 Recorder 自动绑定精确 PVD/Hash；只读分析与自动质量检查不需要批准；Receipt Evidence、准确命令、Event Append、确定性
 Head Recovery、本地 last-good 和 fact-only 更新可在一次性批准的单 Operation Policy 内重复执行。
 
 Policy 生命周期示例：
@@ -281,7 +301,7 @@ python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLIC
 python scripts/promote_verified_delivery.py path/to/project <DELIVERY-ID> <POLICY-ID>
 ```
 
-## V0.7.0 Guided Visual Explanation
+## V0.7–V0.8 Guided Visual Explanation
 
 Explain Pack 编译是只读 Automatic Quality Gate，不需要新增人工审批：
 
@@ -312,8 +332,11 @@ python scripts/render_codex_explainer.py project-panorama.local.html `
   --markdown-output <THREAD-VISUALIZATION-DIR>/panorama-guided-explanation.md
 ```
 
-离线多视图候选使用同一个包显示“讲解”弹窗；`--panorama` 与 `--explain-pack` 必须成对出现。无 Explain Pack
-时继续生成 V0.6 兼容 Bundle：
+离线候选必须在正式 Panorama Renderer 的唯一 Canvas Runtime 内消费同一个 Explain Pack；讲解是阅读镜片，不再拥有独立
+画布、Tab 或页面。控制台、系统、演进和 Evidence Inspector 继续保留，不使用 iframe、data URL 或并行页面。节点以单击为主路径打开详情；View Story 按整图、关系路径、
+逐节点职责/状态、证据和未知项讲解，Risk Story 覆盖成因、影响、应对措施和跟踪，Decision Story 覆盖为什么需要
+决策、选项细节及可能结果。`--panorama` 与 `--explain-pack` 必须成对出现。无 Explain Pack 时继续生成 V0.6
+兼容 Bundle：
 
 ```powershell
 python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.json `
@@ -324,13 +347,28 @@ python scripts/render_panorama_views.py .panorama-work/views/project.model-ir.js
   --output .panorama-work/views/project.guided.html
 ```
 
+Explain Pack 是编译产物，不是脱离项目事实的常驻文案。每次 Panorama Revision/Data Hash、Model、View Set、
+任一 View 或 Event 投影发生变化，都必须先重编译上游 IR 与 Explain Pack，再生成候选；旧包在绑定校验时失败关闭。
 两个呈现面必须绑定同一 `explainPackId` 与 Semantic Hash；任何 Core Pointer/Digest、Project/Model/View Set/View
 绑定或包 Hash 漂移都失败关闭。Verified Delivery 可以携带 Explain Pack，但机器 Evidence 仍保持
 `visualReview=pending`，不能冒充对精确候选字节的人工接受。
 
+V0.8 可从 Core 中显式声明 `businessFlows`。每个步骤必须绑定真实 Module，并从第二步开始绑定一条能够连接
+前后 Module 的 Connection；Explain Pack 将其确定性编译为 `playbackScenarios`。业务流程演示只在用户点击播放后
+沿这些已绑定节点和边运行，支持暂停、重新开始、速度与静止模式；不得根据屏幕邻近、名称相似或自由文本猜测路径。
+系统减少动态、页面隐藏或打印时必须停用无限动画。风险、决策、证据缺口仍由相同 Explain Pack 驱动并随上游事实重编译。
+
 可直接离线打开的受控 V0.7 示例见
 [`examples/v0.7-guided-explanation-orders.html`](examples/v0.7-guided-explanation-orders.html)；其精确 Candidate
 与人工视觉接受记录见 [`docs/v0.7-human-visual-acceptance.md`](docs/v0.7-human-visual-acceptance.md)。
+
+V0.81 发布参考制品见
+[`examples/v0.8-unified-canvas-reference.html`](examples/v0.8-unified-canvas-reference.html)，与
+`PVD-2E32A984B6355D411AF96825` 逐字节一致。历史 V0.8 身份只保留在审计记录中作为回归基线。
+V0.81 修复候选的发布身份、自动门禁、Browser Evidence 缺口和普通自然语言人工批准见
+[`docs/v0.81-release-audit.md`](docs/v0.81-release-audit.md)、
+[`docs/v0.81-human-release-acceptance.md`](docs/v0.81-human-release-acceptance.md) 与
+[`docs/v0.81-release-notes.md`](docs/v0.81-release-notes.md)。
 
 为普通 Studio Proposal 启用事件双写：
 
@@ -688,7 +726,7 @@ Revision/Data Hash、可选 Source Binding、Schema、跨引用、Presentation H
 
 ## Architecture Studio
 
-进入 `系统 → 逻辑架构`，使用右侧的 `全景查看 / 架构设计 Studio` 开关。直接打开 HTML 时
+进入 `系统 → 逻辑架构`，在同一画布中使用 `阅读 / 编辑` 模式开关。直接打开 HTML 时
 使用离线模式，CSP 保持 `connect-src 'none'`；启动本机 Bridge 后，页面可进入完整治理闭环：
 
 ```powershell
@@ -713,6 +751,8 @@ python scripts/studio_bridge.py project-panorama.local.html `
 Studio 支持：
 
 - 从正式 Target（无 Target 时回退到现有架构）建立隔离草稿；
+- 在候选内增加、重命名、设置父级、排序和受约束删除层级/功能区；层级语义参与 Candidate Semantic Hash，
+  `layoutHeight`、折叠与选中状态不参与，正式化时写入 `architecture.layers`；
 - 选择、拖动、增加和删除草稿节点；
 - 编辑名称、用途、架构层、职责与状态所有权；
 - 增加和移除草稿数据流；

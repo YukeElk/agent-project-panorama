@@ -16,7 +16,13 @@ from jsonschema import Draft202012Validator, FormatChecker
 import event_store
 from panorama_io import atomic_write, compute_canonical_hash
 from panorama_view_ir import PanoramaViewIRError
-from render_panorama_views import TEMPLATE, build_bundle, render_html
+from render_panorama_views import (
+    GUIDED_HOST_TEMPLATE,
+    PANORAMA_TEMPLATE,
+    TEMPLATE,
+    build_bundle,
+    render_html,
+)
 from validate_panorama_renderer_geometry import validate_candidate as validate_geometry
 
 
@@ -224,14 +230,29 @@ def _write_once(path: Path, value: bytes) -> bool:
     return True
 
 
-def _template_security_check() -> None:
-    template = TEMPLATE.read_text(encoding="utf-8")
-    required = ["connect-src 'none'", "default-src 'none'", "font-src 'none'"]
-    if any(item not in template for item in required):
-        raise VerifiedDeliveryError("Renderer Template 缺少 fail-closed CSP。")
-    lowered = template.lower()
-    if "http://" in lowered or "https://" in lowered or "<script src=" in lowered:
-        raise VerifiedDeliveryError("Renderer Template 含远程 URL 或外部 Script。")
+def _template_security_check(*, integrated: bool) -> None:
+    templates = [TEMPLATE]
+    if integrated:
+        templates.extend([PANORAMA_TEMPLATE, GUIDED_HOST_TEMPLATE])
+    for path in templates:
+        template = path.read_text(encoding="utf-8")
+        required: list[str] = []
+        if path == TEMPLATE:
+            required.extend(
+                [
+                    "connect-src 'none'",
+                    "object-src 'none'",
+                    "default-src 'none'",
+                    "font-src 'none'",
+                ]
+            )
+        elif path == PANORAMA_TEMPLATE:
+            required.extend(["connect-src 'none'", "object-src 'none'"])
+        if any(item not in template for item in required):
+            raise VerifiedDeliveryError(f"Renderer Template 缺少 fail-closed CSP：{path.name}")
+        lowered = template.lower()
+        if "http://" in lowered or "https://" in lowered or "<script src=" in lowered:
+            raise VerifiedDeliveryError(f"Renderer Template 含远程 URL 或外部 Script：{path.name}")
 
 
 def prepare_delivery(
@@ -239,6 +260,7 @@ def prepare_delivery(
     model: dict[str, Any],
     views: list[dict[str, Any]],
     *,
+    child_views: list[dict[str, Any]] | None = None,
     view_set: dict[str, Any] | None = None,
     explain_pack: dict[str, Any] | None = None,
     panorama: dict[str, Any] | None = None,
@@ -252,21 +274,24 @@ def prepare_delivery(
         bundle = build_bundle(
             model,
             views,
+            child_views=child_views,
             view_set=view_set,
             explain_pack=explain_pack,
             panorama=panorama,
         )
-        geometry = validate_geometry(model, bundle["views"])
+        geometry = validate_geometry(
+            model, [*bundle["views"], *bundle.get("childViews", [])]
+        )
     except PanoramaViewIRError as exc:
         raise VerifiedDeliveryError(str(exc)) from exc
     if geometry["status"] != "passed":
         raise VerifiedDeliveryError("Geometry Gate 未通过。")
-    _template_security_check()
+    _template_security_check(integrated=explain_pack is not None)
     try:
         event_store._validate_redaction(bundle)
     except event_store.EventStoreError as exc:
         raise VerifiedDeliveryError(f"Privacy/Redaction Gate 未通过：{exc}") from exc
-    html = render_html(bundle)
+    html = render_html(bundle, panorama=panorama)
     artifact = html.encode("utf-8")
     artifact_hash = _sha256_bytes(artifact)
     evidence_hash = None

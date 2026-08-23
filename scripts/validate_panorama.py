@@ -24,6 +24,7 @@ ENTITY_REF_TYPES = {
     "layer",
     "module",
     "connection",
+    "business_flow",
     "transition",
     "stage",
     "work_item",
@@ -221,6 +222,7 @@ def _path(parts: Iterable[Any]) -> str:
 
 
 def build_registry(data: dict[str, Any], report: ValidationReport) -> EntityRegistry:
+    module_logic_designs = _architecture_items(data, "moduleLogicDesigns")
     collections: dict[str, list[dict[str, Any]]] = {
         "project": [data.get("project", {})],
         "requirement": _items(data, "requirements"),
@@ -229,6 +231,26 @@ def build_registry(data: dict[str, Any], report: ValidationReport) -> EntityRegi
         "architecture_version": _architecture_items(data, "versions"),
         "module": _architecture_items(data, "modules"),
         "connection": _architecture_items(data, "connections"),
+        "module_logic_design": module_logic_designs,
+        "logic_node": [
+            node
+            for design in module_logic_designs
+            for node in design.get("nodes", [])
+            if isinstance(node, dict)
+        ],
+        "logic_edge": [
+            edge
+            for design in module_logic_designs
+            for edge in design.get("edges", [])
+            if isinstance(edge, dict)
+        ],
+        "boundary_port": [
+            port
+            for design in module_logic_designs
+            for port in design.get("boundaryPorts", [])
+            if isinstance(port, dict)
+        ],
+        "business_flow": _items(data, "businessFlows"),
         "transition": _architecture_items(data, "transitions"),
         "stage": _items(data, "stages"),
         "work_item": _items(data, "workItems"),
@@ -366,6 +388,34 @@ def validate_cross_references(
                 continue
             require(ref.get("id"), entity_type, f"{owner_path}/{index}/id")
 
+    architecture_ref_types = {
+        "layer": "layer",
+        "module": "module",
+        "connection": "connection",
+        "module_logic_design": "module_logic_design",
+        "logic_node": "logic_node",
+        "logic_edge": "logic_edge",
+        "boundary_port": "boundary_port",
+        "resource": "resource",
+    }
+
+    def require_architecture_refs(refs: Any, owner_path: str) -> None:
+        if not isinstance(refs, list):
+            return
+        for index, ref in enumerate(refs):
+            if not isinstance(ref, dict):
+                continue
+            ref_type = ref.get("type")
+            entity_type = architecture_ref_types.get(ref_type)
+            if entity_type is None:
+                report.error(
+                    "BROKEN_ARCHITECTURE_REF",
+                    f"不支持的 Architecture Ref 类型：{ref_type!r}。",
+                    f"{owner_path}/{index}/type",
+                )
+                continue
+            require(ref.get("id"), entity_type, f"{owner_path}/{index}/id")
+
     meta = data.get("meta", {})
     require(
         meta.get("latestUpdateBatchId"),
@@ -437,6 +487,27 @@ def validate_cross_references(
         require(version.get("reviewId"), "review", f"{base}/reviewId", optional=True)
         require_many(version.get("referenceIds"), "reference", f"{base}/referenceIds")
 
+    layer_parent: dict[str, str] = {}
+    for index, layer in enumerate(_architecture_items(data, "layers")):
+        base = f"/architecture/layers/{index}"
+        parent_id = layer.get("parentLayerId")
+        require(parent_id, "layer", f"{base}/parentLayerId", optional=True)
+        if isinstance(parent_id, str):
+            layer_parent[layer.get("id")] = parent_id
+    for layer_id in sorted(layer_parent):
+        visited: set[str] = set()
+        current = layer_id
+        while current in layer_parent:
+            if current in visited:
+                report.error(
+                    "LAYER_HIERARCHY_CYCLE",
+                    f"架构层级从 {layer_id} 开始形成循环，无法确定父子层级。",
+                    "/architecture/layers",
+                )
+                break
+            visited.add(current)
+            current = layer_parent[current]
+
     for index, module in enumerate(_architecture_items(data, "modules")):
         base = f"/architecture/modules/{index}"
         require(module.get("layerId"), "layer", f"{base}/layerId")
@@ -471,6 +542,289 @@ def validate_cross_references(
         require(connection.get("toModuleId"), "module", f"{base}/toModuleId")
         require_many(connection.get("contractReferenceIds"), "reference", f"{base}/contractReferenceIds")
         require(connection.get("transitionId"), "transition", f"{base}/transitionId", optional=True)
+
+    design_keys: dict[tuple[str, str], str] = {}
+    for design_index, design in enumerate(
+        _architecture_items(data, "moduleLogicDesigns")
+    ):
+        base = f"/architecture/moduleLogicDesigns/{design_index}"
+        module_id = design.get("moduleId")
+        design_scope = design.get("architectureScope")
+        require(module_id, "module", f"{base}/moduleId")
+
+        if isinstance(module_id, str) and isinstance(design_scope, str):
+            design_key = (module_id, design_scope)
+            previous_id = design_keys.get(design_key)
+            if previous_id is not None:
+                report.error(
+                    "DUPLICATE_MODULE_LOGIC_SCOPE",
+                    f"模块 {module_id} 的 {design_scope} 内部逻辑已由 {previous_id} 定义。",
+                    f"{base}/architectureScope",
+                )
+            else:
+                design_keys[design_key] = str(design.get("id"))
+
+        module = registry.by_type.get("module", {}).get(module_id)
+        if module is not None:
+            module_scope = module.get("architectureScope")
+            allowed_scopes = (
+                {"target", "both"}
+                if design_scope == "target"
+                else {"historical"}
+                if design_scope == "historical"
+                else set()
+            )
+            if module_scope not in allowed_scopes:
+                report.error(
+                    "MODULE_LOGIC_SCOPE_MISMATCH",
+                    f"模块 {module_id} 的架构范围 {module_scope!r} 不覆盖内部逻辑范围 {design_scope!r}。",
+                    f"{base}/architectureScope",
+                )
+
+        for field_name, entity_type in (
+            ("requirementIds", "requirement"),
+            ("decisionIds", "decision"),
+            ("riskIds", "risk"),
+            ("acceptanceCriteriaIds", "acceptance"),
+            ("gateIds", "gate"),
+            ("referenceIds", "reference"),
+        ):
+            require_many(design.get(field_name), entity_type, f"{base}/{field_name}")
+
+        nodes = design.get("nodes", [])
+        node_ids = {
+            node.get("id")
+            for node in nodes
+            if isinstance(node, dict) and isinstance(node.get("id"), str)
+        }
+        loop_node_ids: set[str] = set()
+        loop_back_node_ids: set[str] = set()
+        for node_index, node in enumerate(nodes if isinstance(nodes, list) else []):
+            if not isinstance(node, dict):
+                continue
+            node_base = f"{base}/nodes/{node_index}"
+            if node.get("type") == "loop" and isinstance(node.get("id"), str):
+                loop_node_ids.add(node["id"])
+            for field_name, entity_type in (
+                ("requirementIds", "requirement"),
+                ("decisionIds", "decision"),
+                ("riskIds", "risk"),
+                ("referenceIds", "reference"),
+            ):
+                require_many(node.get(field_name), entity_type, f"{node_base}/{field_name}")
+
+        edges = design.get("edges", [])
+        for edge_index, edge in enumerate(edges if isinstance(edges, list) else []):
+            if not isinstance(edge, dict):
+                continue
+            edge_base = f"{base}/edges/{edge_index}"
+            from_id = edge.get("fromNodeId")
+            to_id = edge.get("toNodeId")
+            for field_name, endpoint_id in (
+                ("fromNodeId", from_id),
+                ("toNodeId", to_id),
+            ):
+                if endpoint_id not in node_ids:
+                    report.error(
+                        "MODULE_LOGIC_BROKEN_ENDPOINT",
+                        f"内部逻辑边端点 {endpoint_id!r} 不属于当前模块子画布。",
+                        f"{edge_base}/{field_name}",
+                    )
+            if from_id == to_id and isinstance(from_id, str):
+                report.error(
+                    "MODULE_LOGIC_SELF_EDGE",
+                    "内部逻辑边不能使用同一节点作为起点和终点。",
+                    edge_base,
+                )
+            if edge.get("kind") == "loop_back":
+                touching_loops = {from_id, to_id} & loop_node_ids
+                if not touching_loops:
+                    report.error(
+                        "MODULE_LOGIC_LOOP_BACK_MISMATCH",
+                        "loop_back 边必须与当前子画布的 Loop 节点相连。",
+                        f"{edge_base}/kind",
+                    )
+                loop_back_node_ids.update(touching_loops)
+            require_many(edge.get("referenceIds"), "reference", f"{edge_base}/referenceIds")
+
+        for loop_id in sorted(loop_node_ids - loop_back_node_ids):
+            report.error(
+                "MODULE_LOGIC_LOOP_BACK_MISSING",
+                f"Loop 节点 {loop_id} 未绑定 loop_back 边。",
+                f"{base}/edges",
+            )
+
+        ports = design.get("boundaryPorts", [])
+        for port_index, port in enumerate(ports if isinstance(ports, list) else []):
+            if not isinstance(port, dict):
+                continue
+            port_base = f"{base}/boundaryPorts/{port_index}"
+            internal_node_id = port.get("internalNodeId")
+            if internal_node_id not in node_ids:
+                report.error(
+                    "MODULE_LOGIC_BROKEN_PORT_NODE",
+                    f"边界端口引用的内部节点 {internal_node_id!r} 不属于当前子画布。",
+                    f"{port_base}/internalNodeId",
+                )
+            external_ref = port.get("externalEntityRef", {})
+            external_type = external_ref.get("type") if isinstance(external_ref, dict) else None
+            external_id = external_ref.get("id") if isinstance(external_ref, dict) else None
+            if external_type in {"module", "resource"}:
+                require(external_id, external_type, f"{port_base}/externalEntityRef/id")
+            if external_type == "module" and external_id == module_id:
+                report.error(
+                    "MODULE_LOGIC_SELF_EXTERNAL_REF",
+                    "边界端口不能把当前模块伪装为外部模块。",
+                    f"{port_base}/externalEntityRef/id",
+                )
+
+            binding_kind = port.get("bindingKind")
+            binding_id = port.get("bindingId")
+            direction = port.get("direction")
+            if binding_kind == "connection":
+                require(binding_id, "connection", f"{port_base}/bindingId")
+                connection = registry.by_type.get("connection", {}).get(binding_id)
+                if connection is not None:
+                    from_id = connection.get("fromModuleId")
+                    to_id = connection.get("toModuleId")
+                    flow_direction = connection.get("flowDirection")
+                    matches = {
+                        "input": (
+                            to_id == module_id and from_id == external_id
+                        ) or (
+                            flow_direction == "bidirectional"
+                            and from_id == module_id
+                            and to_id == external_id
+                        ),
+                        "output": (
+                            from_id == module_id and to_id == external_id
+                        ) or (
+                            flow_direction == "bidirectional"
+                            and to_id == module_id
+                            and from_id == external_id
+                        ),
+                        "bidirectional": (
+                            flow_direction == "bidirectional"
+                            and {from_id, to_id} == {module_id, external_id}
+                        ),
+                    }.get(direction, False)
+                    if external_type != "module" or not matches:
+                        report.error(
+                            "MODULE_LOGIC_CONNECTION_MISMATCH",
+                            f"边界端口方向/外部模块与连接 {binding_id} 的端点不一致。",
+                            f"{port_base}/bindingId",
+                        )
+            elif binding_kind == "resource_usage":
+                require(binding_id, "resource", f"{port_base}/bindingId")
+                resource = registry.by_type.get("resource", {}).get(binding_id)
+                if (
+                    external_type != "resource"
+                    or external_id != binding_id
+                    or resource is not None
+                    and module_id not in resource.get("usedByModuleIds", [])
+                ):
+                    report.error(
+                        "MODULE_LOGIC_RESOURCE_MISMATCH",
+                        f"边界端口的资源绑定 {binding_id} 未声明当前模块用途。",
+                        f"{port_base}/bindingId",
+                    )
+            require_many(port.get("referenceIds"), "reference", f"{port_base}/referenceIds")
+
+    default_flow_by_scope: dict[str, str] = {}
+    business_flow_step_ids: set[str] = set()
+    for index, flow in enumerate(_items(data, "businessFlows")):
+        base = f"/businessFlows/{index}"
+        scope = flow.get("architectureScope")
+        flow_id = flow.get("id")
+        if flow.get("isDefault") is True and isinstance(scope, str):
+            previous_default = default_flow_by_scope.get(scope)
+            if previous_default is not None:
+                report.error(
+                    "DUPLICATE_DEFAULT_BUSINESS_FLOW",
+                    f"架构范围 {scope!r} 已存在默认业务流程 {previous_default}，不能同时将 {flow_id} 设为默认。",
+                    f"{base}/isDefault",
+                )
+            else:
+                default_flow_by_scope[scope] = str(flow_id)
+        require_many(flow.get("riskIds"), "risk", f"{base}/riskIds")
+        require_many(flow.get("decisionIds"), "decision", f"{base}/decisionIds")
+        require_many(flow.get("referenceIds"), "reference", f"{base}/referenceIds")
+        steps = flow.get("steps", [])
+        if not isinstance(steps, list):
+            continue
+        orders = [step.get("order") for step in steps if isinstance(step, dict)]
+        if orders != list(range(len(orders))):
+            report.error(
+                "BUSINESS_FLOW_ORDER_GAP",
+                "Business Flow Step order 必须从 0 开始连续递增，并与数组顺序一致。",
+                f"{base}/steps",
+            )
+        previous_module_id: str | None = None
+        for step_index, step in enumerate(steps):
+            if not isinstance(step, dict):
+                continue
+            step_base = f"{base}/steps/{step_index}"
+            step_id = step.get("id")
+            if isinstance(step_id, str):
+                if step_id in business_flow_step_ids or step_id in registry.all_ids:
+                    report.error(
+                        "DUPLICATE_ID",
+                        f"Business Flow Step ID {step_id} 不是全局唯一。",
+                        f"{step_base}/id",
+                    )
+                business_flow_step_ids.add(step_id)
+            module_id = step.get("moduleId")
+            connection_id = step.get("connectionId")
+            require(module_id, "module", f"{step_base}/moduleId")
+            require(connection_id, "connection", f"{step_base}/connectionId", optional=True)
+            require_many(step.get("riskIds"), "risk", f"{step_base}/riskIds")
+            require_many(step.get("decisionIds"), "decision", f"{step_base}/decisionIds")
+            require_many(step.get("referenceIds"), "reference", f"{step_base}/referenceIds")
+            if step_index == 0 and connection_id is not None:
+                report.error(
+                    "BUSINESS_FLOW_FIRST_STEP_CONNECTION",
+                    "Business Flow 第一个 Step 不能声明入站 connectionId。",
+                    f"{step_base}/connectionId",
+                )
+            if step_index > 0 and connection_id is None:
+                report.error(
+                    "BUSINESS_FLOW_MISSING_CONNECTION",
+                    "第二个及后续 Business Flow Step 必须显式声明连接，不能从画布位置推断。",
+                    f"{step_base}/connectionId",
+                )
+            connection = registry.by_type.get("connection", {}).get(connection_id)
+            if connection is not None and previous_module_id is not None:
+                from_id = connection.get("fromModuleId")
+                to_id = connection.get("toModuleId")
+                direction = connection.get("flowDirection")
+                directed_match = from_id == previous_module_id and to_id == module_id
+                reverse_match = (
+                    direction == "bidirectional"
+                    and to_id == previous_module_id
+                    and from_id == module_id
+                )
+                if not (directed_match or reverse_match):
+                    report.error(
+                        "BUSINESS_FLOW_CONNECTION_MISMATCH",
+                        f"连接 {connection_id} 不能把前一步模块 {previous_module_id} 传递到当前模块 {module_id}。",
+                        f"{step_base}/connectionId",
+                    )
+            if scope in {"current", "target"}:
+                module = registry.by_type.get("module", {}).get(module_id)
+                module_scope = module.get("architectureScope") if module else None
+                if module is not None and module_scope not in {scope, "both"}:
+                    report.error(
+                        "BUSINESS_FLOW_SCOPE_MISMATCH",
+                        f"模块 {module_id} 的架构范围 {module_scope!r} 不覆盖业务流程范围 {scope!r}。",
+                        f"{step_base}/moduleId",
+                    )
+                if connection is not None and connection.get("architectureScope") not in {scope, "both"}:
+                    report.error(
+                        "BUSINESS_FLOW_SCOPE_MISMATCH",
+                        f"连接 {connection_id} 的架构范围不覆盖业务流程范围 {scope!r}。",
+                        f"{step_base}/connectionId",
+                    )
+            previous_module_id = module_id if isinstance(module_id, str) else None
 
     transition_subject_type = {
         "module": "module",
@@ -518,6 +872,10 @@ def validate_cross_references(
             ("referenceIds", "reference"),
         ):
             require_many(work_item.get(field_name), entity_type, f"{base}/{field_name}")
+        require_architecture_refs(
+            work_item.get("relatedArchitectureRefs"),
+            f"{base}/relatedArchitectureRefs",
+        )
 
     for index, decision in enumerate(_items(data, "decisions")):
         base = f"/decisions/{index}"
@@ -536,6 +894,10 @@ def validate_cross_references(
                 )
         require(decision.get("reviewId"), "review", f"{base}/reviewId", optional=True)
         require_many(decision.get("referenceIds"), "reference", f"{base}/referenceIds")
+        require_architecture_refs(
+            decision.get("relatedArchitectureRefs"),
+            f"{base}/relatedArchitectureRefs",
+        )
 
     for collection_name in ("risks",):
         for index, risk in enumerate(_items(data, collection_name)):
@@ -545,6 +907,10 @@ def validate_cross_references(
             require(risk.get("stageId"), "stage", f"{base}/stageId", optional=True)
             require_many(risk.get("relatedReleaseIds"), "release", f"{base}/relatedReleaseIds")
             require_many(risk.get("referenceIds"), "reference", f"{base}/referenceIds")
+            require_architecture_refs(
+                risk.get("relatedArchitectureRefs"),
+                f"{base}/relatedArchitectureRefs",
+            )
 
     for index, acceptance in enumerate(_items(data, "acceptanceCriteria")):
         base = f"/acceptanceCriteria/{index}"

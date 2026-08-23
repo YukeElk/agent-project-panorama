@@ -37,6 +37,16 @@ V0.5 使用四类门禁：
 这些操作继续使用完整 Proposal、64 位 canonical Hash、独立 write-once Approval 和 Apply 事务。
 Agent、Hook、Receipt、Validator 或 Policy Runtime 都不能生成批准身份或自行扩展授权范围。
 
+外部发布的“精确绑定”是系统的审计责任，不应被实现成要求用户抄写机器标识的重复门禁。当且仅当当前上下文中只有
+一个已经冻结、已经展示或明确选中的发布候选，且候选字节、版本目标和已披露风险均未变化时，用户明确表达
+“批准发布”“批准发布为 `<VERSION>`”等发布意图即构成一次有效 Decision Gate。Recorder 必须自动把该批准绑定到
+唯一候选的 Delivery ID、Artifact SHA-256、字节数、版本、审批原文与记录时间；用户不需要再次复述 PVD 或 Hash。
+
+以下情况仍必须停止并重新确认，不能猜测用户选择：同时存在多个可发布候选、版本目标不明确、候选字节在批准后变化、
+出现尚未披露的重大风险，或批准语义只表示继续评审而不是发布。该简化只适用于外部发布的人机交互；INIT、Studio
+Proposal、Approval Policy、Verification Receipt 等现有机器合同若以精确 Hash 作为事务输入，仍保持各自的显式
+Hash Approval 规则。
+
 ## 3. 无需人工审批的操作
 
 以下操作不创建授权事实，因此不需要批准：
@@ -176,6 +186,9 @@ V0.5.1 Adapter 的完整 Project Path、Policy Profile、Input/Output Hash、Tra
 本地候选只有 semantic、schema、geometry、privacy 以及适用时 browser 门禁通过后，才可按 Policy
 原子替换 last-good。`visualReview=pending|skipped` 可以用于内部 last-good，不得被描述为人工视觉通过；
 `visualReview=rejected` 必须阻止晋升。任何外部发布仍要求人工批准。
+
+若只有一个冻结候选，该批准可以使用普通自然语言发布指令，由 Recorder 自动记录精确 Artifact Binding；不得为了
+审计方便要求用户重复输入已经唯一确定的 PVD/Hash。
 
 ## 11. Studio 单次批准
 

@@ -128,6 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("panorama", type=Path)
     parser.add_argument("model", type=Path)
     parser.add_argument("--view", type=Path, action="append", required=True, dest="views")
+    parser.add_argument("--child-view", type=Path, action="append", dest="child_views")
     parser.add_argument("--view-set", type=Path, required=True)
     parser.add_argument("--explain-pack", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="必须位于项目仓库之外")
@@ -153,12 +154,15 @@ def main(argv: list[str] | None = None) -> int:
         panorama, _ = load_panorama(args.panorama)
         model = _load(args.model)
         views = [_load(path) for path in args.views]
+        child_views = [_load(path) for path in (args.child_views or [])]
         view_set = _load(args.view_set)
         pack = _load(args.explain_pack)
-        errors = validate_explain_pack(pack, panorama, model, views, view_set)
+        errors = validate_explain_pack(
+            pack, panorama, model, views, view_set, child_views=child_views
+        )
         if errors:
             raise PanoramaExplainPackError("Explain Pack 无效：" + "; ".join(errors[:20]))
-        fragment = render_fragment(pack, views)
+        fragment = render_fragment(pack, [*views, *child_views])
         atomic_write(args.output, fragment)
         if args.markdown_output:
             atomic_write(args.markdown_output, render_markdown(pack))

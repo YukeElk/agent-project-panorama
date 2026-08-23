@@ -28,6 +28,13 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="可选、Head=current 且完整有效的 Engineering Event Store",
     )
+    parser.add_argument(
+        "--module-logic-observation",
+        type=Path,
+        action="append",
+        dest="module_logic_observations",
+        help="可重复指定、已验证且 current/complete 的模块内部逻辑 Observation",
+    )
     parser.add_argument("--output", type=Path, required=True, help="新 Model IR JSON")
     parser.add_argument("--overwrite", action="store_true", help="允许覆盖既有候选文件")
     return parser
@@ -45,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
             args.input,
             source_observation_path=args.source_observation,
             event_store_path=args.event_store,
+            module_logic_observation_paths=args.module_logic_observations,
         )
         atomic_write(
             args.output,

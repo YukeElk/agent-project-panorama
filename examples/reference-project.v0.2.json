@@ -248,6 +248,7 @@
       {
         "id": "LAYER-INTERACTION",
         "name": "Interaction",
+        "displayName": "交互层",
         "order": 10,
         "summary": "用户和开发人员访问入口。",
         "extensions": {}
@@ -255,6 +256,7 @@
       {
         "id": "LAYER-ORCHESTRATION",
         "name": "Orchestration",
+        "displayName": "编排层",
         "order": 20,
         "summary": "任务编排、路由与运行状态。",
         "extensions": {}
@@ -262,6 +264,7 @@
       {
         "id": "LAYER-AGENT",
         "name": "Agent",
+        "displayName": "智能体层",
         "order": 30,
         "summary": "业务 Agent 与共享能力 Agent。",
         "extensions": {}
@@ -269,6 +272,7 @@
       {
         "id": "LAYER-SERVICE",
         "name": "Service",
+        "displayName": "服务层",
         "order": 40,
         "summary": "工作空间及元数据服务。",
         "extensions": {}
@@ -276,6 +280,7 @@
       {
         "id": "LAYER-DATA",
         "name": "Data",
+        "displayName": "数据层",
         "order": 50,
         "summary": "向量、文件和结构化数据。",
         "extensions": {}
@@ -424,6 +429,7 @@
       {
         "id": "MOD-CONSOLE",
         "name": "Project Console",
+        "displayName": "项目控制台",
         "layerId": "LAYER-INTERACTION",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -501,6 +507,7 @@
       {
         "id": "MOD-ORCHESTRATOR",
         "name": "Orchestrator",
+        "displayName": "编排器",
         "layerId": "LAYER-ORCHESTRATION",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -587,6 +594,7 @@
       {
         "id": "MOD-BUSINESS-AGENT",
         "name": "Business Agent",
+        "displayName": "业务智能体",
         "layerId": "LAYER-AGENT",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -678,6 +686,7 @@
       {
         "id": "MOD-DIRECT-VECTOR",
         "name": "Direct Vector Access",
+        "displayName": "直接向量访问",
         "layerId": "LAYER-AGENT",
         "architectureScope": "current",
         "targetLayerId": null,
@@ -755,6 +764,7 @@
       {
         "id": "MOD-RETRIEVAL",
         "name": "Retrieval Agent",
+        "displayName": "检索智能体",
         "layerId": "LAYER-AGENT",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -860,6 +870,7 @@
       {
         "id": "MOD-WORKSPACE",
         "name": "Shared Workspace",
+        "displayName": "共享工作空间",
         "layerId": "LAYER-SERVICE",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -995,6 +1006,7 @@
       {
         "id": "MOD-METADATA",
         "name": "Metadata Store",
+        "displayName": "元数据存储",
         "layerId": "LAYER-DATA",
         "architectureScope": "target",
         "targetLayerId": null,
@@ -1079,6 +1091,7 @@
       {
         "id": "MOD-VECTORSTORE",
         "name": "Vector Store",
+        "displayName": "向量存储",
         "layerId": "LAYER-DATA",
         "architectureScope": "both",
         "targetLayerId": null,
@@ -1364,6 +1377,148 @@
     ],
     "extensions": {}
   },
+  "businessFlows": [
+    {
+      "id": "FLOW-DEVELOPER-REQUEST",
+      "name": "开发者请求处理",
+      "summary": "开发者请求从控制台进入编排与业务 Agent，经统一检索和工作空间访问向量存储后返回结果。",
+      "architectureScope": "current",
+      "factStatus": "declared",
+      "status": "active",
+      "isDefault": true,
+      "trigger": "开发者在控制台提交项目任务。",
+      "outcome": "业务 Agent 获得受工作空间边界约束的检索结果。",
+      "steps": [
+        {
+          "id": "FLOWSTEP-REQUEST-01",
+          "order": 0,
+          "type": "trigger",
+          "moduleId": "MOD-CONSOLE",
+          "connectionId": null,
+          "action": "控制台接收开发者请求",
+          "dataSummary": "任务目标、项目范围和操作上下文",
+          "result": "形成待编排的项目请求",
+          "riskIds": [],
+          "decisionIds": [],
+          "referenceIds": [
+            "REF-INTERFACE"
+          ],
+          "extensions": {}
+        },
+        {
+          "id": "FLOWSTEP-REQUEST-02",
+          "order": 1,
+          "type": "data_transfer",
+          "moduleId": "MOD-ORCHESTRATOR",
+          "connectionId": "CONN-CONSOLE-ORCH",
+          "action": "编排器验证并拆分请求",
+          "dataSummary": "用户请求、项目上下文和操作指令",
+          "result": "形成业务 Agent 可执行的任务状态",
+          "riskIds": [
+            "RISK-BASELINE-DIVERGENCE"
+          ],
+          "decisionIds": [],
+          "referenceIds": [
+            "REF-INTERFACE",
+            "REF-LANGGRAPH"
+          ],
+          "extensions": {}
+        },
+        {
+          "id": "FLOWSTEP-REQUEST-03",
+          "order": 2,
+          "type": "processing",
+          "moduleId": "MOD-BUSINESS-AGENT",
+          "connectionId": "CONN-ORCH-AGENT",
+          "action": "业务 Agent 理解任务并构造检索请求",
+          "dataSummary": "任务、上下文、工具结果和图状态",
+          "result": "形成统一检索请求",
+          "riskIds": [
+            "RISK-VERIFY-GAP"
+          ],
+          "decisionIds": [],
+          "referenceIds": [
+            "REF-INTERFACE"
+          ],
+          "extensions": {}
+        },
+        {
+          "id": "FLOWSTEP-REQUEST-04",
+          "order": 3,
+          "type": "data_transfer",
+          "moduleId": "MOD-RETRIEVAL",
+          "connectionId": "CONN-AGENT-RETRIEVAL",
+          "action": "统一检索层执行检索编排",
+          "dataSummary": "RetrievalRequest、过滤条件和项目范围",
+          "result": "形成受项目边界约束的工作空间查询",
+          "riskIds": [
+            "RISK-VERIFY-GAP"
+          ],
+          "decisionIds": [
+            "DEC-CACHE"
+          ],
+          "referenceIds": [
+            "REF-RETRIEVAL-DESIGN",
+            "REF-INTERFACE"
+          ],
+          "extensions": {}
+        },
+        {
+          "id": "FLOWSTEP-REQUEST-05",
+          "order": 4,
+          "type": "processing",
+          "moduleId": "MOD-WORKSPACE",
+          "connectionId": "CONN-RETRIEVAL-WORKSPACE",
+          "action": "工作空间解析资料边界与索引",
+          "dataSummary": "项目范围、资料索引和文件定位",
+          "result": "生成向量存储查询与访问边界",
+          "riskIds": [
+            "RISK-WORKSPACE-CONC"
+          ],
+          "decisionIds": [
+            "DEC-WORKSPACE-METADATA"
+          ],
+          "referenceIds": [
+            "REF-WORKSPACE-DESIGN",
+            "REF-INTERFACE"
+          ],
+          "extensions": {}
+        },
+        {
+          "id": "FLOWSTEP-REQUEST-06",
+          "order": 5,
+          "type": "result",
+          "moduleId": "MOD-VECTORSTORE",
+          "connectionId": "CONN-WORKSPACE-VECTOR",
+          "action": "向量存储执行查询并返回结果",
+          "dataSummary": "索引查询、过滤条件和向量结果",
+          "result": "业务任务获得当前检索结果",
+          "riskIds": [],
+          "decisionIds": [],
+          "referenceIds": [
+            "REF-INTERFACE"
+          ],
+          "extensions": {}
+        }
+      ],
+      "riskIds": [
+        "RISK-BASELINE-DIVERGENCE",
+        "RISK-VERIFY-GAP",
+        "RISK-WORKSPACE-CONC"
+      ],
+      "decisionIds": [
+        "DEC-CACHE",
+        "DEC-WORKSPACE-METADATA"
+      ],
+      "referenceIds": [
+        "REF-RETRIEVAL-DESIGN",
+        "REF-WORKSPACE-DESIGN",
+        "REF-INTERFACE",
+        "REF-LANGGRAPH"
+      ],
+      "extensions": {}
+    }
+  ],
   "stages": [
     {
       "id": "STG-REQ",
