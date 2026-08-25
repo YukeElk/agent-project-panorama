@@ -1,6 +1,6 @@
 # Panorama Model IR Contract v0.1
 
-状态：V0.85 Release Candidate；Core Deployment + optional Source v0.1/v0.2 + Event inputs
+状态：V0.8.5.1 Released；Core Deployment + optional Source v0.1/v0.2 + Event inputs
 
 对应 Finding：SF-34、SF-35、SF-39、SF-40、SF-47、SF-48
 
@@ -43,6 +43,9 @@ Checkpoint；Checkpoint/事件链合同见 [Event Projection Contract](event-pro
 
 Layer 对 Current、Target、Historical 分别绑定。Target 使用 `targetLayerId`，缺失时才回退到正式 `layerId`；
 同时投影多个 Architecture Scope 会造成 Layer 归属歧义，因此 module profile v0.1 每次只允许一个 Scope。
+Layer 必须保留 Core 的 `parentLayerId/kind` 以及通过合同校验的 `layerSemantics`；Model 顶层 Extensions 保留
+`layeringProfile`。这些字段只转录正式 Core，不允许编译器通过名称或位置补写。父层引用和循环在 Model Validator
+再次校验。
 
 ## 4. Evidence 与事实状态
 

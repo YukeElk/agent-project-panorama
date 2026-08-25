@@ -213,6 +213,24 @@
         "technicalLabel": {"type": "string", "minLength": 1, "maxLength": 512},
         "order": {"type": "integer"},
         "summary": {"type": "string", "maxLength": 2048},
+        "parentLayerId": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "kind": {"enum": ["layer", "domain", "capability", "runtime", "integration"]},
+        "semantics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["formatVersion", "boundaryType", "rationale", "inScope", "outOfScope", "evidenceReferenceIds", "confidence"],
+          "properties": {
+            "formatVersion": {"const": "panorama-layer-semantics.v0.1"},
+            "boundaryType": {"enum": ["system", "capability", "responsibility", "technical", "runtime", "integration", "unassigned"]},
+            "rationale": {"type": "string", "maxLength": 10000},
+            "inScope": {"type": "array", "maxItems": 256, "items": {"type": "string", "maxLength": 2000}},
+            "outOfScope": {"type": "array", "maxItems": 256, "items": {"type": "string", "maxLength": 2000}},
+            "evidenceReferenceIds": {"type": "array", "maxItems": 256, "uniqueItems": true, "items": {"$ref": "#/$defs/stableId"}},
+            "confidence": {"enum": ["high", "medium", "low", "unknown"]}
+          }
+        },
         "evidencePins": {
           "type": "array",
           "minItems": 1,

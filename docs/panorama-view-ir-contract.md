@@ -27,6 +27,8 @@ Evolution/Risk 共享同一 Model Identity 和 Evidence，不建立独立事实 
 - Edge 端点必须与 Relation 端点投影出的 Node 精确一致；
 - `layer` Group 必须引用 Model Layer；`environment/source_kind` Group 只表达阅读分组且 `layerId=null`，
   不能用视觉容器制造 ownership/security/deployment boundary；
+- Module View 必须包含直接 Layer 的完整祖先链；Layer Group 使用 `parentGroupId` 保留 Core 父子容器路径，
+  没有直接 Module 的父容器也不能被丢弃；
 - Node/Edge Evidence Pin ID 必须属于其绑定的 Entity/Relation；
 - Search、Focus、Trace、Reach 和 Deep Link 只能遍历这些现有引用。
 

@@ -363,6 +363,7 @@ def compile_model_ir(
     layers: list[dict[str, Any]] = []
     for index, layer in enumerate(architecture.get("layers", [])):
         pointer = f"/architecture/layers/{index}"
+        layer_semantics = layer.get("extensions", {}).get("layerSemantics")
         layers.append(
             {
                 "id": layer["id"],
@@ -370,6 +371,13 @@ def compile_model_ir(
                 **_display_fields(layer),
                 "order": layer["order"],
                 "summary": layer.get("summary", ""),
+                "parentLayerId": layer.get("parentLayerId"),
+                **({"kind": layer["kind"]} if layer.get("kind") else {}),
+                **(
+                    {"semantics": deepcopy(layer_semantics)}
+                    if isinstance(layer_semantics, dict)
+                    else {}
+                ),
                 "evidencePins": [
                     _evidence_pin(pointer=pointer, value=layer, data_hash=data_hash)
                 ],
@@ -1680,6 +1688,11 @@ def compile_model_ir(
         "informationGaps": sorted(information_gaps),
         "extensions": {
             **(
+                {"layeringProfile": deepcopy(architecture.get("extensions", {}).get("layeringProfile"))}
+                if isinstance(architecture.get("extensions", {}).get("layeringProfile"), dict)
+                else {}
+            ),
+            **(
                 {"sourceObservationBinding": source_observation_binding}
                 if source_observation_binding is not None
                 else {}
@@ -1721,6 +1734,25 @@ def validate_model_ir(model: dict[str, Any]) -> list[str]:
         if len(values) != len(set(values)):
             errors.append(f"/{label}s: 存在重复稳定 ID")
     layer_set = set(layer_ids)
+    layer_parent: dict[str, str] = {}
+    for layer in model["layers"]:
+        parent_id = layer.get("parentLayerId")
+        if parent_id is not None:
+            if parent_id not in layer_set:
+                errors.append(
+                    f"/layers/{layer['id']}/parentLayerId: 未知父 Layer {parent_id}"
+                )
+            else:
+                layer_parent[layer["id"]] = parent_id
+    for layer_id in sorted(layer_parent):
+        visited: set[str] = set()
+        current = layer_id
+        while current in layer_parent:
+            if current in visited:
+                errors.append(f"/layers/{layer_id}: 父子层级形成循环")
+                break
+            visited.add(current)
+            current = layer_parent[current]
     entity_set = set(entity_ids)
     for entity in model["entities"]:
         for scope, layer_id in entity.get("layerBindings", {}).items():
@@ -1822,18 +1854,32 @@ def compile_module_view_ir(
         and set(relation["architectureScopes"]) & set(ordered_scopes)
     ]
     selected_scope = ordered_scopes[0]
-    layer_ids = {
+    direct_layer_ids = {
         entity["layerBindings"][selected_scope]
         for entity in selected_entities
         if entity["layerBindings"].get(selected_scope) is not None
     }
+    layer_by_id = {layer["id"]: layer for layer in model["layers"]}
+    layer_ids = set(direct_layer_ids)
+    for direct_layer_id in sorted(direct_layer_ids):
+        current_layer_id = direct_layer_id
+        visited: set[str] = set()
+        while current_layer_id in layer_by_id:
+            parent_id = layer_by_id[current_layer_id].get("parentLayerId")
+            if parent_id is None or parent_id in visited:
+                break
+            layer_ids.add(parent_id)
+            visited.add(parent_id)
+            current_layer_id = parent_id
     selected_layers = [layer for layer in model["layers"] if layer["id"] in layer_ids]
 
-    group_by_layer: dict[str, str] = {}
+    group_by_layer: dict[str, str] = {
+        layer["id"]: _stable_derived_id("GROUP", {"layerId": layer["id"]}, 20)
+        for layer in selected_layers
+    }
     groups: list[dict[str, Any]] = []
     for layer in selected_layers:
-        group_id = _stable_derived_id("GROUP", {"layerId": layer["id"]}, 20)
-        group_by_layer[layer["id"]] = group_id
+        group_id = group_by_layer[layer["id"]]
         groups.append(
             {
                 "id": group_id,
@@ -1842,6 +1888,9 @@ def compile_module_view_ir(
                 "layerId": layer["id"],
                 "label": layer.get("displayLabel", layer["name"]),
                 "order": layer["order"],
+                "parentGroupId": group_by_layer.get(layer.get("parentLayerId")),
+                **({"kind": layer["kind"]} if layer.get("kind") else {}),
+                "summary": layer.get("summary", ""),
             }
         )
 
@@ -2978,6 +3027,12 @@ def validate_view_ir(
     model_entities = {item["id"]: item for item in model.get("entities", [])}
     model_relations = {item["id"]: item for item in model.get("relations", [])}
     group_set = set(group_ids)
+    group_by_id = {item["id"]: item for item in view["groups"]}
+    layer_group_by_ref = {
+        item["layerId"]: item["id"]
+        for item in view["groups"]
+        if item["groupType"] == "layer"
+    }
     node_set = set(node_ids)
     node_by_entity: dict[str, str] = {}
     for group in view["groups"]:
@@ -2988,8 +3043,22 @@ def validate_view_ir(
                 )
             if group["groupRef"] != group["layerId"]:
                 errors.append(f"/groups/{group['id']}: layer groupRef 不匹配")
+            model_layer = model_layers.get(group["layerId"])
+            if model_layer is not None:
+                expected_parent = layer_group_by_ref.get(model_layer.get("parentLayerId"))
+                if group.get("parentGroupId") != expected_parent:
+                    errors.append(
+                        f"/groups/{group['id']}: parentGroupId 与 Model Layer 父级不匹配"
+                    )
+                if "kind" in group and group["kind"] != model_layer.get("kind"):
+                    errors.append(f"/groups/{group['id']}: kind 与 Model Layer 不匹配")
+                if "summary" in group and group["summary"] != model_layer.get("summary", ""):
+                    errors.append(f"/groups/{group['id']}: summary 与 Model Layer 不匹配")
         elif group["layerId"] is not None:
             errors.append(f"/groups/{group['id']}: 非 layer group 不能绑定 layerId")
+        parent_group_id = group.get("parentGroupId")
+        if parent_group_id is not None and parent_group_id not in group_by_id:
+            errors.append(f"/groups/{group['id']}: 未知 parentGroupId {parent_group_id}")
     for node in view["nodes"]:
         entity_id = node["entityRef"]["id"]
         entity = model_entities.get(entity_id)

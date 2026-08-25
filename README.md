@@ -1,4 +1,4 @@
-# Agent Project Panorama V0.85 多语言个人项目全景候选（V0.81 Compatible）
+# Agent Project Panorama V0.8.5.1 分层语义维护版（V0.85.0 / V0.81 Compatible）
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML 的
 AI/Vibe Coding 工程认知控制面。它用于恢复和维持对需求、架构、模块、演进、验证、
@@ -93,9 +93,22 @@ V0.81 同时关闭验收后发现的三个编辑缺陷：已有模块可编辑�
 [`docs/v0.8-unified-canvas-flow-iteration-plan.md`](docs/v0.8-unified-canvas-flow-iteration-plan.md)。当前实现验证见
 [`docs/v0.8-implementation-validation.md`](docs/v0.8-implementation-validation.md)。
 
-## V0.85 多语言 / 多技术栈发布候选
+## V0.8.5.1 分层语义维护发布
 
-V0.85 面向完整个人项目全景，不引入多人协作范围。它保留 V0.81 的唯一画布与父子语义导航，并新增
+V0.8.5.1 在已发布 V0.85.0 的个人项目全景与多技术栈能力上补充分层语义合同。Schema 继续固定
+`Layer / Module / parentLayerId / layerId` 等结构字段，但不固定层级名称、数量与深度。主画布声明一个
+Primary Viewpoint；模块归层必须绑定责任、接口、状态所有权、部署、安全、数据所有权、独立演进或正式设计决定，
+证据不足时进入 `LAYER-UNASSIGNED`，不得根据 Harness、BFF、Agent、目录名或画布位置猜测。
+
+Studio 新建模块只使用当前选中层级；没有有效选择时仅允许进入显式未分配层。跨层拖动或下拉换层属于语义编辑，
+会使原归层理由、证据与置信度失效。Model/View IR 保留父子层级，空父容器不会因没有直接模块而丢失。
+发布审计与边界见 [`docs/v0.8.5.1-release-audit.md`](docs/v0.8.5.1-release-audit.md)、
+[`docs/v0.8.5.1-release-notes.md`](docs/v0.8.5.1-release-notes.md) 和
+[`docs/architecture-layering-contract.md`](docs/architecture-layering-contract.md)。
+
+## V0.85.0 多语言 / 多技术栈已发布基础版
+
+V0.85.0 面向完整个人项目全景，不引入多人协作范围。它保留 V0.81 的唯一画布与父子语义导航，并新增
 `source-topology-observation.v0.2`、版本化 Multistack Registry、`supportMatrix`、证据绑定的
 `stackProfile`、Monorepo Boundary 和项目本地幂等 Source Sync。正式 L1 支持 Python、JavaScript、
 TypeScript、Java、Kotlin、Go、C#；Rust、PHP、Ruby、Swift、Scala、C、C++ 为 Preview L1。
@@ -112,8 +125,9 @@ python scripts/sync_source_observation.py path/to/project `
 
 发布评审范围、支持等级和生产指标见
 [`docs/v0.82-v0.85-personal-production-multistack-plan.md`](docs/v0.82-v0.85-personal-production-multistack-plan.md)；
-当前结论与变更说明见 [`docs/v0.85-release-audit.md`](docs/v0.85-release-audit.md) 和
-[`docs/v0.85-release-notes.md`](docs/v0.85-release-notes.md)。外部 Tag/Push/Release 仍需用户另行批准。
+基础版本结论与变更说明见 [`docs/v0.85-release-audit.md`](docs/v0.85-release-audit.md) 和
+[`docs/v0.85-release-notes.md`](docs/v0.85-release-notes.md)。V0.85.0 已发布；后续分层语义维护由
+V0.8.5.1 承接。
 
 先执行不访问网络、不安装依赖、不读取 Secret 的 Runtime Preflight：
 

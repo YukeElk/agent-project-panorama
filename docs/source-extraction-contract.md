@@ -1,6 +1,6 @@
 # Source Extraction Contract v0.2
 
-状态：V0.85 Release Candidate；v0.1 输入兼容；多语言/多技术栈 Adapter Registry 已实现；尚未获外部发布授权
+状态：V0.85.0 Released；v0.1 输入兼容；多语言/多技术栈 Adapter Registry 已实现
 
 对应 Finding：SF-24、SF-30、SF-39、SF-40、SF-46
 

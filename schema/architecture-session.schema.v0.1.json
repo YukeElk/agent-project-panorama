@@ -164,10 +164,24 @@
         },
         "layerId": { "$ref": "#/$defs/id" },
         "baselineLayerId": { "$ref": "#/$defs/id" },
+        "layerAssignment": { "$ref": "#/$defs/layerAssignment" },
+        "baselineLayerAssignment": { "$ref": "#/$defs/layerAssignment" },
         "category": { "type": "string", "maxLength": 64 },
         "isDraft": { "type": "boolean" },
         "x": { "type": "number", "minimum": -100000, "maximum": 100000 },
         "y": { "type": "number", "minimum": -100000, "maximum": 100000 }
+      }
+    },
+    "layerAssignment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["layerId", "basis", "rationale", "evidenceReferenceIds", "confidence", "alternativeLayerIds"],
+      "properties": {
+        "layerId": { "$ref": "#/$defs/id" },
+        "basis": { "enum": ["responsibility", "capability", "interface", "state_ownership", "deployment", "security", "data_ownership", "independent_evolution", "explicit_design_decision", "unknown"] },
+        "rationale": { "type": "string", "maxLength": 10000 },
+        "evidenceReferenceIds": { "type": "array", "maxItems": 256, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "confidence": { "enum": ["high", "medium", "low", "unknown"] },
+        "alternativeLayerIds": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
       }
     },
     "edge": {

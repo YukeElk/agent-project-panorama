@@ -6028,6 +6028,9 @@
         arr(candidate.nodes).forEach(function (node) {
           var formal = node.entityRef && node.entityRef.type === "module" ? moduleById[node.entityRef.id] : null;
           var design = formal && (formal.targetDesign || formal.currentDesign) || {};
+          var assignmentSet = formal && formal.extensions && formal.extensions.layerAssignments || {};
+          var recordedAssignment = assignmentSet.target || assignmentSet.current || {};
+          var hydratedAssignment = { layerId: node.layerId, basis: recordedAssignment.basis || "unknown", rationale: recordedAssignment.rationale || "", evidenceReferenceIds: cloneForStudio(arr(recordedAssignment.evidenceReferenceIds)), confidence: recordedAssignment.confidence || "unknown", alternativeLayerIds: cloneForStudio(arr(recordedAssignment.alternativeLayerIds)) };
           var defaults = {
             displayName: formal ? (formal.displayName || null) : null,
             nonResponsibilities: cloneForStudio(arr(design.nonResponsibilities)),
@@ -6040,7 +6043,9 @@
             designExtensions: cloneForStudio(design.extensions || {}),
             rationale: formal && formal.rationale || "",
             requirementIds: cloneForStudio(arr(formal && formal.requirementIds)),
-            baselineLayerId: node.layerId
+            baselineLayerId: node.layerId,
+            layerAssignment: hydratedAssignment,
+            baselineLayerAssignment: cloneForStudio(hydratedAssignment)
           };
           Object.keys(defaults).forEach(function (field) { if (!Object.prototype.hasOwnProperty.call(node, field)) node[field] = defaults[field]; });
         });
@@ -6095,6 +6100,9 @@
         var slot = laneCounts[layerId] || 0;
         laneCounts[layerId] = slot + 1;
         var design = module.targetDesign || module.currentDesign || {};
+        var assignmentSet = module.extensions && module.extensions.layerAssignments || {};
+        var recordedAssignment = assignmentSet.target || assignmentSet.current || {};
+        var layerAssignment = { layerId: layerId, basis: recordedAssignment.basis || "unknown", rationale: recordedAssignment.rationale || "", evidenceReferenceIds: cloneForStudio(arr(recordedAssignment.evidenceReferenceIds)), confidence: recordedAssignment.confidence || "unknown", alternativeLayerIds: cloneForStudio(arr(recordedAssignment.alternativeLayerIds)) };
         return {
           nodeId: "NODE-" + module.id,
           entityRef: { type: "module", id: module.id },
@@ -6115,6 +6123,8 @@
           requirementIds: cloneForStudio(arr(module.requirementIds)),
           layerId: layerId,
           baselineLayerId: layerId,
+          layerAssignment: layerAssignment,
+          baselineLayerAssignment: cloneForStudio(layerAssignment),
           category: module.category || "supporting",
           isDraft: false,
           x: 145 + (slot % 3) * 205,
@@ -6230,7 +6240,7 @@
           return {
             candidateId: candidate.candidateId, label: candidate.label, kind: candidate.kind, status: candidate.status,
             assumptions: candidate.assumptions, unknowns: candidate.unknowns, architectureLayers: studioLayers(candidate),
-            nodes: arr(candidate.nodes).map(function (node) { var copy = cloneForStudio(node); delete copy.x; delete copy.y; return copy; }),
+            nodes: arr(candidate.nodes).map(function (node) { var copy = cloneForStudio(node); delete copy.x; delete copy.y; delete copy.baselineLayerAssignment; return copy; }),
             edges: candidate.edges,
             moduleLogicCanvases: arr(candidate.moduleLogicCanvases).map(function (canvas) { var copy = cloneForStudio(canvas); delete copy.camera; delete copy.viewerState; delete copy.createdAt; delete copy.updatedAt; copy.nodes = arr(copy.nodes).map(function (node) { delete node.x; delete node.y; delete node.width; delete node.height; return node; }); copy.boundaryPorts = arr(copy.boundaryPorts).map(function (port) { delete port.x; delete port.y; return port; }); return copy; })
           };
@@ -6300,6 +6310,8 @@
         if (!node.name.trim()) checks.push({ level: "error", message: node.nodeId + " 缺少名称" });
         if (!node.layerId) checks.push({ level: "error", message: node.name + " 缺少架构层" });
         else if (!layerIds.has(node.layerId)) checks.push({ level: "error", message: node.name + " 引用了不存在的架构层 " + node.layerId });
+        if (!node.layerAssignment || node.layerAssignment.layerId !== node.layerId) checks.push({ level: "error", code: "CLIENT_LAYER_ASSIGNMENT", message: node.name + " 的归层说明与所属架构层不一致" });
+        else if (!String(node.layerAssignment.rationale || "").trim() && (node.isDraft || JSON.stringify(node.layerAssignment) !== JSON.stringify(node.baselineLayerAssignment))) checks.push({ level: "warning", code: "CLIENT_LAYER_ASSIGNMENT_RATIONALE", message: node.name + " 缺少归层理由" });
         if (!node.purpose.trim()) checks.push({ level: "warning", message: node.name + " 缺少用途描述" });
         if (!node.stateOwnership.trim()) checks.push({ level: "warning", message: node.name + " 未说明状态所有权" });
         if (ids.has(node.nodeId)) checks.push({ level: "error", message: "草稿节点标识重复：" + node.nodeId });
@@ -7063,6 +7075,7 @@
         layoutItem.x = Number(detail.x); layoutItem.y = Number(detail.y);
         if (layerChanged) {
           layoutItem.layerId = nextLayerId;
+          resetStudioLayerAssignment(layoutItem, nextLayerId, layerBeforeId);
           appendStudioOperation("layout.move", { nodeId: detail.nodeId, canvasId: canvas && canvas.canvasId }, layoutBefore, { x: layoutItem.x, y: layoutItem.y }, false);
           unifiedStudioCommit("node.layer.snap", { nodeId: detail.nodeId, layerId: nextLayerId }, layerBeforeId, nextLayerId, true);
         } else {
@@ -7073,7 +7086,8 @@
       if (detail.action === "update-field") {
         var item = detail.scope === "module_logic" && canvas ? canvas.nodes.find(function (node) { return node.nodeId === detail.nodeId; }) : candidate.nodes.find(function (node) { return node.nodeId === detail.nodeId; });
         if (!item) return;
-        var rawBeforeValue = item[detail.field], beforeValue = rawBeforeValue === undefined ? null : cloneForStudio(rawBeforeValue);
+        var assignmentField = detail.field.indexOf("layerAssignment.") === 0 ? detail.field.split(".")[1] : null;
+        var rawBeforeValue = assignmentField ? (item.layerAssignment || {})[assignmentField] : item[detail.field], beforeValue = rawBeforeValue === undefined ? null : cloneForStudio(rawBeforeValue);
         var nextValue = detail.value;
         if (detail.valueType === "string-list") nextValue = String(detail.value || "").split(/\r?\n/).map(function (value) { return value.trim(); }).filter(Boolean);
         if (detail.valueType === "technology-list") {
@@ -7083,18 +7097,21 @@
         if (detail.field === "displayName") nextValue = String(detail.value || "").trim() || null;
         if (detail.field === "loopExitCondition" && item.type !== "loop") nextValue = null;
         if (JSON.stringify(beforeValue) === JSON.stringify(nextValue)) return;
-        pushStudioUndo(); var fieldLayoutBefore = { x: item.x, y: item.y }; item[detail.field] = nextValue;
+        pushStudioUndo(); var fieldLayoutBefore = { x: item.x, y: item.y };
+        if (assignmentField) { if (!item.layerAssignment) resetStudioLayerAssignment(item, item.layerId, null); item.layerAssignment[assignmentField] = nextValue; }
+        else item[detail.field] = nextValue;
         if (detail.field === "type" && nextValue !== "loop") item.loopExitCondition = null;
         if (detail.field === "layerId" && detail.scope === "architecture") {
           var selectedFrame = unifiedStudioLayerFrame(candidate, nextValue);
           if (!selectedFrame) { restoreStudioSnapshot(state.studioUndoStack.pop()); showToast("目标层级不存在"); return; }
           item.y = Math.round(selectedFrame.y + 8);
+          resetStudioLayerAssignment(item, nextValue, beforeValue);
           appendStudioOperation("layout.move", { nodeId: detail.nodeId, reason: "layer_selection" }, fieldLayoutBefore, { x: item.x, y: item.y }, false);
         }
         unifiedStudioCommit("node.update", { nodeId: detail.nodeId, canvasId: canvas && canvas.canvasId, field: detail.field }, beforeValue, cloneForStudio(nextValue), true);
         return;
       }
-      if (detail.action === "add-module") { addStudioNode("service"); return; }
+      if (detail.action === "add-module") { addStudioNode("service", detail.layerId); return; }
       if (detail.action === "add-layer") {
         pushStudioUndo(); var layers = studioLayers(candidate); var nowId = String(Date.now());
         var layer = { id: "LAYER-STUDIO-" + nowId, name: "新架构层级", order: layers.length, summary: "待补充该层的架构职责。", parentLayerId: null, kind: "layer", extensions: {}, layoutHeight: 132 };
@@ -7260,7 +7277,7 @@
         "<div class='studio-library-section'><h3>添加组件</h3><div class='studio-library-list'><button class='studio-library-btn' type='button' data-studio-add-node='agent'>＋ Agent</button><button class='studio-library-btn' type='button' data-studio-add-node='service'>＋ 服务</button><button class='studio-library-btn' type='button' data-studio-add-node='data'>＋ 数据存储</button></div></div>" +
         "<div class='studio-library-section'><h3>层级 / 功能区</h3><div class='studio-layer-controls'><select class='studio-select' data-studio-layer-select aria-label='选择架构层'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === state.studioSelectedLayerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select><label class='studio-field'><span>父层级</span><select class='studio-select' data-studio-layer-parent " + (!selectedLayer ? "disabled" : "") + "><option value=''>无</option>" + layers.filter(function (layer) { return !selectedLayer || layer.id !== selectedLayer.id; }).map(function (layer) { return "<option value='" + e(layer.id) + "' " + (selectedLayer && selectedLayer.parentLayerId === layer.id ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></label><div class='studio-layer-control-grid'><button class='studio-library-btn' type='button' data-studio-layer-action='add'>＋ 新层级</button><button class='studio-library-btn' type='button' data-studio-layer-action='rename' " + (!selectedLayer ? "disabled" : "") + ">重命名</button><button class='studio-library-btn' type='button' data-studio-layer-action='up' " + (!selectedLayer || selectedLayer.order === 0 ? "disabled" : "") + ">上移</button><button class='studio-library-btn' type='button' data-studio-layer-action='down' " + (!selectedLayer || selectedLayer.order === layers.length - 1 ? "disabled" : "") + ">下移</button><button class='studio-library-btn' type='button' data-studio-layer-action='delete' " + (!selectedLayer ? "disabled" : "") + ">删除</button></div></div><p class='studio-layer-tree-note'>父子层级、名称与顺序影响语义；卡片坐标仍只影响布局。</p></div>" +
         "<div class='studio-library-section'><h3>需求基线</h3><ul class='studio-requirements'>" + requirements + "</ul></div></aside>" +
-        "<div class='studio-canvas-wrap " + (state.studioMobilePanel === "canvas" ? "" : "is-mobile-hidden") + "' id='studio-panel-canvas' data-studio-panel='canvas'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动或使用 Alt + 方向键调整布局</span><span>布局操作不影响语义</span></div>" +
+        "<div class='studio-canvas-wrap " + (state.studioMobilePanel === "canvas" ? "" : "is-mobile-hidden") + "' id='studio-panel-canvas' data-studio-panel='canvas'><div class='studio-layer-toolbar'><strong>目标架构草稿</strong><span>拖动或使用 Alt + 方向键调整布局</span><span>布局操作不影响语义，仅影响 Layout Hash</span></div>" +
         "<div class='studio-canvas' id='studio-canvas'><div class='studio-canvas-surface' id='studio-canvas-surface' style='height:" + surfaceHeight + "px'>" + bands + "<svg class='studio-edge-svg' id='studio-edge-svg' aria-hidden='true' focusable='false'></svg>" + nodes + "</div></div>" + studioFlowListHtml(candidate) + "</div>" +
         "<aside class='studio-inspector " + (state.studioMobilePanel === "inspector" ? "" : "is-mobile-hidden") + "' id='studio-panel-inspector' data-studio-panel='inspector'><div class='studio-panel-head'><strong>属性检查器</strong><span class='count'>" + e(selected ? selected.name : "未选择") + "</span></div>" + inspector + "</aside></div>" +
         "<footer class='studio-footer'><div class='studio-footer-status'><span class='studio-warning'>Studio 只编辑隔离 session；正式 project-panorama-data 仅由 Bridge Apply 更新</span><span>基础检查：" + errors + " 错误 / " + warnings + " 提示</span><span>语义操作 " + session.semanticOperations.length + " · 布局操作 " + session.layoutOperations.length + "</span><span class='studio-storage-note'>" + (state.studioStorage === "bridge" ? "服务端 session 修订 " + e(session.sessionRevision || 0) : (state.studioStorage === "local" ? "已保存在本浏览器；用 studio_bridge.py 打开即可启用完整闭环" : "仅保存在内存，请导出备份")) + "</span></div><div class='studio-actions'>" +
@@ -7293,7 +7310,11 @@
       var outgoing = candidate.edges.filter(function (edge) { return edge.fromNodeId === node.nodeId; });
       return "<div class='studio-inspector-section'><div class='studio-field'><label for='studio-node-name'>模块名称</label><span class='studio-impact'>影响 Semantic Hash</span><input class='studio-input' id='studio-node-name' data-studio-field='name' value='" + e(node.name) + "'></div>" +
         "<div class='studio-field'><label for='studio-node-purpose'>用途说明</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-purpose' data-studio-field='purpose'>" + e(node.purpose) + "</textarea></div>" +
-        "<div class='studio-field'><label for='studio-node-layer'>架构层</label><span class='studio-impact'>影响 Semantic Hash；画布坐标仅影响 Layout Hash</span><select class='studio-select' id='studio-node-layer' data-studio-field='layerId'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === node.layerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-layer'>架构层</label><span class='studio-impact'>影响 Semantic Hash；换层会使旧归层依据失效</span><select class='studio-select' id='studio-node-layer' data-studio-field='layerId'>" + layers.map(function (layer) { return "<option value='" + e(layer.id) + "' " + (layer.id === node.layerId ? "selected" : "") + ">" + e(layer.name) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-layer-basis'>归层依据</label><select class='studio-select' id='studio-node-layer-basis' data-studio-field='layerAssignment.basis'>" + ["unknown","responsibility","capability","interface","state_ownership","deployment","security","data_ownership","independent_evolution","explicit_design_decision"].map(function (basis) { return "<option value='" + basis + "' " + ((node.layerAssignment || {}).basis === basis ? "selected" : "") + ">" + e(basis) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-layer-rationale'>为什么属于该层级</label><span class='studio-impact'>必须基于职责、接口、状态或其他项目证据，不能只写组件名称</span><textarea class='studio-textarea' id='studio-node-layer-rationale' data-studio-field='layerAssignment.rationale'>" + e((node.layerAssignment || {}).rationale || "") + "</textarea></div>" +
+        "<div class='studio-field'><label for='studio-node-layer-confidence'>归层置信度</label><select class='studio-select' id='studio-node-layer-confidence' data-studio-field='layerAssignment.confidence'>" + ["unknown","low","medium","high"].map(function (confidence) { return "<option value='" + confidence + "' " + ((node.layerAssignment || {}).confidence === confidence ? "selected" : "") + ">" + e(confidence) + "</option>"; }).join("") + "</select></div>" +
+        "<div class='studio-field'><label for='studio-node-layer-evidence'>归层证据 Reference ID（每行一项）</label><textarea class='studio-textarea' id='studio-node-layer-evidence' data-studio-field='layerAssignment.evidenceReferenceIds'>" + e(arr((node.layerAssignment || {}).evidenceReferenceIds).join("\n")) + "</textarea></div>" +
         "<div class='studio-field'><label for='studio-node-state'>状态所有权</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-state' data-studio-field='stateOwnership'>" + e(node.stateOwnership) + "</textarea></div>" +
         "<div class='studio-field'><label for='studio-node-responsibilities'>职责（每行一项）</label><span class='studio-impact'>影响 Semantic Hash</span><textarea class='studio-textarea' id='studio-node-responsibilities' data-studio-field='responsibilities'>" + e(arr(node.responsibilities).join("\n")) + "</textarea></div>" +
         (node.isDraft ? "<button class='studio-action is-danger' type='button' data-studio-action='delete-node'>删除草稿模块</button>" : "") + "</div>" +
@@ -7428,32 +7449,59 @@
       candidate.updatedAt = new Date().toISOString(); validateStudioSession(); persistStudioSession(); renderStudio();
     }
 
-    function addStudioNode(kind) {
+    function resetStudioLayerAssignment(node, layerId, priorLayerId) {
+      var prior = node.layerAssignment && typeof node.layerAssignment === "object" ? cloneForStudio(node.layerAssignment) : null;
+      var alternatives = arr(prior && prior.alternativeLayerIds).filter(function (item) { return item !== layerId; });
+      if (priorLayerId && priorLayerId !== layerId && alternatives.indexOf(priorLayerId) < 0) alternatives.push(priorLayerId);
+      node.layerAssignment = { layerId: layerId, basis: "unknown", rationale: "", evidenceReferenceIds: [], confidence: "unknown", alternativeLayerIds: alternatives };
+    }
+
+    function addStudioNode(kind, requestedLayerId) {
       var candidate = activeStudioCandidate();
       if (!candidate) return;
-      pushStudioUndo();
       var layers = studioLayers(candidate);
-      var layerId = kind === "data" ? layers[layers.length - 1].id : (kind === "agent" && layers.length > 2 ? layers[2].id : layers[Math.min(1, layers.length - 1)].id);
+      var selectedLayerId = requestedLayerId || state.studioSelectedLayerId;
+      var layerId = layers.some(function (layer) { return layer.id === selectedLayerId; }) ? selectedLayerId : null;
+      if (!layerId) {
+        var unassigned = layers.find(function (layer) { return layer.id === "LAYER-UNASSIGNED"; });
+        layerId = unassigned ? unassigned.id : null;
+      }
+      if (!layerId) { showToast("请先选择模块所属层级；Studio 不会按组件类型自动猜测归层"); return; }
+      pushStudioUndo();
+      state.studioSelectedLayerId = layerId;
       var layerSlot = candidate.nodes.filter(function (item) { return item.layerId === layerId; }).length;
       var nodeId = "DRAFT-NODE-" + String(Date.now());
       var frame = unifiedStudioLayerFrame(candidate, layerId);
-      var node = { nodeId: nodeId, entityRef: null, name: kind === "agent" ? "new_agent" : (kind === "data" ? "new_data_store" : "new_service"), displayName: kind === "agent" ? "新 Agent" : (kind === "data" ? "新数据存储" : "新服务"), purpose: "", responsibilities: [], nonResponsibilities: [], technologies: [], stateOwnership: "", dataHandled: [], interfaceSummary: [], deploymentRole: "", referenceIds: [], notes: "", designExtensions: {}, rationale: "", requirementIds: [], layerId: layerId, baselineLayerId: layerId, category: kind, isDraft: true, x: 145 + (layerSlot % 3) * 205, y: Math.round((frame ? frame.y + 8 : 24) + Math.floor(layerSlot / 3) * 96) };
+      var node = { nodeId: nodeId, entityRef: null, name: kind === "agent" ? "new_agent" : (kind === "data" ? "new_data_store" : "new_service"), displayName: kind === "agent" ? "新 Agent" : (kind === "data" ? "新数据存储" : "新服务"), purpose: "", responsibilities: [], nonResponsibilities: [], technologies: [], stateOwnership: "", dataHandled: [], interfaceSummary: [], deploymentRole: "", referenceIds: [], notes: "", designExtensions: {}, rationale: "", requirementIds: [], layerId: layerId, baselineLayerId: layerId, layerAssignment: { layerId: layerId, basis: "unknown", rationale: "", evidenceReferenceIds: [], confidence: "unknown", alternativeLayerIds: [] }, baselineLayerAssignment: null, category: kind === "data" ? "data" : "supporting", isDraft: true, x: 145 + (layerSlot % 3) * 205, y: Math.round((frame ? frame.y + 8 : 24) + Math.floor(layerSlot / 3) * 96) };
       candidate.nodes.push(node);
       state.studioSelectedNodeId = nodeId;
       appendStudioOperation("node.add", { nodeId: nodeId }, null, cloneForStudio(node), true);
       validateStudioSession(); persistStudioSession(); renderStudio();
     }
 
+    function studioFieldValue(node, field) {
+      if (!node) return null;
+      if (field.indexOf("layerAssignment.") === 0) {
+        return (node.layerAssignment || {})[field.split(".")[1]];
+      }
+      return node[field];
+    }
+
     function updateStudioField(field, value, capturedBefore) {
       var node = studioNode(state.studioSelectedNodeId);
       if (!node) return;
-      var before = capturedBefore === undefined ? cloneForStudio(node[field]) : cloneForStudio(capturedBefore);
-      var normalized = field === "responsibilities" ? String(value).split(/\r?\n/).map(function (item) { return item.trim(); }).filter(Boolean) : String(value);
+      var assignmentField = field.indexOf("layerAssignment.") === 0 ? field.split(".")[1] : null;
+      var currentValue = assignmentField ? (node.layerAssignment || {})[assignmentField] : node[field];
+      var before = capturedBefore === undefined ? cloneForStudio(currentValue) : cloneForStudio(capturedBefore);
+      var normalized = field === "responsibilities" || assignmentField === "evidenceReferenceIds" ? String(value).split(/\r?\n/).map(function (item) { return item.trim(); }).filter(Boolean) : String(value);
       if (JSON.stringify(before) === JSON.stringify(normalized)) return;
-      node[field] = before;
+      if (assignmentField) { if (!node.layerAssignment) resetStudioLayerAssignment(node, node.layerId, null); node.layerAssignment[assignmentField] = before; }
+      else node[field] = before;
       pushStudioUndo();
-      node[field] = normalized;
+      if (assignmentField) node.layerAssignment[assignmentField] = normalized;
+      else node[field] = normalized;
       if (field === "layerId") {
+        resetStudioLayerAssignment(node, normalized, before);
         var candidate = activeStudioCandidate();
         var slot = candidate.nodes.filter(function (item) { return item.nodeId !== node.nodeId && item.layerId === normalized; }).length;
         var targetFrame = unifiedStudioLayerFrame(candidate, normalized);
@@ -8527,7 +8575,7 @@
       }
       if (event.target.dataset.studioField) {
         var selectedStudioNode = studioNode(state.studioSelectedNodeId);
-        var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : (selectedStudioNode ? cloneForStudio(selectedStudioNode[event.target.dataset.studioField]) : null);
+        var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : cloneForStudio(studioFieldValue(selectedStudioNode, event.target.dataset.studioField));
         updateStudioField(event.target.dataset.studioField, event.target.value, beforeStudioField);
         state.studioFieldBaseline = null;
         return;
@@ -8572,13 +8620,13 @@
       if (!event.target.dataset.studioField) return;
       var node = studioNode(state.studioSelectedNodeId);
       if (!node) return;
-      state.studioFieldBaseline = { nodeId: node.nodeId, field: event.target.dataset.studioField, value: cloneForStudio(node[event.target.dataset.studioField]) };
+      state.studioFieldBaseline = { nodeId: node.nodeId, field: event.target.dataset.studioField, value: cloneForStudio(studioFieldValue(node, event.target.dataset.studioField)) };
     });
     document.addEventListener("focusout", function (event) {
       if (state.studioBridge.applyResult || state.studioBridge.sessionMutationBusy) return;
       if (!event.target.dataset.studioField) return;
       var selectedStudioNode = studioNode(state.studioSelectedNodeId);
-      var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : (selectedStudioNode ? cloneForStudio(selectedStudioNode[event.target.dataset.studioField]) : null);
+      var beforeStudioField = state.studioFieldBaseline && state.studioFieldBaseline.nodeId === state.studioSelectedNodeId && state.studioFieldBaseline.field === event.target.dataset.studioField ? state.studioFieldBaseline.value : cloneForStudio(studioFieldValue(selectedStudioNode, event.target.dataset.studioField));
       updateStudioField(event.target.dataset.studioField, event.target.value, beforeStudioField);
       state.studioFieldBaseline = null;
     });

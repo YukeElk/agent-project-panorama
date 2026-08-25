@@ -105,9 +105,17 @@ Candidate 新增 `architectureLayers` 语义投影。用户可在 Studio 中新�
 功能区；节点继续绑定 Layer，数据流继续绑定显式端点。Layer ID、名称、顺序、父子关系、Kind 和 Summary 进入
 Candidate Semantic Hash 与 Proposal Diff；坐标、折叠和 `layoutHeight` 只进入 Layout。
 
+层级与 Module 归属同时遵守 [Architecture Layering and Containment Contract](architecture-layering-contract.md)。
+新建 Module 进入当前选中的 Layer；无有效选择时只能回退到现有 `LAYER-UNASSIGNED`，不得按 Agent/Data/Service
+组件类型、Layer 数组位置或名称猜测。跨层拖动或选择会清空旧归层理由/证据/置信度并保留原 Layer 为候选替代，
+用户补写的 Assignment 进入 Candidate Semantic Hash。Formal Validator 拒绝 Assignment 与 Layer Binding 不一致。
+
 Client Validator 必须拒绝重复 Layer ID、未知父层级、父子循环和节点悬空 Layer 引用。删除仍含模块或子层的 Layer
 必须在 UI 中阻断；Formal Validator 再次校验完整 Panorama。候选物化可以更新正式 `architecture.layers`，但只有
 Proposal 的精确 Hash Approval 与 Apply 才能修改项目 Core。
+
+Core 的 `parentLayerId/kind/layerSemantics` 必须进入 Model IR，Module View 必须包含直接 Layer 的完整祖先链，
+View Group 使用 `parentGroupId` 保留容器路径。父容器不能因没有直接 Module 而在编译时消失。
 
 ## V0.8 父子语义画布与 Module Logic Candidate
 

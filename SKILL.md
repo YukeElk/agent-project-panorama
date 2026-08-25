@@ -1,13 +1,13 @@
 ---
 name: agent-project-panorama
-description: "操作 Agent Project Panorama V0.1–V0.85，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的多语言源码拓扑、多视图架构、逐步讲解与显式业务流轨迹，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound multistack architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
+description: "操作 Agent Project Panorama V0.1–V0.8.5.1，持续追踪 Git/实现/验证/运行事实，检查 Evidence/Freshness，记录受约束的 Engineering Event，管理有界 Approval Policy，编译证据绑定的多语言源码拓扑、多视图架构、逐步讲解与显式业务流轨迹，并执行 INIT、INSPECT、ARCHITECTURE STUDIO、PROPOSE/APPLY、VALIDATE 和 Renderer 交付。Use when Codex needs to model or reconcile a project, inspect provenance and drift, compile evidence-bound multistack architecture views or guided explanations, record or validate project-local engineering events, manage bounded approvals, compare architecture candidates, or apply a governed Panorama update."
 ---
 
 # Agent 项目全景
 
 将本文件所在目录作为 Skill 根目录，并从该目录运行脚本。把一个 Panorama 视为单项目、以架构为主轴的工程认知界面；不要扩展成任务看板或通用项目管理平台。V0.5 Foundation 继续支持 Schema `0.1/0.2`、Data Template `0.1.0/0.1.1` 与中文 Renderer `0.4.0`，并新增不修改正式 Panorama 的 Project-local Engineering Event Sidecar。
 V0.1.4 Evidence & Materialization 合同继续兼容；V0.2 只增加事实观察通道，不降低其 INIT Approval 约束。
-V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 新增 hash-bound Explain Pack。V0.81.0 发布父子语义画布 WP0–WP8：唯一 Canvas Runtime、`read|edit` 两模式、架构主画布/模块逻辑子画布，以及作为镜片的讲解、进度、风险/决策、证据和轨迹；同时修复编辑既有模块、拖动后连线重算、跨层吸附归属，以及控制台/演进/需求的信息架构。历史 V0.8 PVD 只作为回归基线；V0.81 代表制品由普通自然语言发布批准自动绑定唯一冻结候选。V0.85 当前处于发布评审候选：新增版本化 Multistack Registry、Source Observation/Mapping v0.2、项目本地幂等 Source Sync，以及 Kotlin/Go/C# 正式 L1 与 Rust/PHP/Ruby/Swift/Scala/C/C++ Preview L1；并把桌面/移动、输入设备、Reduced Motion 与 Print 浏览器矩阵纳入 CI。V0.81 的历史 Browser Evidence 缺口继续保留在历史审计中，不得回填伪造。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
+V0.5.0 发布 Foundation Slice A、Approval Policy Core 与 opt-in Proposal/Apply Outbox。V0.6.0 纳入 V0.5.1 内部里程碑的 `event_head.recover`，并发布 `verified_delivery.promote`、Evidence-bound Model/View IR、有界 Source Extraction、Guided Multi-view Renderer 与 Verified Delivery。V0.7.0 新增 hash-bound Explain Pack。V0.81.0 发布父子语义画布 WP0–WP8：唯一 Canvas Runtime、`read|edit` 两模式、架构主画布/模块逻辑子画布，以及作为镜片的讲解、进度、风险/决策、证据和轨迹；同时修复编辑既有模块、拖动后连线重算、跨层吸附归属，以及控制台/演进/需求的信息架构。历史 V0.8 PVD 只作为回归基线；V0.81 代表制品由普通自然语言发布批准自动绑定唯一冻结候选。V0.85.0 已发布版本化 Multistack Registry、Source Observation/Mapping v0.2、项目本地幂等 Source Sync，以及 Kotlin/Go/C# 正式 L1 与 Rust/PHP/Ruby/Swift/Scala/C/C++ Preview L1；并把桌面/移动、输入设备、Reduced Motion 与 Print 浏览器矩阵纳入 CI。V0.8.5.1 是其分层语义维护版：新增证据绑定的 Layering Profile、Layer Semantics 和 Module Layer Assignment，保留父子容器投影，并禁止 Studio 按名称、类型或数组位置猜测归层。V0.81 的历史 Browser Evidence 缺口继续保留在历史审计中，不得回填伪造。其他 Operation Adapter 与 Dataset/RAG/Eval Export 尚未成为已发布能力；bounded parser 不得描述为通用或完整源码架构生成器。
 
 ## 不变量
 
@@ -103,7 +103,7 @@ DISCOVER
    - Not Detected ≠ Absent，优先使用 unknown / not_detected / not_observed；
    - Active Contract / Configuration Intent ≠ Active Runtime；
    - Test Passed Historically ≠ Current Test Baseline Passed。
-8. Requirement 来自业务场景、用户结果、能力、约束和质量目标；不要把框架、文件、目录或测试工具直接当 Requirement。Module 是可独立解释职责、接口、状态所有权、部署边界和演进的责任单元，不得使用“一目录/一文件/一任务 = 一 Module”。
+8. Requirement 来自业务场景、用户结果、能力、约束和质量目标；不要把框架、文件、目录或测试工具直接当 Requirement。Module 是可独立解释职责、接口、状态所有权、部署边界和演进的责任单元，不得使用“一目录/一文件/一任务 = 一 Module”。随后完整读取并执行 [Architecture Layering and Containment Contract](docs/architecture-layering-contract.md)：先声明 Primary Viewpoint，再区分系统/能力容器、独立 Module 与 Module Logic；名称、目录和组件惯例不能直接决定归层，证据不足时进入 `LAYER-UNASSIGNED`。
 9. 按 Current / Target / Transition 独立建模。Current 只来自 actual implementation/config/runtime 或 accepted-and-implemented structure。confirmed Target 必须有 approved Decision/ADR、reviewed architecture 或 explicit user-approved target；idea/proposal 保持 draft/proposed/pending。只有 Current 与 Target 有证据化差异时建立 Transition。
 10. 对每个 Module 独立判断 Design、Implementation、Verification、Runtime。长期项目尝试重建 2–5 个 architecture-changing versions；证据不足时写 `historical architecture incomplete`。
 11. Agent 推理只能产生 Risk Candidate / Attention Candidate。只有实际运行 Validator 返回的代码才是 Formal Finding，禁止伪造 Finding Code。
@@ -741,6 +741,8 @@ python scripts/studio_bridge.py path/to/project-panorama.html `
 只有用户明确要求 Agent 评审时才在启动参数中提供受信 Codex CLI 路径；页面/API 不得选择 executable、参数、cwd 或环境。Bridge 只探测 `--codex-cli` 指定的普通可执行文件，坏路径必须拒绝启动，未提供参数时不得从环境变量、PATH 或用户目录自动发现。Bridge 必须只绑定 `127.0.0.1` 随机端口，使用一次性 capability、同源 Origin、CSRF 与 no-store 响应；不要把它暴露到局域网、云端或多人环境。
 
 Studio Session 保存在 `.panorama-work/studio/`，正式 `project-panorama-data` 在画布编辑期间保持不变。支持多个候选与最多三个方案比较；浏览器 `CLIENT_*` 检查不是 Formal Finding。V0.8 候选可增加、重命名、设置父级、排序和受约束删除层级/功能区；`id/name/parentLayerId/kind/order` 参与候选语义，`layoutHeight/selected/collapsed` 只属于布局，正式化时只把前者物化到 `architecture.layers`。层级环、未知父级、含子层或含节点的删除必须失败关闭。语义操作与布局操作必须分开，只有语义变化使正式校验、Agent Review、Proposal 与 Approval stale。只把 Bridge 返回的完整 `semanticHash / layoutHash` 称为权威 Hash；离线页面固定显示 `not_computed_by_bridge`。候选 Semantic Diff 中正式实体只按 `entityRef.type + entityRef.id` 对齐，草稿只按 session-local ID 对齐，不得用显示名称猜测同一实体，也不得把坐标、缩放或操作时间算入语义差异。Data/Git/Source/CAS/候选变化等 stale 原因必须逐项保留，不压缩为模糊标签。
+
+Studio 的层级编辑同时遵守 [Architecture Layering and Containment Contract](docs/architecture-layering-contract.md)。新建 Module 只能进入用户当前选中的 Layer/Container；没有有效选择时只允许进入既有 `LAYER-UNASSIGNED`，不得按 Agent/Data/Service 类型、名称或 Layer 数组位置猜测。跨层拖动/选择是语义变更，必须使旧归层依据失效并要求补充理由；Core `parentLayerId` 必须经过 Model/View 投影继续显示，空父容器不能被编译器丢弃。
 
 保持 Studio 主流程仅用键盘可完成：候选 Tab 实现方向键和 Home/End；节点用 `Alt + 方向键` 调整布局并只记录 Layout Operation；为每条 SVG 连线提供可聚焦文本等价项；Drawer/Dialog 打开后移动焦点，Tab 闭环，Esc 关闭并把焦点返回触发控件。840px 以下使用组件、画布、属性/检查分段面板。保持正文至少 13px、辅助文字至少 12px、主要触控目标至少 44×44 CSS px；未实现完整 Tree 键盘模型前不要使用 `tree/treeitem`。只报告 WCAG 相关实现证据，不宣称完整 WCAG 认证。
 

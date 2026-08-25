@@ -32,6 +32,7 @@ MAX_CANDIDATES = 12
 MAX_NODES_PER_CANDIDATE = 200
 MAX_EDGES_PER_CANDIDATE = 400
 MAX_OPERATIONS = 5000
+LAYER_ASSIGNMENTS_FORMAT = "panorama-layer-assignments.v0.1"
 _ID_RE = re.compile(r"^[A-Z][A-Z0-9._:-]{1,127}$")
 _SAFE_FILE_ID_RE = re.compile(r"^[A-Z][A-Z0-9._-]{1,127}$")
 
@@ -118,6 +119,54 @@ def _target_modules(data: dict[str, Any]) -> list[dict[str, Any]]:
     modules = data.get("architecture", {}).get("modules", [])
     target = [item for item in modules if item.get("architectureScope") in {"target", "both"}]
     return target or list(modules)
+
+
+def _candidate_layer_assignment(
+    module: dict[str, Any], effective_layer_id: str
+) -> dict[str, Any]:
+    extensions = module.get("extensions", {})
+    assignment_set = (
+        extensions.get("layerAssignments", {})
+        if isinstance(extensions, dict)
+        else {}
+    )
+    raw = None
+    if isinstance(assignment_set, dict):
+        raw = assignment_set.get("target") or assignment_set.get("current")
+    if not isinstance(raw, dict):
+        raw = {}
+    return {
+        "layerId": effective_layer_id,
+        "basis": raw.get("basis", "unknown"),
+        "rationale": str(raw.get("rationale", "")),
+        "evidenceReferenceIds": _clone(raw.get("evidenceReferenceIds", [])),
+        "confidence": raw.get("confidence", "unknown"),
+        "alternativeLayerIds": _clone(raw.get("alternativeLayerIds", [])),
+    }
+
+
+def _module_extensions_with_target_assignment(
+    module: dict[str, Any], assignment: dict[str, Any]
+) -> dict[str, Any]:
+    extensions = _clone(module.get("extensions", {}))
+    if not isinstance(extensions, dict):
+        extensions = {}
+    assignment_set = extensions.get("layerAssignments")
+    if not isinstance(assignment_set, dict):
+        assignment_set = {}
+    else:
+        assignment_set = _clone(assignment_set)
+    assignment_set["formatVersion"] = LAYER_ASSIGNMENTS_FORMAT
+    assignment_set["target"] = {
+        "layerId": assignment.get("layerId"),
+        "basis": assignment.get("basis", "unknown"),
+        "rationale": str(assignment.get("rationale", "")),
+        "evidenceReferenceIds": _clone(assignment.get("evidenceReferenceIds", [])),
+        "confidence": assignment.get("confidence", "unknown"),
+        "alternativeLayerIds": _clone(assignment.get("alternativeLayerIds", [])),
+    }
+    extensions["layerAssignments"] = assignment_set
+    return extensions
 
 
 def _baseline_module_logic_canvases(
@@ -270,6 +319,7 @@ def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
         effective_layer_id = module.get("targetLayerId") or module.get("layerId")
         node_id = _slug(module_id, "NODE")
         node_for_module[module_id] = node_id
+        layer_assignment = _candidate_layer_assignment(module, effective_layer_id)
         nodes.append({
             "nodeId": node_id,
             "entityRef": {"type": "module", "id": module_id},
@@ -294,6 +344,8 @@ def _baseline_candidate(data: dict[str, Any], now: str) -> dict[str, Any]:
             # unchanged formal targetLayerId (including an explicit same-layer
             # target) without guessing.
             "baselineLayerId": effective_layer_id,
+            "layerAssignment": layer_assignment,
+            "baselineLayerAssignment": _clone(layer_assignment),
             "category": module.get("category", "supporting"),
             "isDraft": False,
             "x": 145 + (slot % 3) * 205,
@@ -343,7 +395,7 @@ def _semantic_projection(candidate: dict[str, Any]) -> dict[str, Any]:
     for node in candidate.get("nodes", []):
         nodes.append({
             key: _clone(value) for key, value in node.items()
-            if key not in {"x", "y", "selected", "collapsed", "width", "height"}
+            if key not in {"x", "y", "selected", "collapsed", "width", "height", "baselineLayerAssignment"}
         })
     edges = [_clone(item) for item in candidate.get("edges", [])]
     layers = []
@@ -498,7 +550,7 @@ def candidate_semantic_diff(
         "name", "displayName", "purpose", "responsibilities", "nonResponsibilities",
         "stateOwnership", "layerId", "category", "technologies", "dataHandled",
         "interfaceSummary", "deploymentRole", "referenceIds", "notes",
-        "designExtensions", "rationale", "requirementIds", "isDraft",
+        "designExtensions", "rationale", "requirementIds", "layerAssignment", "isDraft",
     )
     edge_fields = (
         "fromNodeRef", "toNodeRef", "name", "label", "protocol",
@@ -740,6 +792,23 @@ def validate_session(session: dict[str, Any]) -> list[dict[str, Any]]:
                 findings.append(_finding("warning", "CLIENT_STATE_OWNERSHIP", f"{node_id} has no state ownership", candidate_id=candidate_id))
             if node.get("layerId") not in layer_ids:
                 findings.append(_finding("error", "CLIENT_NODE_LAYER", f"{node_id} references an unknown layer: {node.get('layerId')}", f"/candidates/{index}/nodes/{node_index}/layerId", candidate_id))
+            assignment = node.get("layerAssignment")
+            if assignment is not None:
+                assignment_path = f"/candidates/{index}/nodes/{node_index}/layerAssignment"
+                if not isinstance(assignment, dict):
+                    findings.append(_finding("error", "CLIENT_LAYER_ASSIGNMENT", f"{node_id} layerAssignment must be an object", assignment_path, candidate_id))
+                else:
+                    if assignment.get("layerId") != node.get("layerId"):
+                        findings.append(_finding("error", "CLIENT_LAYER_ASSIGNMENT", f"{node_id} layerAssignment does not match node.layerId", f"{assignment_path}/layerId", candidate_id))
+                    if assignment.get("basis") not in {"responsibility", "capability", "interface", "state_ownership", "deployment", "security", "data_ownership", "independent_evolution", "explicit_design_decision", "unknown"}:
+                        findings.append(_finding("error", "CLIENT_LAYER_ASSIGNMENT", f"{node_id} has an invalid layer assignment basis", f"{assignment_path}/basis", candidate_id))
+                    if assignment.get("confidence") not in {"high", "medium", "low", "unknown"}:
+                        findings.append(_finding("error", "CLIENT_LAYER_ASSIGNMENT", f"{node_id} has an invalid layer assignment confidence", f"{assignment_path}/confidence", candidate_id))
+                    if not str(assignment.get("rationale", "")).strip() and (
+                        node.get("isDraft") is True
+                        or assignment != node.get("baselineLayerAssignment")
+                    ):
+                        findings.append(_finding("warning", "CLIENT_LAYER_ASSIGNMENT_RATIONALE", f"{node_id} has no layer assignment rationale", f"{assignment_path}/rationale", candidate_id))
         edge_ids: set[str] = set()
         for edge_index, edge in enumerate(candidate.get("edges", [])):
             edge_id = edge.get("edgeId")
@@ -1152,6 +1221,10 @@ def _new_module(node: dict[str, Any], module_id: str, now: str) -> dict[str, Any
         "codePath": "", "decisionIds": [], "riskIds": [], "acceptanceCriteriaIds": [], "gateIds": [], "workItemIds": [], "reviewIds": [],
         "createdAt": now, "updatedAt": now, "extensions": _clone(node.get("extensions", {})),
     }
+    if isinstance(node.get("layerAssignment"), dict):
+        result["extensions"] = _module_extensions_with_target_assignment(
+            result, node["layerAssignment"]
+        )
     if node.get("displayName"):
         result["displayName"] = str(node["displayName"]).strip()
     return result
@@ -1553,6 +1626,15 @@ def candidate_to_panorama(current: dict[str, Any], session: dict[str, Any], cand
                     node.get("layerId")
                     if node.get("layerId") != module.get("layerId")
                     else None
+                )
+            baseline_assignment = node.get("baselineLayerAssignment")
+            assignment = node.get("layerAssignment")
+            if isinstance(assignment, dict) and (
+                assignment != baseline_assignment
+                or node.get("layerId") != baseline_layer_id
+            ):
+                module["extensions"] = _module_extensions_with_target_assignment(
+                    module, assignment
                 )
             for key in ("rationale", "requirementIds"):
                 if key in node:

@@ -14,13 +14,14 @@
 8. [Legacy Panorama Strategy](#8-legacy-panorama-strategy)
 9. [Requirement Extraction](#9-requirement-extraction)
 10. [Module Decomposition](#10-module-decomposition)
-11. [Current / Target / Transition](#11-current--target--transition)
-12. [Module 四状态](#12-module-四状态)
-13. [Architecture Version Reconstruction](#13-architecture-version-reconstruction)
-14. [Risk Candidate 与 Formal Finding](#14-risk-candidate-与-formal-finding)
-15. [Next Focus](#15-next-focus)
-16. [INIT Preview Gate](#16-init-preview-gate)
-17. [Script 与 Agent 的边界](#17-script-与-agent-的边界)
+11. [Layer Decomposition and Containment](#11-layer-decomposition-and-containment)
+12. [Current / Target / Transition](#12-current--target--transition)
+13. [Module 四状态](#13-module-四状态)
+14. [Architecture Version Reconstruction](#14-architecture-version-reconstruction)
+15. [Risk Candidate 与 Formal Finding](#15-risk-candidate-与-formal-finding)
+16. [Next Focus](#16-next-focus)
+17. [INIT Preview Gate](#17-init-preview-gate)
+18. [Script 与 Agent 的边界](#18-script-与-agent-的边界)
 
 ## 1. 适用范围与停止边界
 
@@ -284,7 +285,22 @@ Where is its implementation evidence?
 
 证据不足时合并为较大责任单元并标记待拆分，不要把每个目录强行升级为 Module。
 
-## 11. Current / Target / Transition
+## 11. Layer Decomposition and Containment
+
+完整执行 [Architecture Layering and Containment Contract](architecture-layering-contract.md)。Layer 名称、数量和层深
+不是固定分类；必须先声明当前 Scope 的 Primary Viewpoint，再判断系统/能力容器、独立 Module 与 Module Logic。
+
+- 个人项目全景的主画布默认使用 `logical_capability`，Runtime、Deployment、Source 和 Sequence 使用其他 View；
+- `parentLayerId` 表示语义包含，不能由坐标或视觉邻近推导；
+- Module 只能有一个 Primary Layer，不代表它只有一个观察角度；其他角度由 View 投影表达；
+- 归层必须记录责任、接口、状态所有权、部署、安全、数据所有权、独立演进或明确设计决定等依据；
+- 常见组件名称、目录和技术标签不能代替证据；
+- 无法判断时进入 `LAYER-UNASSIGNED`，保留替代归属和 Unknown，不强制分类。
+
+INIT Preview 的 Current/Target Architecture 必须说明 Primary Viewpoint、父子容器、每个 Module 的归层理由和
+关键替代方案。正式 Core 使用合同定义的兼容 `extensions` 保存 Profile、Layer Semantics 和 Module Assignment。
+
+## 12. Current / Target / Transition
 
 ### Current
 
@@ -298,7 +314,7 @@ confirmed Target 至少需要 approved decision、accepted ADR、reviewed archit
 
 只有 Current 和 Target 存在可证实差异时建立。至少说明：from、to、why、status、blocker、decision、risk、acceptance。没有证据时不虚构日期、进度或完成度。
 
-## 12. Module 四状态
+## 13. Module 四状态
 
 对每个 Module 独立判断：
 
@@ -311,7 +327,7 @@ Runtime
 
 Implementation=functional 不推导 Design=confirmed、Verification=passed 或 Runtime=active。Current tests、historical tests、deployment declaration 与 runtime observation 分别作为不同证据记录。
 
-## 13. Architecture Version Reconstruction
+## 14. Architecture Version Reconstruction
 
 已有长期项目应尝试提取少量关键 Architecture Versions，而不是只创建 Current / Target 两个标签。版本代表 architecture-changing decisions，不代表每次 commit。
 
@@ -319,7 +335,7 @@ Implementation=functional 不推导 Design=confirmed、Verification=passed 或 R
 
 若无法可靠重建，明确写 `historical architecture incomplete`，列出已知锚点与未知区间，不补写推测历史。
 
-## 14. Risk Candidate 与 Formal Finding
+## 15. Risk Candidate 与 Formal Finding
 
 Semantic Reasoning 发现的 documentation stale、resource unclear、historical/runtime mismatch 等，只能称 Risk Candidate 或 Attention Candidate。
 
@@ -330,7 +346,7 @@ Preview 中分栏输出：
 - Formal Findings：附 Validator execution evidence；
 - Risk Candidates：附来源、推理和需要确认的事实。
 
-## 15. Next Focus
+## 16. Next Focus
 
 Next Focus 基于 Current Stage、Blocking Decision、Exit Criteria、Formal Findings、Risk Candidates、Current→Target Transition 与 Verification Gap，不等于 AI 想做什么。
 
@@ -338,7 +354,7 @@ Next Focus 基于 Current Stage、Blocking Decision、Exit Criteria、Formal Fin
 
 提供 2–3 个合理方案，每项包含 Why now、Benefits、Risks、Impact、Prerequisites、Expected outcome，并推荐一个。允许主线、并行工程保障和长期证据流并存，不强制所有 Focus 串行。
 
-## 16. INIT Preview Gate
+## 17. INIT Preview Gate
 
 已有、Legacy 或复杂项目必须执行：
 
@@ -368,7 +384,7 @@ Preview 固定输出：
 
 输出 Preview 后停止，不写 JSON、不写 HTML。只有用户明确批准该 INIT Preview，才生成 Schema-valid JSON、运行 INIT、VALIDATE 与 INSPECT。
 
-## 17. Script 与 Agent 的边界
+## 18. Script 与 Agent 的边界
 
 ### Script 负责
 

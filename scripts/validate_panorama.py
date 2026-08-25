@@ -56,6 +56,41 @@ SCOPE_TYPE_MAP = {
 SUPPORTED_SCHEMA_VERSIONS = set(SCHEMA_BY_VERSION)
 SUPPORTED_TEMPLATE_VERSIONS = {"0.1.0", "0.1.1"}
 
+LAYERING_PROFILE_FORMAT = "panorama-layering-profile.v0.1"
+LAYER_SEMANTICS_FORMAT = "panorama-layer-semantics.v0.1"
+LAYER_ASSIGNMENTS_FORMAT = "panorama-layer-assignments.v0.1"
+LAYERING_VIEWPOINTS = {
+    "logical_capability",
+    "domain",
+    "runtime",
+    "deployment",
+    "integration",
+    "source",
+    "sequence",
+}
+LAYER_BOUNDARY_TYPES = {
+    "system",
+    "capability",
+    "responsibility",
+    "technical",
+    "runtime",
+    "integration",
+    "unassigned",
+}
+LAYER_ASSIGNMENT_BASES = {
+    "responsibility",
+    "capability",
+    "interface",
+    "state_ownership",
+    "deployment",
+    "security",
+    "data_ownership",
+    "independent_evolution",
+    "explicit_design_decision",
+    "unknown",
+}
+LAYER_CONFIDENCE = {"high", "medium", "low", "unknown"}
+
 
 class ValidationRuntimeError(RuntimeError):
     """An input, marker, schema, or dependency failure (CLI exit code 2)."""
@@ -542,6 +577,350 @@ def validate_cross_references(
         require(connection.get("toModuleId"), "module", f"{base}/toModuleId")
         require_many(connection.get("contractReferenceIds"), "reference", f"{base}/contractReferenceIds")
         require(connection.get("transitionId"), "transition", f"{base}/transitionId", optional=True)
+
+
+def validate_extended_cross_references_and_layer_semantics(
+    data: dict[str, Any], registry: EntityRegistry, report: ValidationReport
+) -> None:
+    """Validate remaining rich cross-refs and opt-in layering semantics.
+
+    The Core schema intentionally keeps ``extensions`` open for backwards
+    compatibility.  Once a project declares the layering contract, structural
+    consistency becomes deterministic; the Validator still does not infer the
+    correct layer from names, directories, coordinates, or technology labels.
+    """
+
+    def require(
+        entity_id: str | None,
+        entity_type: str,
+        owner_path: str,
+        *,
+        optional: bool = False,
+    ) -> None:
+        if entity_id is None and optional:
+            return
+        if not isinstance(entity_id, str) or not registry.has(entity_type, entity_id):
+            report.error(
+                "BROKEN_REFERENCE",
+                f"应引用已存在的 {entity_type} ID，实际为 {entity_id!r}。",
+                owner_path,
+            )
+
+    def require_many(ids: Any, entity_type: str, owner_path: str) -> None:
+        if not isinstance(ids, list):
+            return
+        for index, entity_id in enumerate(ids):
+            require(entity_id, entity_type, f"{owner_path}/{index}")
+
+    def require_entity_refs(refs: Any, owner_path: str) -> None:
+        if not isinstance(refs, list):
+            return
+        for index, ref in enumerate(refs):
+            if not isinstance(ref, dict):
+                continue
+            entity_type = ref.get("type")
+            if entity_type not in ENTITY_REF_TYPES:
+                report.error(
+                    "BROKEN_ENTITY_REF",
+                    f"不支持的 entityRef 类型：{entity_type!r}。",
+                    f"{owner_path}/{index}/type",
+                )
+                continue
+            require(ref.get("id"), entity_type, f"{owner_path}/{index}/id")
+
+    architecture_ref_types = {
+        "layer": "layer",
+        "module": "module",
+        "connection": "connection",
+        "module_logic_design": "module_logic_design",
+        "logic_node": "logic_node",
+        "logic_edge": "logic_edge",
+        "boundary_port": "boundary_port",
+        "resource": "resource",
+    }
+
+    def require_architecture_refs(refs: Any, owner_path: str) -> None:
+        if not isinstance(refs, list):
+            return
+        for index, ref in enumerate(refs):
+            if not isinstance(ref, dict):
+                continue
+            ref_type = ref.get("type")
+            entity_type = architecture_ref_types.get(ref_type)
+            if entity_type is None:
+                report.error(
+                    "BROKEN_ARCHITECTURE_REF",
+                    f"不支持的 Architecture Ref 类型：{ref_type!r}。",
+                    f"{owner_path}/{index}/type",
+                )
+                continue
+            require(ref.get("id"), entity_type, f"{owner_path}/{index}/id")
+
+    architecture = data.get("architecture", {})
+    if not isinstance(architecture, dict):
+        return
+    architecture_extensions = architecture.get("extensions", {})
+    if not isinstance(architecture_extensions, dict):
+        return
+    stages = _items(data, "stages")
+    profile = architecture_extensions.get("layeringProfile")
+    reviewed = False
+    if profile is not None:
+        path = "/architecture/extensions/layeringProfile"
+        if not isinstance(profile, dict):
+            report.error(
+                "LAYERING_PROFILE_INVALID",
+                "layeringProfile 必须是对象。",
+                path,
+            )
+        else:
+            if profile.get("formatVersion") != LAYERING_PROFILE_FORMAT:
+                report.error(
+                    "LAYERING_PROFILE_INVALID",
+                    f"formatVersion 必须为 {LAYERING_PROFILE_FORMAT}。",
+                    f"{path}/formatVersion",
+                )
+            if profile.get("primaryViewpoint") not in LAYERING_VIEWPOINTS - {"source", "sequence"}:
+                report.error(
+                    "LAYERING_PROFILE_INVALID",
+                    "primaryViewpoint 必须是 logical_capability/domain/runtime/deployment/integration 之一。",
+                    f"{path}/primaryViewpoint",
+                )
+            secondary = profile.get("secondaryViewpoints")
+            if not isinstance(secondary, list) or any(
+                item not in LAYERING_VIEWPOINTS for item in secondary
+            ):
+                report.error(
+                    "LAYERING_PROFILE_INVALID",
+                    "secondaryViewpoints 必须是合法 Viewpoint 的数组。",
+                    f"{path}/secondaryViewpoints",
+                )
+            elif profile.get("primaryViewpoint") in secondary:
+                report.error(
+                    "LAYERING_PROFILE_INVALID",
+                    "Primary Viewpoint 不能同时出现在 secondaryViewpoints。",
+                    f"{path}/secondaryViewpoints",
+                )
+            for field, expected in (
+                ("assignmentPolicy", "single_primary_evidence_bound"),
+                ("ambiguityPolicy", "unassigned"),
+                ("containerPolicy", "layer_or_module_logic"),
+            ):
+                if profile.get(field) != expected:
+                    report.error(
+                        "LAYERING_PROFILE_INVALID",
+                        f"{field} 必须为 {expected}。",
+                        f"{path}/{field}",
+                    )
+            if profile.get("status") not in {"draft", "reviewed"}:
+                report.error(
+                    "LAYERING_PROFILE_INVALID",
+                    "status 必须为 draft 或 reviewed。",
+                    f"{path}/status",
+                )
+            reviewed = profile.get("status") == "reviewed"
+
+    layers = _architecture_items(data, "layers")
+    layer_ids = {item.get("id") for item in layers if isinstance(item.get("id"), str)}
+
+    def validate_reference_ids(value: Any, path: str) -> None:
+        if not isinstance(value, list):
+            report.error(
+                "LAYER_SEMANTICS_INVALID",
+                "evidenceReferenceIds 必须是 Reference ID 数组。",
+                path,
+            )
+            return
+        for ref_index, reference_id in enumerate(value):
+            if not isinstance(reference_id, str) or not registry.has("reference", reference_id):
+                report.error(
+                    "LAYER_SEMANTICS_REFERENCE",
+                    f"归层证据必须引用正式 Reference，实际为 {reference_id!r}。",
+                    f"{path}/{ref_index}",
+                )
+
+    for index, layer in enumerate(layers):
+        layer_id = layer.get("id")
+        base = f"/architecture/layers/{index}/extensions/layerSemantics"
+        extensions = layer.get("extensions", {})
+        semantics = extensions.get("layerSemantics") if isinstance(extensions, dict) else None
+        if semantics is None:
+            if reviewed and layer_id != "LAYER-UNASSIGNED":
+                report.error(
+                    "LAYER_SEMANTICS_GAP",
+                    f"reviewed Profile 中的 Layer {layer_id} 缺少 layerSemantics。",
+                    base,
+                    related_entities=({"type": "layer", "id": str(layer_id)},),
+                )
+            continue
+        if not isinstance(semantics, dict):
+            report.error("LAYER_SEMANTICS_INVALID", "layerSemantics 必须是对象。", base)
+            continue
+        if semantics.get("formatVersion") != LAYER_SEMANTICS_FORMAT:
+            report.error(
+                "LAYER_SEMANTICS_INVALID",
+                f"formatVersion 必须为 {LAYER_SEMANTICS_FORMAT}。",
+                f"{base}/formatVersion",
+            )
+        boundary_type = semantics.get("boundaryType")
+        if boundary_type not in LAYER_BOUNDARY_TYPES:
+            report.error(
+                "LAYER_SEMANTICS_INVALID",
+                "boundaryType 不是受支持的层级边界类型。",
+                f"{base}/boundaryType",
+            )
+        confidence = semantics.get("confidence")
+        if confidence not in LAYER_CONFIDENCE:
+            report.error(
+                "LAYER_SEMANTICS_INVALID",
+                "confidence 必须为 high/medium/low/unknown。",
+                f"{base}/confidence",
+            )
+        rationale = semantics.get("rationale")
+        if not isinstance(rationale, str) or not rationale.strip():
+            level = report.error if reviewed and layer_id != "LAYER-UNASSIGNED" else report.warning
+            level(
+                "LAYER_SEMANTICS_GAP",
+                f"Layer {layer_id} 缺少边界理由，无法解释该容器为何存在。",
+                f"{base}/rationale",
+                related_entities=({"type": "layer", "id": str(layer_id)},),
+            )
+        for field in ("inScope", "outOfScope"):
+            value = semantics.get(field)
+            if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                report.error(
+                    "LAYER_SEMANTICS_INVALID",
+                    f"{field} 必须是字符串数组。",
+                    f"{base}/{field}",
+                )
+        validate_reference_ids(
+            semantics.get("evidenceReferenceIds"), f"{base}/evidenceReferenceIds"
+        )
+        if layer_id == "LAYER-UNASSIGNED" and boundary_type != "unassigned":
+            report.error(
+                "LAYER_SEMANTICS_INVALID",
+                "LAYER-UNASSIGNED 的 boundaryType 必须为 unassigned。",
+                f"{base}/boundaryType",
+            )
+
+    def expected_scopes(module: dict[str, Any]) -> dict[str, str | None]:
+        scope = module.get("architectureScope")
+        result: dict[str, str | None] = {}
+        if scope in {"current", "both"}:
+            result["current"] = module.get("layerId")
+        if scope in {"target", "both"}:
+            result["target"] = module.get("targetLayerId") or module.get("layerId")
+        if scope == "historical":
+            result["historical"] = module.get("layerId")
+        return result
+
+    for index, module in enumerate(_architecture_items(data, "modules")):
+        module_id = module.get("id")
+        extensions = module.get("extensions", {})
+        assignment_set = extensions.get("layerAssignments") if isinstance(extensions, dict) else None
+        base = f"/architecture/modules/{index}/extensions/layerAssignments"
+        required = expected_scopes(module)
+        if assignment_set is None:
+            if reviewed:
+                report.error(
+                    "LAYER_ASSIGNMENT_GAP",
+                    f"reviewed Profile 中的 Module {module_id} 缺少 Layer Assignment。",
+                    base,
+                    related_entities=({"type": "module", "id": str(module_id)},),
+                )
+            continue
+        if not isinstance(assignment_set, dict):
+            report.error("LAYER_ASSIGNMENT_INVALID", "layerAssignments 必须是对象。", base)
+            continue
+        if assignment_set.get("formatVersion") != LAYER_ASSIGNMENTS_FORMAT:
+            report.error(
+                "LAYER_ASSIGNMENT_INVALID",
+                f"formatVersion 必须为 {LAYER_ASSIGNMENTS_FORMAT}。",
+                f"{base}/formatVersion",
+            )
+        for scope, expected_layer_id in required.items():
+            assignment = assignment_set.get(scope)
+            assignment_path = f"{base}/{scope}"
+            if assignment is None:
+                if reviewed:
+                    report.error(
+                        "LAYER_ASSIGNMENT_GAP",
+                        f"Module {module_id} 缺少 {scope} Layer Assignment。",
+                        assignment_path,
+                        related_entities=({"type": "module", "id": str(module_id)},),
+                    )
+                continue
+            if not isinstance(assignment, dict):
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    f"{scope} Assignment 必须是对象。",
+                    assignment_path,
+                )
+                continue
+            layer_id = assignment.get("layerId")
+            if layer_id != expected_layer_id:
+                report.error(
+                    "LAYER_ASSIGNMENT_MISMATCH",
+                    f"Module {module_id} 的 {scope} Assignment={layer_id!r}，正式 Layer Binding={expected_layer_id!r}。",
+                    f"{assignment_path}/layerId",
+                    related_entities=({"type": "module", "id": str(module_id)},),
+                )
+            if layer_id not in layer_ids:
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    f"Assignment 使用未知 Layer {layer_id!r}。",
+                    f"{assignment_path}/layerId",
+                )
+            basis = assignment.get("basis")
+            if basis not in LAYER_ASSIGNMENT_BASES:
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    "basis 不是受支持的归层依据。",
+                    f"{assignment_path}/basis",
+                )
+            confidence = assignment.get("confidence")
+            if confidence not in LAYER_CONFIDENCE:
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    "confidence 必须为 high/medium/low/unknown。",
+                    f"{assignment_path}/confidence",
+                )
+            rationale = assignment.get("rationale")
+            if not isinstance(rationale, str) or not rationale.strip():
+                report.warning(
+                    "LAYER_ASSIGNMENT_GAP",
+                    f"Module {module_id} 的 {scope} 归层缺少理由。",
+                    f"{assignment_path}/rationale",
+                    severity="high" if reviewed else "warning",
+                    related_entities=({"type": "module", "id": str(module_id)},),
+                )
+            validate_reference_ids(
+                assignment.get("evidenceReferenceIds"),
+                f"{assignment_path}/evidenceReferenceIds",
+            )
+            alternatives = assignment.get("alternativeLayerIds")
+            if not isinstance(alternatives, list):
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    "alternativeLayerIds 必须是 Layer ID 数组。",
+                    f"{assignment_path}/alternativeLayerIds",
+                )
+            else:
+                for alt_index, alternative in enumerate(alternatives):
+                    if alternative not in layer_ids or alternative == layer_id:
+                        report.error(
+                            "LAYER_ASSIGNMENT_INVALID",
+                            f"替代 Layer 必须存在且不同于主 Layer，实际为 {alternative!r}。",
+                            f"{assignment_path}/alternativeLayerIds/{alt_index}",
+                        )
+            if layer_id == "LAYER-UNASSIGNED" and (
+                basis != "unknown" or confidence not in {"low", "unknown"}
+            ):
+                report.error(
+                    "LAYER_ASSIGNMENT_INVALID",
+                    "未分配 Module 必须使用 basis=unknown 且 confidence=low/unknown。",
+                    assignment_path,
+                )
 
     design_keys: dict[tuple[str, str], str] = {}
     for design_index, design in enumerate(
@@ -1806,6 +2185,7 @@ def validate_data(
         return report
     registry = build_registry(data, report)
     validate_cross_references(data, registry, report)
+    validate_extended_cross_references_and_layer_semantics(data, registry, report)
     validate_rules(
         data,
         registry,

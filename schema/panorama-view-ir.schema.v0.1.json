@@ -215,7 +215,12 @@
           "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
         },
         "label": {"type": "string", "minLength": 1, "maxLength": 512},
-        "order": {"type": "integer"}
+        "order": {"type": "integer"},
+        "parentGroupId": {
+          "oneOf": [{"$ref": "#/$defs/stableId"}, {"type": "null"}]
+        },
+        "kind": {"enum": ["layer", "domain", "capability", "runtime", "integration"]},
+        "summary": {"type": "string", "maxLength": 2048}
       }
     },
     "node": {
