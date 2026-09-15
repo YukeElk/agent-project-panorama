@@ -8,7 +8,7 @@ Node.js 和 Python **不包含在发布包中**，须由服务器预先提供。
 
 - Node.js：22.19.0 或更高的 22.x，或者 24.0.0 及以上；建议使用仍受维护的 LTS 版本。
 - Python：3.11+，包含标准库。全景本身不需要额外的 Python 包。
-- Linux 下载 `panorama-1.0.0-linux.tar.gz`；Windows 下载 `panorama-1.0.0-windows.zip`。
+- Linux 下载 `panorama-1.0.1-linux.tar.gz`；Windows 下载 `panorama-1.0.1-windows.zip`。
 - 全景程序由 JavaScript、Python 和静态页面构成，不含 CPU 原生二进制。x64/ARM64 使用各自系统对应的 Node/Python；具体实测平台以 Release 验证结果为准。
 - 包应解压到普通目录，保留完整结构。Windows 项目根建议使用短路径，例如 `D:\projects\demo`。
 
@@ -17,17 +17,17 @@ Node.js 和 Python **不包含在发布包中**，须由服务器预先提供。
 ## Linux
 
 ```sh
-tar -xzf panorama-1.0.0-linux.tar.gz
-cd panorama-1.0.0
+tar -xzf panorama-1.0.1-linux.tar.gz
+cd panorama-1.0.1
 sh ./install.sh --node /opt/node/bin/node --python /usr/bin/python3
 ./panorama doctor
 ```
 
-如果 Node/Python 已在 PATH 中，可直接运行 `sh ./install.sh`。Python 符号链接会解析为实际解释器路径。下面将安装目录记为 `/opt/panorama-1.0.0`；替换为实际位置。
+如果 Node/Python 已在 PATH 中，可直接运行 `sh ./install.sh`。Python 符号链接会解析为实际解释器路径。下面将安装目录记为 `/opt/panorama-1.0.1`；替换为实际位置。
 
 ## Windows PowerShell
 
-解压 zip 后进入 `panorama-1.0.0`：
+解压 zip 后进入 `panorama-1.0.1`：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Node 'C:\node\node.exe' -Python 'C:\Python313\python.exe'
@@ -53,12 +53,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\panorama.ps1 doctor
 Linux 示例（先创建项目外的数据和请求父目录）：
 
 ```sh
-/opt/panorama-1.0.0/panorama process preflight --project /srv/projects/demo --data /srv/panorama-data/demo --output /srv/requests/demo-bootstrap.json
+/opt/panorama-1.0.1/panorama process preflight --project /srv/projects/demo --data /srv/panorama-data/demo --output /srv/requests/demo-bootstrap.json
 # 回读并补齐 bootstrap，再初始化
-/opt/panorama-1.0.0/panorama process init --project /srv/projects/demo --data /srv/panorama-data/demo --input /srv/requests/demo-bootstrap.json
+/opt/panorama-1.0.1/panorama process init --project /srv/projects/demo --data /srv/panorama-data/demo --input /srv/requests/demo-bootstrap.json
 ```
 
-Windows 使用相同参数，将入口替换为 `& 'D:\tools\panorama-1.0.0\panorama.ps1'`。固定入口自动提供登记的 Python，无需每次添加 `--python`。
+Windows 使用相同参数，将入口替换为 `& 'D:\tools\panorama-1.0.1\panorama.ps1'`。固定入口自动提供登记的 Python，无需每次添加 `--python`。
 
 接入基线取实际文件状态，包括未提交修改；已有项目过去未采集的开发历史不会被补造成已验证记录。
 
@@ -73,16 +73,20 @@ Windows 使用相同参数，将入口替换为 `& 'D:\tools\panorama-1.0.0\pano
 ## 工作台与远程访问
 
 ```sh
-/opt/panorama-1.0.0/panorama workbench start --project /srv/projects/demo --data /srv/panorama-data/demo --port 43110
+/opt/panorama-1.0.1/panorama workbench start --project /srv/projects/demo --data /srv/panorama-data/demo --port 43110
 ```
 
-在本机浏览器打开启动输出的完整地址。服务器上只监听 `127.0.0.1`。从自己的电脑访问远程服务器时，保持本地和远程端口相同：
+1.0.1 默认监听 `0.0.0.0`，接受其他电脑的连接。启动输出会列出本机地址、网卡地址和本次访问凭证。远程浏览器直接打开：
 
 ```sh
-ssh -N -L 43110:127.0.0.1:43110 user@server
+http://服务器IP:43110/#cap=本次启动输出的凭证
 ```
 
-随后打开 `http://127.0.0.1:43110/#cap=...`（使用本次启动实际输出的凭证）。多个项目使用不同端口和数据目录。工作台关闭后，项目内 CLI 仍可正常记录开发过程。
+把“服务器IP”换成实际可达的 IP；`0.0.0.0` 是监听地址，不是浏览器的访问地址。服务器防火墙和网络需允许该端口连接。无需 SSH 转发，也无需另设来源 IP 白名单；API 仍校验访问凭证和同源请求。浏览器读取凭证后会从地址栏清除它。
+
+端口用 `--port 43110` 配置；不提供时自动选择可用端口，并在启动输出显示。需要指定某块网卡时使用 `--host IP`；需要仅本机访问时使用 `--host 127.0.0.1`。多个项目使用不同端口和数据目录。工作台关闭后，项目内 CLI 仍可正常记录开发过程。
+
+从 1.0.0 升级请解压 1.0.1 到新目录，运行安装脚本，关闭旧工作台，再使用新入口和原来的 `--project`、`--data` 启动；已初始化的项目无需重新 init。
 
 全景离线可解析源码、编辑候选、导出和导入 Agent 交接、记录检查和展示演进。自然语言模型分析需另有可访问的模型服务；未配置时使用外部 Agent 交接或手工设计。
 

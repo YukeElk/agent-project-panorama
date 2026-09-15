@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Field, KIND_LABELS, lines } from './Shared.jsx';
 
-const makeId = (kind) => `target:${kind}:${crypto.randomUUID()}`;
+import { createBrowserUUID } from '../../browser-utils.js';
+
+const makeId = (kind) => `target:${kind}:${createBrowserUUID()}`;
 const unique = (items) => [...new Set(items)];
 const fields = (node) => ({
   label: node?.label || '', description: node?.description || '',

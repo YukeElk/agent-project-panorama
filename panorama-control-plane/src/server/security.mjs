@@ -16,7 +16,7 @@ export function verifyCapability(actual, expected) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-export function secureHeaders(contentType = 'application/json; charset=utf-8') {
+export function secureHeaders(contentType = 'application/json; charset=utf-8', { openerIsolation = true } = {}) {
   return {
     'content-type': contentType,
     'cache-control': 'no-store',
@@ -24,12 +24,22 @@ export function secureHeaders(contentType = 'application/json; charset=utf-8') {
     'referrer-policy': 'no-referrer',
     'x-content-type-options': 'nosniff',
     'x-frame-options': 'DENY',
-    'cross-origin-opener-policy': 'same-origin',
+    ...(openerIsolation ? { 'cross-origin-opener-policy': 'same-origin' } : {}),
   };
 }
 
-export function authorizeRequest(request, { expectedHost, expectedOrigin, capability, requireOrigin = false }) {
-  if (!isLoopback(request.socket.remoteAddress)) throw new Error('NON_LOOPBACK');
+export function httpRequestOrigin(request) {
+  const host = request.headers.host;
+  if (typeof host !== 'string' || !host || /[\s\\/@?#,]/.test(host)) throw Object.assign(new Error('HOST_INVALID'), { statusCode: 403 });
+  try {
+    const url = new URL(`http://${host}`);
+    if (!url.hostname || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('HOST_INVALID');
+    return url.origin;
+  } catch { throw Object.assign(new Error('HOST_INVALID'), { statusCode: 403 }); }
+}
+
+export function authorizeRequest(request, { expectedHost, expectedOrigin, capability, requireOrigin = false, allowRemote = false }) {
+  if (!allowRemote && !isLoopback(request.socket.remoteAddress)) throw new Error('NON_LOOPBACK');
   if (request.headers.host !== expectedHost) throw new Error('HOST_MISMATCH');
   const origin = request.headers.origin;
   if ((requireOrigin || origin) && origin !== expectedOrigin) throw new Error('ORIGIN_MISMATCH');

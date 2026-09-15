@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { tmpdir, networkInterfaces } from 'node:os';
+import { request as httpRequest } from 'node:http';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { basename, dirname, join, resolve } from 'node:path';
 import test from 'node:test';
 import { createStandaloneServer } from '../../src/server/standalone-server.mjs';
@@ -23,7 +26,7 @@ async function setup(context, extra = {}) {
     await rm(area, { recursive: true, force: true });
   });
   const options = { projectRoot, dataRoot, staticRoot, modelConfig: { available: false, label: '外部 Agent 交接' }, ...extra };
-  const start = async () => { const local = await createStandaloneServer(options); servers.push(local); return local; };
+  const start = async (overrides = {}) => { const local = await createStandaloneServer({ ...options, ...overrides }); servers.push(local); return local; };
   const local = await start();
   return { area, local, start, projectRoot, dataRoot };
 }
@@ -68,6 +71,70 @@ test('default standalone APIs isolate execution, enforce origin and expose regis
   assert.equal((await request(local, 'source?path=../data/workspace.json')).status, 400);
   assert.equal((await request(local, 'source?path=.env')).status, 400);
   assert.equal(await readFile(join(projectRoot, 'orders.ts'), 'utf8'), before);
+});
+
+test('default listener permits actual non-loopback HTTP reads and design writes with the launch capability', async (context) => {
+  const { local } = await setup(context);
+  assert.equal(local.server.address().address, '0.0.0.0');
+  assert.equal(local.listenHost, '0.0.0.0');
+  const address = Object.values(networkInterfaces()).flat().find((item) => item?.family === 'IPv4' && !item.internal)?.address;
+  assert.ok(address, 'This integration test requires a non-loopback IPv4 interface');
+  const remote = { ...local, origin: `http://${address}:${local.port}` };
+  assert.ok(local.launchUrls.includes(`${remote.origin}/#cap=${local.capability}`));
+  const peers = [];
+  local.server.on('request', (incoming) => peers.push(incoming.socket.remoteAddress));
+  assert.equal((await fetch(remote.origin)).status, 200);
+  const bootstrap = await request(remote, 'bootstrap');
+  assert.equal(bootstrap.status, 200);
+  const body = { type: 'create-session', input: { title: '远程设计', kind: 'architecture' }, expectedRevision: bootstrap.body.workspace.revision };
+  assert.equal((await request(remote, 'command', body, { origin: local.origin })).body.error, 'ORIGIN_MISMATCH');
+  assert.equal((await request(remote, 'command', body, { origin: '' })).body.error, 'ORIGIN_MISMATCH');
+  assert.equal((await request(remote, 'bootstrap', null, { authorization: '' })).body.error, 'CAPABILITY_MISMATCH');
+  assert.equal((await request(remote, 'bootstrap', null, { authorization: 'Bearer invalid' })).body.error, 'CAPABILITY_MISMATCH');
+  assert.equal((await request(remote, 'command', body)).status, 200);
+  assert.equal((await request(remote, 'bootstrap')).body.workspace.sessions.at(-1).title, '远程设计');
+  assert.ok(peers.length > 0 && peers.every((peer) => peer === address || peer === `::ffff:${address}`));
+});
+
+test('same-origin checks follow a valid request Host, including a different external port', async (context) => {
+  const { local } = await setup(context);
+  const raw = (host, origin, path = '/api/standalone/bootstrap', body) => new Promise((done, reject) => {
+    const outgoing = httpRequest(`${local.origin}${path}`, { method: body ? 'POST' : 'GET', headers: {
+      Host: host, authorization: `Bearer ${local.capability}`, ...(origin ? { origin } : {}), ...(body ? { 'content-type': 'application/json' } : {}),
+    } }, (incoming) => { let text = ''; incoming.setEncoding('utf8'); incoming.on('data', (chunk) => text += chunk); incoming.on('end', () => done({ status: incoming.statusCode, body: JSON.parse(text) })); });
+    outgoing.on('error', reject); outgoing.end(body ? JSON.stringify(body) : undefined);
+  });
+  const alias = 'panorama.example:43110';
+  const bootstrap = await raw(alias, `http://${alias}`);
+  assert.equal(bootstrap.status, 200);
+  const body = { type: 'create-session', input: { title: '域名与端口', kind: 'architecture' }, expectedRevision: bootstrap.body.workspace.revision };
+  assert.equal((await raw(alias, `http://${alias}`, '/api/standalone/command', body)).status, 200);
+  assert.equal((await raw(alias, 'http://other.example:43110')).body.error, 'ORIGIN_MISMATCH');
+  for (const invalid of ['server/path', 'user@server', 'server:99999', 'server,other', 'server#fragment']) {
+    assert.equal((await raw(invalid)).status, 403, invalid);
+  }
+});
+
+test('an explicit loopback host and port remain configurable', async (context) => {
+  const { local, start } = await setup(context);
+  const port = local.port;
+  await local.close();
+  const restricted = await start({ host: '127.0.0.1', port });
+  assert.equal(restricted.server.address().address, '127.0.0.1');
+  assert.equal(restricted.port, port);
+  assert.deepEqual(restricted.launchUrls, [restricted.launchUrl]);
+  assert.equal((await request(restricted, 'bootstrap')).status, 200);
+});
+
+test('workbench CLI rejects invalid or incomplete network flags before locating a project', () => {
+  const cli = fileURLToPath(new URL('../../src/cli.mjs', import.meta.url));
+  for (const flags of [['--port', '43110abc'], ['--port', '-1'], ['--port', '65536'], ['--port'], ['--host', 'not-an-ip'], ['--host'], ['--port', '1', '--port', '2'], ['--unknown', '1']]) {
+    const child = spawnSync(process.execPath, [cli, 'start', '--project', 'missing-remote-test-project', ...flags], { encoding: 'utf8', windowsHide: true, timeout: 10000 });
+    assert.equal(child.status, 2, child.stderr);
+    assert.match(child.stderr, /PORT_INVALID|LISTEN_HOST_INVALID|OPTION_INVALID/);
+  }
+  const help = spawnSync(process.execPath, [cli, 'start', '--help'], { encoding: 'utf8', windowsHide: true, timeout: 10000 });
+  assert.equal(help.status, 0); assert.match(help.stdout, /--host 0\.0\.0\.0/);
 });
 
 test('external natural language, preview application, review and handoff persist without business writes', async (context) => {

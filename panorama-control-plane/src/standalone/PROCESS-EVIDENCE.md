@@ -8,7 +8,7 @@
 
 **本地接口**
 
-路径前缀为 `/api/standalone`，沿用现有 Host、loopback、Bearer capability 校验，所有 POST 要求当前本地 Origin。请求体上限 1 MiB，严格 JSON 拒绝重复键、无效 UTF-8、过深/非法结构；每份内嵌过程文档再按 P0 上限和 Schema 校验。浏览器粘贴 JSON 通过 `receiptJson`/`documentJson` 原文发送，服务端负责严格解析。
+路径前缀为 `/api/standalone`。1.0.1 默认监听 `0.0.0.0`，接受远程连接；请求 Host 必须是有效地址，API 校验 Bearer capability，所有 POST 要求 Origin 与当前请求 Host 对应的 HTTP 来源一致。端口使用 `--port` 配置，监听地址可用 `--host` 指定。请求体上限 1 MiB，严格 JSON 拒绝重复键、无效 UTF-8、过深/非法结构；每份内嵌过程文档再按 P0 上限和 Schema 校验。浏览器粘贴 JSON 通过 `receiptJson`/`documentJson` 原文发送，服务端负责严格解析。
 
 | 方法与路径 | 输入 | 行为 |
 |---|---|---|

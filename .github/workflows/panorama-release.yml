@@ -1,7 +1,7 @@
-name: Panorama 1.0 distribution validation
+name: Panorama distribution validation
 on:
   push:
-    branches: ['release/v1.0.0']
+    branches: ['release/v1.0.1']
     paths: ['panorama-control-plane/**', '.github/workflows/panorama-release.yml']
   workflow_dispatch:
 permissions:

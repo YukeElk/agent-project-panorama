@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { diffModels } from '../../../../standalone/design-model.mjs';
+import { copyText } from '../../browser-utils.js';
 
 export const KIND_LABELS = { module: '模块', file: '文件', symbol: '符号', route: '入口', service: '服务', resource: '资源', external: '外部依赖' };
 export const STATUS_LABELS = { reflected: '结构已体现', partial: '部分体现', not_reflected: '尚未体现', insufficient_evidence: '证据不足', pending: '待处理', accepted: '已采纳', partially_accepted: '部分采纳', rejected: '已驳回' };
@@ -21,7 +22,7 @@ export function Tag({ children, tone = '' }) { return <span className={`st-tag $
 export function CopyButton({ text, label = '复制说明' }) {
   const [status, setStatus] = useState('');
   return <span className="st-copy"><button type="button" className="secondary-button" disabled={!text} onClick={async () => {
-    try { await navigator.clipboard.writeText(text); setStatus('已复制'); }
+    try { await copyText(text); setStatus('已复制'); }
     catch { setStatus('复制不可用，请选择下方文本复制'); }
   }}>{status === '已复制' ? status : label}</button>{status && status !== '已复制' ? <small role="status">{status}</small> : null}</span>;
 }

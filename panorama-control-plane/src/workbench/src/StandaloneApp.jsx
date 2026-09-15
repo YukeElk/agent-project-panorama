@@ -19,7 +19,7 @@ export default function StandaloneApp() {
   const updateWorkspace = useCallback((workspace) => { workspaceRef.current = workspace; setBootstrap((current) => ({ ...current, workspace })); }, []);
   useEffect(() => {
     const abort = new AbortController();
-    if (!initializeStandaloneCapability()) { setError('请使用启动命令提供的本地链接打开全景。'); return () => abort.abort(); }
+    if (!initializeStandaloneCapability()) { setError('请使用启动命令提供的完整链接打开全景，远程访问时替换为服务器 IP，并保留访问凭证。'); return () => abort.abort(); }
     void standaloneRequest('bootstrap', { signal: abort.signal }).then((value) => { workspaceRef.current = value.workspace; setBootstrap(value); }, (failure) => { if (failure.name !== 'AbortError') setError(failure.message); });
     return () => abort.abort();
   }, []);

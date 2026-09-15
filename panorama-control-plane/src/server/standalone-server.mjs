@@ -1,11 +1,13 @@
 import { createServer } from 'node:http';
+import { isIP } from 'node:net';
+import { networkInterfaces } from 'node:os';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { extname, join, relative, resolve } from 'node:path';
 
 import { analyzeProject, readSourceEvidence } from '../standalone/source-analysis.mjs';
 import { WorkspaceStore } from '../standalone/design-workspace.mjs';
 import { analyzeConversation, modelConfiguration } from '../standalone/conversation.mjs';
-import { authorizeRequest, createCapability, isLoopback, secureHeaders } from './security.mjs';
+import { authorizeRequest, createCapability, httpRequestOrigin, secureHeaders } from './security.mjs';
 import { ProcessEvidenceService, compatibilityPreview, importDocument } from '../standalone/process-evidence.mjs';
 import { parseProcessJson } from '../process/json.mjs';
 import { keys } from '../development/io.mjs';
@@ -15,7 +17,8 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 
 function send(response, status, body, contentType = 'application/json; charset=utf-8') {
   if (response.destroyed || response.writableEnded) return;
-  response.writeHead(status, secureHeaders(contentType));
+  // Direct HTTP server origins cannot apply COOP. CSP and framing restrictions remain active.
+  response.writeHead(status, secureHeaders(contentType, { openerIsolation: false }));
   response.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 }
 
@@ -45,21 +48,21 @@ async function staticFile(root, pathname) {
   return candidate;
 }
 
-export async function createStandaloneServer({ projectRoot, dataRoot, staticRoot = join(process.cwd(), 'dist', 'workbench'), port = 0, analyzer = analyzeProject, modelConfig = modelConfiguration(), fetchImpl = fetch } = {}) {
+export async function createStandaloneServer({ projectRoot, dataRoot, staticRoot = join(process.cwd(), 'dist', 'workbench'), host = '0.0.0.0', port = 0, analyzer = analyzeProject, modelConfig = modelConfiguration(), fetchImpl = fetch } = {}) {
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('PORT_INVALID');
+  if (!isIP(host)) throw new Error('LISTEN_HOST_INVALID');
   const store = new WorkspaceStore({ projectRoot, dataRoot, analyzeProject: analyzer });
   await store.init();
   const processEvidence = new ProcessEvidenceService(store);
   const capability = createCapability();
-  let origin;
-  let host;
   const service = { name: 'Panorama · 项目理解与设计', version: packageInfo.version, mode: 'standalone' };
   const server = createServer(async (request, response) => {
     try {
-      if (!isLoopback(request.socket.remoteAddress) || request.headers.host !== host) return send(response, 403, { error: 'HOST_MISMATCH' });
-      const url = new URL(request.url || '/', origin);
+      const requestOrigin = httpRequestOrigin(request);
+      const url = new URL(request.url || '/', requestOrigin);
+      if (url.origin !== requestOrigin) return send(response, 403, { error: 'HOST_MISMATCH' });
       if (url.pathname.startsWith('/api/')) {
-        authorizeRequest(request, { expectedHost: host, expectedOrigin: origin, capability, requireOrigin: request.method !== 'GET' });
+        authorizeRequest(request, { expectedHost: request.headers.host, expectedOrigin: requestOrigin, capability, requireOrigin: request.method !== 'GET', allowRemote: true });
         if (url.pathname.startsWith('/api/standalone/process')) {
           const path = url.pathname.slice('/api/standalone/'.length);
           if (request.method === 'GET' && path === 'process') return send(response, 200, await processEvidence.catalog(url.searchParams.get('nodeId'), url.searchParams.get('candidateId')));
@@ -113,13 +116,18 @@ export async function createStandaloneServer({ projectRoot, dataRoot, staticRoot
   });
   server.requestTimeout = 120000;
   try {
-    await new Promise((done, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', done); });
+    await new Promise((done, reject) => { server.once('error', reject); server.listen(port, host, done); });
   } catch (error) { await store.close(); throw error; }
-  host = `127.0.0.1:${server.address().port}`;
-  origin = `http://${host}`;
+  const boundPort = server.address().port;
+  const addresses = host === '0.0.0.0'
+    ? ['127.0.0.1', ...Object.values(networkInterfaces()).flat().filter((item) => item && item.family === 'IPv4' && !item.internal).map((item) => item.address)]
+    : [host === '::' ? '::1' : host];
+  const origins = [...new Set(addresses)].map((address) => `http://${isIP(address) === 6 ? `[${address}]` : address}:${boundPort}`);
+  const origin = origins[0];
+  const launchUrls = origins.map((value) => `${value}/#cap=${encodeURIComponent(capability)}`);
   let closing;
   return {
-    server, store, capability, origin, launchUrl: `${origin}/#cap=${encodeURIComponent(capability)}`,
+    server, store, capability, origin, listenHost: host, port: boundPort, launchUrl: launchUrls[0], launchUrls,
     close() {
       if (!closing) closing = new Promise((done, reject) => {
         server.close((error) => error ? reject(error) : done());

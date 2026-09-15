@@ -6,6 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { temporary } from '../process/temp.mjs';
 import { python } from '../process/development-helpers.mjs';
 import { buildOffline } from '../../scripts/release/build-offline.mjs';
+import packageInfo from '../../package.json' with { type: 'json' };
 
 function run(executable,args,{cwd,env={}}={}) {
   return new Promise((done,reject)=>{
@@ -19,7 +20,7 @@ async function input(base,name,value){const path=join(base,name+'.json');await w
 test('1.0 offline distribution: isolated installations, existing/empty projects, actual checks, UI and integrity', {timeout:240000}, async t=>{
   const base=await temporary(t),bundle=join(base,'bundle A'),other=join(base,'bundle B');
   const result=await buildOffline({output:bundle});
-  assert.equal(result.version,'1.0.0');assert.equal(result.runtimesIncluded,false);
+  assert.equal(result.version,packageInfo.version);assert.equal(result.runtimesIncluded,false);
   const manifest=JSON.parse(await readFile(join(bundle,'release.json'),'utf8'));
   assert.ok(manifest.files.length>100);
   assert.ok(manifest.files.every(row=>!row.path.startsWith('/')&&!/^[A-Z]:|\.node$|\.exe$|\.dll$|\.map$|\.env$|installation.local/.test(row.path)));
@@ -89,11 +90,11 @@ test('1.0 offline distribution: isolated installations, existing/empty projects,
     let stdout='',stderr='';child.stdout.on('data',v=>stdout+=v);child.stderr.on('data',v=>stderr+=v);
     try {
       const deadline=Date.now()+20000;while(!stdout.includes('#cap=')&&Date.now()<deadline&&child.exitCode===null)await new Promise(resolve=>setTimeout(resolve,50));
-      assert.match(stdout,/#cap=/,stderr);const url=new URL(stdout.match(/http:\/\/127\.0\.0\.1:\d+\/#[^\s]+/)[0]);
+      assert.match(stdout,/#cap=/,stderr);assert.match(stdout,/监听地址：0\.0\.0\.0:\d+/);const url=new URL(stdout.match(/http:\/\/127\.0\.0\.1:\d+\/#[^\s]+/)[0]);
       const html=await (await fetch(url.origin)).text();assert.match(html,/<html/);
       const asset=html.match(/src="([^"]+\.js)"/)[1];assert.equal((await fetch(url.origin+asset)).status,200);
       const headers={Authorization:'Bearer '+new URLSearchParams(url.hash.slice(1)).get('cap')};
-      const bootstrap=await (await fetch(url.origin+'/api/standalone/bootstrap',{headers})).json();assert.equal(bootstrap.service.version,'1.0.0');
+      const bootstrap=await (await fetch(url.origin+'/api/standalone/bootstrap',{headers})).json();assert.equal(bootstrap.service.version,packageInfo.version);
       assert.ok(bootstrap.workspace.current.nodes.some(row=>JSON.stringify(row).includes('module.py')));
       const detail=await (await fetch(url.origin+'/api/standalone/process/work?id=work%3Aoffline',{headers})).json();assert.ok(detail.evolution);assert.deepEqual(detail.context.baseline,originalBaseline);
     } finally {

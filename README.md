@@ -1,10 +1,12 @@
 # Agent Project Panorama
 
-**1.0：独立工作台与项目内开发过程工具。** 支持已有项目和空项目接入、源码解析、设计评审、真实检查证据、配置修订与模块演进。
+**1.0.1：独立工作台与项目内开发过程工具。** 支持已有项目和空项目接入、源码解析、设计评审、真实检查证据、配置修订与模块演进。
 
-- [下载 1.0 发布包](https://github.com/YukeElk/agent-project-panorama/releases/tag/v1.0.0)
+- [下载 1.0.1 发布包](https://github.com/YukeElk/agent-project-panorama/releases/tag/v1.0.1)
 - [Linux / Windows 离线安装与使用](panorama-control-plane/docs/OFFLINE.md)
-- [1.0 源码及开发说明](panorama-control-plane/README.md)
+- [1.0.1 源码及开发说明](panorama-control-plane/README.md)
+
+1.0.1 工作台默认监听 `0.0.0.0`，支持通过服务器 IP 和可配置端口远程访问，继续使用启动凭证。
 
 发布包包含全景与所需 JavaScript 库；Node/Python 由使用者提供。解压后一台服务器可服务多个相互独立的项目，无需 MCP 或集中服务。旧技能及历史版本文件保留。
 
