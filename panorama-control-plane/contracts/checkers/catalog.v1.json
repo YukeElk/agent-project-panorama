@@ -1,0 +1,35 @@
+{
+  "formatVersion": "panorama.checker-catalog.v1",
+  "contracts": [
+    {
+      "formatVersion": "panorama.checker-contract.v1",
+      "id": "catcare.tar-integrity",
+      "version": "1",
+      "title": "CatCare 留存 TAR 的清单与原件完整性",
+      "subjectKinds": ["retained_artifact"],
+      "formats": ["catcare.export.v1.tar-uncompressed"],
+      "claims": [{"id":"tar.manifest-originals-integrity","property":"普通文件成员、路径、唯一性、清单与原件集合/大小/SHA-256 一致，成员填充及至少两块完整零尾块。","evidenceKinds":["artifact_integrity"]}],
+      "notChecked": ["原件内容质量、医疗判断或业务语义。", "源数据库完整性、遗漏但未列入 manifest 的记录。", "生产导出服务、权限与恢复流程。"],
+      "dependencyRoles": ["tool","artifact"],
+      "dependencies": ["P4 tools/verify-export-bundle.py 的全部代码。", "命令行绑定的实际 TAR；manifest.json 在包内。", "Python 可执行文件与标准库；采集器仅散列可执行文件，标准库部署由本机运行环境维护。"],
+      "failureProtocol": "catcare-tar.v1",
+      "limits": {"timeoutMs":120000,"maxLogBytes":1048576,"maxObjectBytes":67108864,"limitations":["采集器单文件上限 64 MiB，检查器至多 100000 成员，元数据读取至多 16 MiB。", "未提供操作系统级 CPU/RAM/网络隔离。"]},
+      "examples": {"positive":["P4 delivery/catcare-synthetic.tar；离线无数据库。"],"negative":["最后零尾块改成非零。", "截断、重复声明、清单散列不符、路径穿越、链接成员。", "吞掉异常后退出 0 但缺少有效成功报告。"]}
+    },
+    {
+      "formatVersion": "panorama.checker-contract.v1",
+      "id": "hogwarts.retained-support-geometry",
+      "version": "1",
+      "title": "Blender 留存支撑家具 GLB 的有限坐标与几何边界",
+      "subjectKinds": ["retained_artifact"],
+      "formats": ["glb2.embedded-uncompressed-float-vec3"],
+      "claims": [{"id":"glb.support-geometry-integrity","property":"原始 POSITION/变换有限，Blender 实际导入后存在带面的网格，世界坐标和家具尺寸界限；关联源文件存在且散列稳定。","evidenceKinds":["artifact_integrity"]}],
+      "notChecked": ["视觉风格、贴图质量、与霍格沃茨设计的一致性。", "Godot 游戏表现、碰撞、性能或生产验收。", "关联 .blend 的可打开性、建模语义或与 GLB 的内容等价。", "稀疏、压缩、外部缓冲、非 float VEC3 编码；遇到时明确拒绝。"],
+      "dependencyRoles": ["tool","artifact","config"],
+      "dependencies": ["P4 modeling/check_retained_support.py 的全部代码。", "绑定的实际 GLB、相邻 manifest.json、manifest 引用的 modeling/source/*.blend；声明闭包须覆盖引用的新文件。", "Blender 可执行文件与安装的 Python/glTF 插件；采集器仅散列可执行文件，插件部署由本机运行环境维护。"],
+      "failureProtocol": "retained-support.v1",
+      "limits": {"timeoutMs":120000,"maxLogBytes":1048576,"maxObjectBytes":67108864,"limitations":["采集器单文件上限 64 MiB；对象世界坐标绝对值不超过 10 米。", "lectern 尺寸 X 0.5–2、Y 0.3–2、Z 0.75–2 米，其他支撑家具各轴 0.05–10 米。", "需 Blender --python-exit-code 17；未提供系统级内存上限。"]},
+      "examples": {"positive":["P4 catalogue_lectern.glb 与其关联 manifest/.blend。"],"negative":["原始 POSITION NaN、截断、缺失来源、异常尺寸。", "KHR_draco_mesh_compression、sparse 或非 float VEC3 POSITION。", "异常报告存在但宿主退出 0；不能支持验收。"]}
+    }
+  ]
+}

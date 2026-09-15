@@ -1,0 +1,74 @@
+{
+  "formatVersion": "panorama.process-project.v1",
+  "purpose": "contract_example",
+  "binding": {
+    "authority": "structure-core",
+    "projectId": "fixture:cat-sys:project",
+    "checkoutId": "fixture:cat-sys:checkout",
+    "panoramaProjectId": null
+  },
+  "corePin": {
+    "commit": "9cab2b1345cca68177708fc30f2cac6bbe5792b5",
+    "version": "2.0.0-preview.2"
+  },
+  "rulePacks": [
+    {
+      "id": "PANORAMA-PROCESS-BASE",
+      "version": "0.1.0",
+      "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+    }
+  ],
+  "inputRoots": [
+    {
+      "id": "project",
+      "kind": "project",
+      "description": "Synthetic project input; resolved by fixture registry."
+    },
+    {
+      "id": "retained",
+      "kind": "artifact",
+      "description": "Synthetic retained object input."
+    },
+    {
+      "id": "external",
+      "kind": "external",
+      "description": "Explicitly registered synthetic external input."
+    }
+  ],
+  "moduleBindings": [
+    {
+      "moduleId": "backend",
+      "panoramaNodeIds": [],
+      "sourceSnapshotId": null,
+      "status": "unknown",
+      "reason": "P0 合同样本；未创建正式 Panorama 模块映射。"
+    }
+  ],
+  "runnerRefs": [
+    {
+      "id": "fixture-runner",
+      "definitionDigest": "9f178aaf88f9647556b14490349669272f67eddcf3cef6d191c41379e1e59b36",
+      "evidenceKinds": [
+        "process_record",
+        "execution_record",
+        "behavior_test",
+        "interface_test",
+        "artifact_integrity",
+        "document_review",
+        "visual_review",
+        "input_binding"
+      ]
+    }
+  ],
+  "features": [
+    {
+      "key": "repository.git",
+      "value": false,
+      "status": "declared",
+      "basisRefs": [
+        "urn:fixture:cat-sys"
+      ]
+    }
+  ],
+  "extensions": {}
+}

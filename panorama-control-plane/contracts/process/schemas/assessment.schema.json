@@ -1,0 +1,526 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:panorama:process:schema:assessment:1",
+  "title": "panorama.process-assessment.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "formatVersion": {
+      "const": "panorama.process-assessment.v1"
+    },
+    "purpose": {
+      "$ref": "urn:panorama:process:schema:common:1#/$defs/purpose"
+    },
+    "assessmentId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "assessmentHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "binding": {
+      "$ref": "urn:panorama:process:schema:common:1#/$defs/binding"
+    },
+    "workItemRef": {
+      "$ref": "urn:panorama:process:schema:common:1#/$defs/workRef"
+    },
+    "rulePacks": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:panorama:process:schema:common:1#/$defs/packRef"
+      },
+      "minItems": 1,
+      "maxItems": 20
+    },
+    "assessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "mode": {
+          "enum": [
+            "deterministic",
+            "external_declaration",
+            "contract_example"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "mode"
+      ]
+    },
+    "assessedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "receiptId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "receiptHash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "receiptId",
+          "receiptHash"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "currentInputObservations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "inputSetId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "selectionDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "readable",
+              "unknown"
+            ]
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "inputSetId",
+          "selectionDigest",
+          "digest",
+          "state",
+          "observedAt"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "readable"
+                }
+              },
+              "required": [
+                "state"
+              ]
+            },
+            "then": {
+              "properties": {
+                "digest": {
+                  "$ref": "urn:panorama:process:schema:common:1#/$defs/digest"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "digest": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:panorama:process:schema:common:1#/$defs/ruleResult"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:panorama:process:schema:common:1#/$defs/criterionResult"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "satisfied",
+            "blocked",
+            "unknown",
+            "conflict"
+          ]
+        },
+        "processReady": {
+          "type": "boolean"
+        },
+        "blockingRuleIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "blockingCriterionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "totalRules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "applicableRules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "notApplicableRules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "unknownRules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "conflictingRules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "status",
+        "processReady",
+        "blockingRuleIds",
+        "blockingCriterionIds",
+        "totalRules",
+        "applicableRules",
+        "notApplicableRules",
+        "unknownRules",
+        "conflictingRules"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4000,
+        "pattern": "\\S"
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 40,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "additionalProperties": true
+    },
+    "currentSubjectObservations": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subjectId",
+          "identityDigest",
+          "state",
+          "observedAt"
+        ],
+        "properties": {
+          "subjectId": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/id"
+          },
+          "identityDigest": {
+            "anyOf": [
+              {
+                "$ref": "urn:panorama:process:schema:common:1#/$defs/digest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "observed",
+              "unknown"
+            ]
+          },
+          "observedAt": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/timestamp"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "observed"
+                }
+              },
+              "required": [
+                "state"
+              ]
+            },
+            "then": {
+              "properties": {
+                "identityDigest": {
+                  "$ref": "urn:panorama:process:schema:common:1#/$defs/digest"
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "identityDigest": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "formatVersion",
+    "purpose",
+    "assessmentId",
+    "assessmentHash",
+    "binding",
+    "workItemRef",
+    "rulePacks",
+    "assessor",
+    "assessedAt",
+    "receiptRefs",
+    "currentInputObservations",
+    "rules",
+    "criteria",
+    "overall",
+    "limitations",
+    "extensions",
+    "currentSubjectObservations"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "processReady": {
+                "const": true
+              }
+            },
+            "required": [
+              "processReady"
+            ]
+          }
+        },
+        "required": [
+          "overall"
+        ]
+      },
+      "then": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "status": {
+                "const": "satisfied"
+              },
+              "blockingRuleIds": {
+                "maxItems": 0
+              },
+              "blockingCriterionIds": {
+                "maxItems": 0
+              }
+            }
+          },
+          "rules": {
+            "items": {
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "strength": {
+                        "enum": [
+                          "required",
+                          "conditional"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "strength"
+                    ]
+                  },
+                  "then": {
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "applicability": {
+                            "properties": {
+                              "status": {
+                                "const": "not_applicable"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "properties": {
+                          "applicability": {
+                            "properties": {
+                              "status": {
+                                "const": "applicable"
+                              }
+                            }
+                          },
+                          "satisfaction": {
+                            "const": "satisfied"
+                          },
+                          "freshness": {
+                            "type": "object",
+                            "properties": {
+                              "status": {
+                                "const": "current"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "criteria": {
+            "items": {
+              "if": {
+                "properties": {
+                  "required": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "required"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "satisfaction": {
+                    "const": "satisfied"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "overall": {
+            "properties": {
+              "status": {
+                "not": {
+                  "const": "satisfied"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "purpose": {
+            "const": "contract_example"
+          }
+        },
+        "required": [
+          "purpose"
+        ]
+      },
+      "then": {
+        "properties": {
+          "assessor": {
+            "properties": {
+              "mode": {
+                "const": "contract_example"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "assessor": {
+            "properties": {
+              "mode": {
+                "not": {
+                  "const": "contract_example"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

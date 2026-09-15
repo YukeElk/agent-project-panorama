@@ -1,3 +1,18 @@
+# Agent Project Panorama
+
+**1.0：独立工作台与项目内开发过程工具。** 支持已有项目和空项目接入、源码解析、设计评审、真实检查证据、配置修订与模块演进。
+
+- [下载 1.0 发布包](https://github.com/YukeElk/agent-project-panorama/releases/tag/v1.0.0)
+- [Linux / Windows 离线安装与使用](panorama-control-plane/docs/OFFLINE.md)
+- [1.0 源码及开发说明](panorama-control-plane/README.md)
+
+发布包包含全景与所需 JavaScript 库；Node/Python 由使用者提供。解压后一台服务器可服务多个相互独立的项目，无需 MCP 或集中服务。旧技能及历史版本文件保留。
+
+---
+
+<details>
+<summary>原始技能版本说明（历史）</summary>
+
 # Agent Project Panorama V0.1
 
 `Agent Project Panorama` 是一个以架构为主轴、Local-first、单项目单 HTML
@@ -165,3 +180,6 @@ Key。Validator 会对 Embedded Secret、Production Embedded Secret 和失效路
 完成后编写，支持 INIT / INSPECT / PROPOSE UPDATE / APPLY UPDATE / VALIDATE，并要求
 Preview 先于 Apply。页面内编辑、拖拽架构、直接批准 Review、自动 Git 扫描、云端协作、
 Task Kanban、企业级 Secret 加密和完整 Impact Graph 均不在 V0.1 第一轮范围内。
+
+
+</details>

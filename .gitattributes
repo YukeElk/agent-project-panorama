@@ -1,2 +1,4 @@
 * text=auto eol=lf
 *.png binary
+# Preserve pinned contract/vendor bytes across Windows and Linux checkouts.
+/panorama-control-plane/** -text

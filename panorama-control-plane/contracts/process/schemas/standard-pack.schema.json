@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:panorama:process:schema:standard-pack:2",
+  "title": "standard-pack.v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "formatVersion": {
+      "const": "standard-pack.v0.2"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "pattern": "\\S"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "local_file",
+            "reference"
+          ]
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        }
+      },
+      "required": [
+        "type",
+        "location"
+      ]
+    },
+    "appliesTo": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+      },
+      "minItems": 1,
+      "maxItems": 1000,
+      "uniqueItems": true
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:panorama:process:schema:common:1#/$defs/rule"
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 40,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "formatVersion",
+    "id",
+    "title",
+    "version",
+    "source",
+    "appliesTo",
+    "rules",
+    "extensions"
+  ]
+}

@@ -1,0 +1,448 @@
+{
+  "formatVersion": "standard-pack.v0.2",
+  "id": "PANORAMA-PROCESS-BASE",
+  "title": "开发过程基础规范",
+  "version": "0.1.0",
+  "source": {
+    "type": "local_file",
+    "location": "CONTRACT.md"
+  },
+  "appliesTo": [
+    "single-checkout-development"
+  ],
+  "rules": [
+    {
+      "id": "BASE-01",
+      "version": "0.1.0",
+      "title": "工作目标与身份",
+      "requirement": "项目、工作项、目标和预期结果必须可定位。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.identity",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-01.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-01"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "BASE-02",
+      "version": "0.1.0",
+      "title": "基线与实际范围",
+      "requirement": "保存开始基线、预计范围、实际变化和模块关联。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.scope",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-02.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-02"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "BASE-03",
+      "version": "0.1.0",
+      "title": "规则适用性",
+      "requirement": "每条规则都记录适用性、理由及所用规范版本。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.applicability",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-03.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-03"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "BASE-04",
+      "version": "0.1.0",
+      "title": "执行与对象绑定",
+      "requirement": "检查必须记录来源、对象及实际声明的输入版本。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.execution-binding",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-04.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-04"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "BASE-05",
+      "version": "0.1.0",
+      "title": "逐项验收依据",
+      "requirement": "每项验收要求关联相应对象、证据类型、来源及限制。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.criteria-evidence",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-05.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-05"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "BASE-06",
+      "version": "0.1.0",
+      "title": "结果与接续信息",
+      "requirement": "保存本次结果、未完成事项和继续所需信息。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "required",
+      "when": {
+        "always": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.outcome",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "BASE-06.E1",
+          "allowedKinds": [
+            "process_record",
+            "execution_record"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "process",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:BASE-06"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "COND-ARTIFACT",
+      "version": "0.1.0",
+      "title": "留存产物验收",
+      "requirement": "对被交付的留存产物建立身份，并提供实际覆盖其内容的合适检查。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "conditional",
+      "when": {
+        "fact": "delivery.retained-artifact",
+        "equals": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.retained-artifact",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "COND-ARTIFACT.E1",
+          "allowedKinds": [
+            "artifact_integrity"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "retained_artifacts",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:COND-ARTIFACT"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "COND-EXTERNAL",
+      "version": "0.1.0",
+      "title": "外部输入绑定",
+      "requirement": "对已声明项目外输入保存选择方式与摘要，变化或不可读取时重新判断证据有效性。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "conditional",
+      "when": {
+        "fact": "inputs.external",
+        "equals": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.external-input",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "COND-EXTERNAL.E1",
+          "allowedKinds": [
+            "input_binding"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "external_inputs",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:COND-EXTERNAL"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "COND-INTERFACE",
+      "version": "0.1.0",
+      "title": "公开行为验证",
+      "requirement": "改变公开行为时，提供相应行为/兼容检查，并核对相关说明。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "conditional",
+      "when": {
+        "fact": "change.public-behavior",
+        "equals": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.interface",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "COND-INTERFACE.E1",
+          "allowedKinds": [
+            "behavior_test",
+            "interface_test"
+          ],
+          "acceptedActorKinds": [
+            "system",
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "interface_subjects",
+          "minCount": 1,
+          "currentRequired": true
+        },
+        {
+          "id": "COND-INTERFACE.E2",
+          "allowedKinds": [
+            "document_review"
+          ],
+          "acceptedActorKinds": [
+            "coding_agent",
+            "human"
+          ],
+          "subjects": "interface_subjects",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:COND-INTERFACE"
+      ],
+      "extensions": {}
+    },
+    {
+      "id": "COND-REVIEW",
+      "version": "0.1.0",
+      "title": "人工或视觉验收",
+      "requirement": "要求人工或视觉判断时，记录规则及验收项指定来源的真实评审；未执行保留未验证。",
+      "category": "quality",
+      "severity": "high",
+      "strength": "conditional",
+      "when": {
+        "fact": "acceptance.human-review",
+        "equals": true
+      },
+      "checkpoints": [
+        "finish",
+        "resume"
+      ],
+      "evaluator": {
+        "id": "process.review",
+        "version": "1"
+      },
+      "evidenceRequirements": [
+        {
+          "id": "COND-REVIEW.E1",
+          "allowedKinds": [
+            "visual_review"
+          ],
+          "acceptedActorKinds": [
+            "human"
+          ],
+          "subjects": "review_subjects",
+          "minCount": 1,
+          "currentRequired": true
+        }
+      ],
+      "relatedEntities": [],
+      "sourceRefs": [
+        "urn:panorama:process:contract:0.1.0:COND-REVIEW"
+      ],
+      "extensions": {}
+    }
+  ],
+  "extensions": {}
+}

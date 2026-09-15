@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:structure:identity:1",
+  "type":"object",
+  "required":["schema_version","kind","project_id"],
+  "properties":{
+    "schema_version":{"const":1},
+    "kind":{"enum":["project","module"]},
+    "project_id":{"type":"string","format":"uuid"},
+    "name":{"type":"string"},
+    "module_id":{"type":"string","minLength":1},
+    "project_root":{"type":"string","minLength":1}
+  },
+  "allOf":[{"if":{"properties":{"kind":{"const":"module"}}},"then":{"required":["module_id","project_root"]}}],
+  "additionalProperties":false,
+  "$comment":"Module project_root is relative to the module directory. The resolver additionally validates ancestor ownership, module path and nested-project boundaries."
+}

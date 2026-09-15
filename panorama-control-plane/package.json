@@ -1,0 +1,45 @@
+{
+  "name": "panorama-control-plane",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "bin": {
+    "panorama": "./src/cli.mjs",
+    "panorama-process": "./src/development/cli.mjs"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "start": "node src/cli.mjs start",
+    "test": "node test/run-standalone-tests.mjs",
+    "test:standalone": "node test/run-standalone-tests.mjs",
+    "test:process-contracts": "node --test test/process/contracts.test.mjs",
+    "test:process": "node test/run-process-tests.mjs",
+    "assess:process": "node scripts/assess-process.mjs",
+    "process": "node src/development/cli.mjs",
+    "test:development": "node --test test/process/development.test.mjs test/process/locator.test.mjs test/process/preparation.test.mjs test/process/configuration.test.mjs test/process/installation.test.mjs test/process/scoped-checks.test.mjs",
+    "install:local": "node scripts/install-local.mjs",
+    "build:offline": "node scripts/release/build-offline.mjs",
+    "test:offline": "node --test test/release/offline.test.mjs",
+    "test:process-ui": "node --test test/standalone/process-evidence.test.mjs test/standalone/process-evolution.test.mjs",
+    "test:all": "node test/run-process-tests.mjs && node test/run-standalone-tests.mjs && node --test test/release/offline.test.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.0.1",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "lucide-react": "^1.34.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "5.9.3",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.0",
+    "vite": "^8.2.2"
+  }
+}

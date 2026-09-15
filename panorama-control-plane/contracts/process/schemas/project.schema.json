@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:panorama:process:schema:project:1",
+  "title": "panorama.process-project.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "formatVersion": {
+      "const": "panorama.process-project.v1"
+    },
+    "purpose": {
+      "$ref": "urn:panorama:process:schema:common:1#/$defs/purpose"
+    },
+    "binding": {
+      "$ref": "urn:panorama:process:schema:common:1#/$defs/binding"
+    },
+    "corePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "const": "9cab2b1345cca68177708fc30f2cac6bbe5792b5"
+        },
+        "version": {
+          "const": "2.0.0-preview.2"
+        }
+      },
+      "required": [
+        "commit",
+        "version"
+      ]
+    },
+    "rulePacks": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:panorama:process:schema:common:1#/$defs/packRef"
+      },
+      "minItems": 1,
+      "maxItems": 20
+    },
+    "inputRoots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "kind": {
+            "enum": [
+              "project",
+              "external",
+              "artifact"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "description"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "moduleBindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "moduleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "panoramaNodeIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "minItems": 0,
+            "maxItems": 1000,
+            "uniqueItems": true
+          },
+          "sourceSnapshotId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "declared",
+              "observed",
+              "unknown"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "moduleId",
+          "panoramaNodeIds",
+          "sourceSnapshotId",
+          "status",
+          "reason"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 1000
+    },
+    "runnerRefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "definitionDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "evidenceKinds": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "process_record",
+                "execution_record",
+                "behavior_test",
+                "interface_test",
+                "artifact_integrity",
+                "document_review",
+                "visual_review",
+                "input_binding"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 1000,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "definitionDigest",
+          "evidenceKinds"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "value": {
+            "type": [
+              "string",
+              "boolean",
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "declared",
+              "observed",
+              "unknown",
+              "conflict"
+            ]
+          },
+          "basisRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "\\S"
+            },
+            "minItems": 1,
+            "maxItems": 1000,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "key",
+          "value",
+          "status",
+          "basisRefs"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 1000
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 40,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "formatVersion",
+    "purpose",
+    "binding",
+    "corePin",
+    "rulePacks",
+    "inputRoots",
+    "moduleBindings",
+    "runnerRefs",
+    "features",
+    "extensions"
+  ]
+}

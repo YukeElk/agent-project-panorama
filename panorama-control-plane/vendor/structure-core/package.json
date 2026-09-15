@@ -1,0 +1,20 @@
+{
+  "name": "@structure/protocol-core",
+  "version": "2.0.0-preview.2",
+  "license": "MIT",
+  "description": "Persistent project state with shared kernel, configurable policy and structured visualization data",
+  "private": true,
+  "pi": {
+    "extensions": ["./extensions"],
+    "skills": ["./skills"],
+    "prompts": ["./prompts"]
+  },
+  "scripts": {
+    "test": "python -m unittest discover -s tests -v && node --test tests/pi-adapter.test.mjs",
+    "docs": "python scripts/build_docs.py",
+    "check": "python scripts/build_docs.py --check"
+  },
+  "engines": {"node": ">=22.19.0"},
+  "files": ["extensions", "skills", "prompts", "agents", "scripts", "templates", "schemas", "docs", "README.md", "LICENSE", "!**/__pycache__", "!**/*.pyc"],
+  "structure": {"schemaVersion": 2, "python": ">=3.11", "maturity": "preview"}
+}

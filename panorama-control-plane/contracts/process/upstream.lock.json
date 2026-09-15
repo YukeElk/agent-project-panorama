@@ -1,0 +1,65 @@
+{
+  "formatVersion": "panorama.process-upstream-lock.v1",
+  "repository": "https://github.com/cafedaily/pi-development-harness",
+  "commit": "9cab2b1345cca68177708fc30f2cac6bbe5792b5",
+  "harnessVersion": "0.2.2",
+  "coreVersion": "2.0.0-preview.2",
+  "coreSchemaVersion": 2,
+  "archiveSha256": "d89985c7736ecff2b5434b501a50875a6015d5d418cc62e2ad5595f6028e30c2",
+  "license": "MIT",
+  "intent": "P0 pins interface source; runtime vendoring/adapter installation is P2.",
+  "fullTreeDigest": "f621409011365e8b4cb2d1be6edcb99b98ea95bca79046200d5a59956396fd13",
+  "archivedFileCount": 116,
+  "interfaceFiles": [
+    {
+      "path": "package.json",
+      "sha256": "4203a18f5684069b90d8166baa97361b1269d2d72b4821a1c38ef3864d38fad8",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/package.json"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "22ef21d2bd294f271d45e729f8eae6aaceca33dc2a5941f8b19a672370af044e",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/LICENSE"
+    },
+    {
+      "path": "scripts/harness.py",
+      "sha256": "21587fb4cb28e7684685d9d793a33386a9e62df1c13d681307b84a5a3d22b245",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/scripts/harness.py"
+    },
+    {
+      "path": "scripts/devharness/engine.py",
+      "sha256": "143f107b501fbf2dabf9e7c9c76ea32a325f5c1c3c7a4567540eb66d4ea71b74",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/scripts/devharness/engine.py"
+    },
+    {
+      "path": "packages/structure-core/package.json",
+      "sha256": "c7e6f6973fc16d957a550c99ffe015b75fbff070912c108e416bdfd05d1e3dce",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/package.json"
+    },
+    {
+      "path": "packages/structure-core/LICENSE",
+      "sha256": "22ef21d2bd294f271d45e729f8eae6aaceca33dc2a5941f8b19a672370af044e",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/LICENSE"
+    },
+    {
+      "path": "packages/structure-core/schemas/protocol.schema.json",
+      "sha256": "9cb3c08aaab7c81bd23337f185a02904652551f6fcb5401f7dec9fedff694824",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/schemas/protocol.schema.json"
+    },
+    {
+      "path": "packages/structure-core/scripts/structure.py",
+      "sha256": "ddf50fba463cd06e3e899d9d2f8fa9852c13355966a4a0713f8f3cdc3e8c4c73",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/scripts/structure.py"
+    },
+    {
+      "path": "packages/structure-core/scripts/structure_core/service.py",
+      "sha256": "592691e0e84a0ef50ae28cd63eff0fdf1844c0d1432f39cb482ee7ec8f75fad9",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/scripts/structure_core/service.py"
+    },
+    {
+      "path": "packages/structure-core/scripts/structure_core/identity.py",
+      "sha256": "96156d06635129d09bf62635b91fadb5aa07a062a8c90e84dd1784812245cf6a",
+      "sourceUrl": "https://github.com/cafedaily/pi-development-harness/blob/9cab2b1345cca68177708fc30f2cac6bbe5792b5/packages/structure-core/scripts/structure_core/identity.py"
+    }
+  ]
+}

@@ -1,0 +1,2143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:panorama:process:schema:common:1",
+  "title": "Process shared definitions",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "pattern": "\\S"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+    },
+    "purpose": {
+      "enum": [
+        "record",
+        "contract_example"
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "enum": [
+            "structure-core",
+            "pi-development-harness"
+          ]
+        },
+        "projectId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "checkoutId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "panoramaProjectId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "authority",
+        "projectId",
+        "checkoutId",
+        "panoramaProjectId"
+      ]
+    },
+    "workRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "definitionDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "definitionDigest"
+      ]
+    },
+    "packRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "digest"
+      ]
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rootId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+        }
+      },
+      "required": [
+        "rootId",
+        "path"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "enum": [
+            "system",
+            "coding_agent",
+            "human"
+          ]
+        },
+        "authority": {
+          "enum": [
+            "observed",
+            "declared",
+            "inferred",
+            "unknown"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "authority"
+      ]
+    },
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "receiptId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "receiptHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "evidenceId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        }
+      },
+      "required": [
+        "receiptId",
+        "receiptHash",
+        "evidenceId"
+      ]
+    },
+    "checkRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "receiptId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "receiptHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "checkId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        }
+      },
+      "required": [
+        "receiptId",
+        "receiptHash",
+        "checkId"
+      ]
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "current",
+            "stale",
+            "unknown"
+          ]
+        },
+        "scope": {
+          "const": "declared_inputs_and_subjects"
+        },
+        "changedIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "status",
+        "scope",
+        "changedIds",
+        "unknowns"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "current"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "changedIds": {
+                "maxItems": 0
+              },
+              "unknowns": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "stale"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "changedIds": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "unknowns": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "applicable",
+            "not_applicable",
+            "unknown",
+            "conflict"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "basisRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "basisRefs"
+      ]
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rootId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+        },
+        "role": {
+          "enum": [
+            "source",
+            "config",
+            "fixture",
+            "artifact",
+            "dependency",
+            "tool"
+          ]
+        },
+        "state": {
+          "enum": [
+            "present",
+            "missing",
+            "unreadable"
+          ]
+        },
+        "digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bytes": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "rootId",
+        "path",
+        "role",
+        "state",
+        "digest",
+        "bytes"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "present"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "digest": {
+                "type": "null"
+              },
+              "bytes": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rootId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "role": {
+          "enum": [
+            "source",
+            "config",
+            "fixture",
+            "artifact",
+            "dependency",
+            "tool"
+          ]
+        }
+      },
+      "required": [
+        "rootId",
+        "include",
+        "exclude",
+        "role"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/file"
+          },
+          "minItems": 0,
+          "maxItems": 50000
+        }
+      },
+      "required": [
+        "digest",
+        "files"
+      ]
+    },
+    "inputSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/selector"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "selectionDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "before": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/snapshot"
+        },
+        "after": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "id",
+        "selectors",
+        "selectionDigest",
+        "before",
+        "after"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "enum": [
+            "process",
+            "source_behavior",
+            "retained_artifact",
+            "fresh_build",
+            "live_endpoint",
+            "document",
+            "visual_scene",
+            "verification_input"
+          ]
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "$ref": "urn:panorama:process:schema:common:1#/$defs/locator"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "identityDigest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "producedByExecutionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "locator",
+        "identityDigest",
+        "producedByExecutionId"
+      ]
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "subjectIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "allowedEvidenceKinds": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "process_record",
+              "execution_record",
+              "behavior_test",
+              "interface_test",
+              "artifact_integrity",
+              "document_review",
+              "visual_review",
+              "input_binding"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "acceptedActorKinds": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "system",
+              "coding_agent",
+              "human"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "requirement",
+        "required",
+        "subjectIds",
+        "allowedEvidenceKinds",
+        "acceptedActorKinds"
+      ]
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "expectedOutcome": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "moduleIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "plannedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "changedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/criterion"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "decisionRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "outcome": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "\\S"
+            },
+            "incomplete": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "pattern": "\\S"
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            },
+            "resumeNotes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000,
+                "pattern": "\\S"
+              },
+              "minItems": 0,
+              "maxItems": 1000
+            }
+          },
+          "required": [
+            "summary",
+            "incomplete",
+            "resumeNotes"
+          ]
+        },
+        "baseline": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/workBaseline"
+        }
+      },
+      "required": [
+        "goal",
+        "expectedOutcome",
+        "moduleIds",
+        "plannedPaths",
+        "changedPaths",
+        "criteria",
+        "unknowns",
+        "decisionRefs",
+        "outcome",
+        "baseline"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "enum": [
+            "process_record",
+            "execution_record",
+            "behavior_test",
+            "interface_test",
+            "artifact_integrity",
+            "document_review",
+            "visual_review",
+            "input_binding"
+          ]
+        },
+        "author": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/actor"
+        },
+        "checkId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "subjectIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "inputSetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "criterionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "objectDigest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "generatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "author",
+        "checkId",
+        "subjectIds",
+        "inputSetIds",
+        "criterionIds",
+        "summary",
+        "objectDigest",
+        "generatedAt"
+      ]
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "checkerId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "enum": [
+            "machine",
+            "review",
+            "record"
+          ]
+        },
+        "runnerRef": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                },
+                "definitionDigest": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "id",
+                "definitionDigest"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "author": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/actor"
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "result": {
+              "enum": [
+                "passed",
+                "failed",
+                "errored",
+                "interrupted",
+                "not_run"
+              ]
+            },
+            "exitCode": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "startedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "finishedAt": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "result",
+            "exitCode",
+            "startedAt",
+            "finishedAt"
+          ]
+        },
+        "subjectIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "inputSetIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "criterionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "id",
+        "checkerId",
+        "kind",
+        "runnerRef",
+        "author",
+        "execution",
+        "subjectIds",
+        "inputSetIds",
+        "criterionIds",
+        "evidenceIds",
+        "limitations"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "machine"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "runnerRef": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                  },
+                  "definitionDigest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "id",
+                  "definitionDigest"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "runnerRef": {
+                "type": "null"
+              },
+              "execution": {
+                "properties": {
+                  "exitCode": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "execution": {
+                "properties": {
+                  "result": {
+                    "const": "not_run"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            },
+            "required": [
+              "execution"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidenceIds": {
+                "maxItems": 0
+              },
+              "execution": {
+                "properties": {
+                  "exitCode": {
+                    "type": "null"
+                  },
+                  "startedAt": {
+                    "type": "null"
+                  },
+                  "finishedAt": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "execution": {
+                "properties": {
+                  "startedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "finishedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "machine"
+              },
+              "execution": {
+                "properties": {
+                  "result": {
+                    "const": "passed"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "execution"
+            ]
+          },
+          "then": {
+            "properties": {
+              "execution": {
+                "properties": {
+                  "exitCode": {
+                    "const": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "machine"
+              },
+              "execution": {
+                "properties": {
+                  "result": {
+                    "const": "failed"
+                  }
+                },
+                "required": [
+                  "result"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "execution"
+            ]
+          },
+          "then": {
+            "properties": {
+              "execution": {
+                "properties": {
+                  "exitCode": {
+                    "type": "integer",
+                    "not": {
+                      "const": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "always": {
+              "const": true
+            }
+          },
+          "required": [
+            "always"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fact": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "equals": {
+              "type": [
+                "string",
+                "boolean",
+                "integer"
+              ]
+            }
+          },
+          "required": [
+            "fact",
+            "equals"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "paths": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "rootId": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                },
+                "include": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*[:\\\\\\u0000-\\u001f])[^/]+(?:/[^/]+)*$"
+                  },
+                  "minItems": 1,
+                  "maxItems": 1000,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "rootId",
+                "include"
+              ]
+            }
+          },
+          "required": [
+            "paths"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "urn:panorama:process:schema:common:1#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 20
+            }
+          },
+          "required": [
+            "all"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "urn:panorama:process:schema:common:1#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 20
+            }
+          },
+          "required": [
+            "any"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "not": {
+              "$ref": "urn:panorama:process:schema:common:1#/$defs/expression"
+            }
+          },
+          "required": [
+            "not"
+          ]
+        }
+      ]
+    },
+    "evidenceRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "allowedKinds": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "process_record",
+              "execution_record",
+              "behavior_test",
+              "interface_test",
+              "artifact_integrity",
+              "document_review",
+              "visual_review",
+              "input_binding"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "acceptedActorKinds": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "system",
+              "coding_agent",
+              "human"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "subjects": {
+          "enum": [
+            "process",
+            "acceptance_subjects",
+            "retained_artifacts",
+            "external_inputs",
+            "interface_subjects",
+            "review_subjects"
+          ]
+        },
+        "minCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "currentRequired": {
+          "const": true
+        }
+      },
+      "required": [
+        "id",
+        "allowedKinds",
+        "acceptedActorKinds",
+        "subjects",
+        "minCount",
+        "currentRequired"
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "category": {
+          "enum": [
+            "quality",
+            "architecture",
+            "documentation",
+            "runtime",
+            "other"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "strength": {
+          "enum": [
+            "required",
+            "conditional",
+            "recommended",
+            "optional"
+          ]
+        },
+        "when": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/expression"
+        },
+        "checkpoints": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "begin",
+              "change",
+              "before_check",
+              "finish",
+              "resume"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "evaluator": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000,
+              "pattern": "\\S"
+            }
+          },
+          "required": [
+            "id",
+            "version"
+          ]
+        },
+        "evidenceRequirements": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/evidenceRequirement"
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "relatedEntities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "sourceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 1,
+          "maxItems": 1000,
+          "uniqueItems": true
+        },
+        "extensions": {
+          "type": "object",
+          "maxProperties": 40,
+          "propertyNames": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "title",
+        "requirement",
+        "category",
+        "severity",
+        "strength",
+        "when",
+        "checkpoints",
+        "evaluator",
+        "evidenceRequirements",
+        "relatedEntities",
+        "sourceRefs",
+        "extensions"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "strength": {
+                "const": "required"
+              }
+            },
+            "required": [
+              "strength"
+            ]
+          },
+          "then": {
+            "properties": {
+              "when": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "always": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "always"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ruleResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "ruleVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "strength": {
+          "enum": [
+            "required",
+            "conditional",
+            "recommended",
+            "optional"
+          ]
+        },
+        "applicability": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/applicability"
+        },
+        "checkRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/checkRef"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/evidenceRef"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "freshness": {
+          "anyOf": [
+            {
+              "$ref": "urn:panorama:process:schema:common:1#/$defs/freshness"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "satisfaction": {
+          "enum": [
+            "satisfied",
+            "unsatisfied",
+            "insufficient",
+            "conflict",
+            null
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "ruleId",
+        "ruleVersion",
+        "strength",
+        "applicability",
+        "checkRefs",
+        "evidenceRefs",
+        "freshness",
+        "satisfaction",
+        "reason",
+        "missing"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "properties": {
+                  "status": {
+                    "const": "not_applicable"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "applicability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "satisfaction": {
+                "type": "null"
+              },
+              "freshness": {
+                "type": "null"
+              },
+              "checkRefs": {
+                "maxItems": 0
+              },
+              "evidenceRefs": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "satisfaction": {
+                "enum": [
+                  "satisfied",
+                  "unsatisfied",
+                  "insufficient",
+                  "conflict"
+                ]
+              },
+              "freshness": {
+                "$ref": "urn:panorama:process:schema:common:1#/$defs/freshness"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "satisfaction": {
+                "const": "satisfied"
+              }
+            },
+            "required": [
+              "satisfaction"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applicability": {
+                "properties": {
+                  "status": {
+                    "const": "applicable"
+                  }
+                }
+              },
+              "evidenceRefs": {
+                "minItems": 1
+              },
+              "missing": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "properties": {
+                  "status": {
+                    "const": "unknown"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "applicability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "satisfaction": {
+                "const": "insufficient"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "applicability": {
+                "properties": {
+                  "status": {
+                    "const": "conflict"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            },
+            "required": [
+              "applicability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "satisfaction": {
+                "const": "conflict"
+              }
+            }
+          }
+        },
+        {
+          "$comment": "P0_BASE_RULES_ALWAYS_APPLY",
+          "if": {
+            "properties": {
+              "strength": {
+                "const": "required"
+              }
+            },
+            "required": [
+              "strength"
+            ]
+          },
+          "then": {
+            "properties": {
+              "applicability": {
+                "properties": {
+                  "status": {
+                    "const": "applicable"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "criterionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "criterionId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "criterionVersion": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "checkRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/checkRef"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/evidenceRef"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        },
+        "freshness": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/freshness"
+        },
+        "satisfaction": {
+          "enum": [
+            "satisfied",
+            "unsatisfied",
+            "insufficient",
+            "conflict"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "criterionId",
+        "criterionVersion",
+        "required",
+        "checkRefs",
+        "evidenceRefs",
+        "freshness",
+        "satisfaction",
+        "reason",
+        "missing"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "satisfaction": {
+                "const": "satisfied"
+              }
+            },
+            "required": [
+              "satisfaction"
+            ]
+          },
+          "then": {
+            "properties": {
+              "evidenceRefs": {
+                "minItems": 1
+              },
+              "missing": {
+                "maxItems": 0
+              },
+              "freshness": {
+                "properties": {
+                  "status": {
+                    "const": "current"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 40,
+      "propertyNames": {
+        "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "additionalProperties": true
+    },
+    "baselineInputSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "selectors": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/selector"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "selectionDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "snapshot": {
+          "$ref": "urn:panorama:process:schema:common:1#/$defs/snapshot"
+        }
+      },
+      "required": [
+        "id",
+        "selectors",
+        "selectionDigest",
+        "snapshot"
+      ]
+    },
+    "workBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "state": {
+          "enum": [
+            "observed",
+            "unknown"
+          ]
+        },
+        "capturedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "const": "declared_project_scope"
+        },
+        "inputSets": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:panorama:process:schema:common:1#/$defs/baselineInputSet"
+          },
+          "maxItems": 100
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "pattern": "\\S"
+          },
+          "minItems": 0,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "capturedAt",
+        "scope",
+        "inputSets",
+        "unknowns"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "observed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "inputSets": {
+                "minItems": 1
+              },
+              "unknowns": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "capturedAt": {
+                "type": "null"
+              },
+              "inputSets": {
+                "maxItems": 0
+              },
+              "unknowns": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

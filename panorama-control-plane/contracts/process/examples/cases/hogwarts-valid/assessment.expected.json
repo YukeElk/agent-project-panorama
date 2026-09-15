@@ -1,0 +1,438 @@
+{
+  "formatVersion": "panorama.process-assessment.v1",
+  "purpose": "contract_example",
+  "assessmentId": "fixture:hogwarts-valid:assessment",
+  "assessmentHash": "acd4ab27e1bc1ad389be23568440f0f75a9d046306cffe9e10b479f9a3190ea5",
+  "binding": {
+    "authority": "structure-core",
+    "projectId": "fixture:hogwarts:project",
+    "checkoutId": "fixture:hogwarts:checkout",
+    "panoramaProjectId": null
+  },
+  "workItemRef": {
+    "id": "fixture:hogwarts-valid:work",
+    "definitionDigest": "b40e4193c3a93d6ecc4eb4e93f06d50503653e17e1317b5deea0fae0ce0a9fc4"
+  },
+  "rulePacks": [
+    {
+      "id": "PANORAMA-PROCESS-BASE",
+      "version": "0.1.0",
+      "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+    }
+  ],
+  "assessor": {
+    "id": "p0-expected-result-author",
+    "version": "0.1.0",
+    "mode": "contract_example"
+  },
+  "assessedAt": "2026-09-14T00:00:00Z",
+  "receiptRefs": [
+    {
+      "receiptId": "fixture:hogwarts-valid:receipt",
+      "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6"
+    }
+  ],
+  "currentInputObservations": [
+    {
+      "inputSetId": "INPUT-SOURCE",
+      "selectionDigest": "cd56186bb067f36fcb4121931d35cba10c2ee1ba2347bb482d4ac73479ceebf8",
+      "digest": "90abf75378d1fbc29e36c8b87c41238f7d4906baab5e069fcc1e1c0a41157732",
+      "state": "readable",
+      "observedAt": "2026-09-14T00:00:00Z"
+    }
+  ],
+  "rules": [
+    {
+      "ruleId": "BASE-01",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-02",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-03",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-04",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-EXECUTION"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-EXECUTION"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-05",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-06",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-ARTIFACT",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "applicable",
+        "reason": "delivery.retained-artifact = true（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:delivery.retained-artifact"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-ARTIFACT"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-ARTIFACT"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-EXTERNAL",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "not_applicable",
+        "reason": "inputs.external = false（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:inputs.external"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": null,
+      "satisfaction": null,
+      "reason": "本样本不触发该条件。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-INTERFACE",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "not_applicable",
+        "reason": "change.public-behavior = false（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:change.public-behavior"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": null,
+      "satisfaction": null,
+      "reason": "本样本不触发该条件。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-REVIEW",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "not_applicable",
+        "reason": "acceptance.human-review = false（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:acceptance.human-review"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": null,
+      "satisfaction": null,
+      "reason": "本样本不触发该条件。",
+      "missing": []
+    }
+  ],
+  "criteria": [
+    {
+      "criterionId": "AC-BEHAVIOR",
+      "criterionVersion": 1,
+      "required": true,
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-BEHAVIOR"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-BEHAVIOR"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：匹配指定证据类型与对象。",
+      "missing": []
+    },
+    {
+      "criterionId": "AC-ARTIFACT",
+      "criterionVersion": 1,
+      "required": true,
+      "checkRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "checkId": "CHK-ARTIFACT"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:hogwarts-valid:receipt",
+          "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+          "evidenceId": "EV-CHK-ARTIFACT"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：匹配指定证据类型与对象。",
+      "missing": []
+    }
+  ],
+  "overall": {
+    "status": "satisfied",
+    "processReady": true,
+    "blockingRuleIds": [],
+    "blockingCriterionIds": [],
+    "totalRules": 10,
+    "applicableRules": 7,
+    "notApplicableRules": 3,
+    "unknownRules": 0,
+    "conflictingRules": 0
+  },
+  "limitations": [
+    "Expected result authored for P0 contract conformance. P1 evaluator has not run."
+  ],
+  "extensions": {},
+  "currentSubjectObservations": [
+    {
+      "subjectId": "SUB-PROCESS",
+      "identityDigest": "11c1a6270f54a6f4a658ea750b81e52c629a8eaee209f2637b6206ab2919cf1d",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "subjectId": "SUB-SOURCE",
+      "identityDigest": "7cb84863f1d6705477e9aa146e57f393dc1dc1fe44d8872739d2d2ac04ed90f8",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "subjectId": "SUB-RETAINED",
+      "identityDigest": "9e1031838977ad2eb58e1953676bfd00372bcbf66342d480b4370cee40da9fa4",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    }
+  ]
+}

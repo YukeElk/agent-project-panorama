@@ -1,0 +1,104 @@
+{
+  "formatVersion": "panorama.structure-vendor.v1",
+  "repository": "https://github.com/cafedaily/pi-development-harness",
+  "commit": "9cab2b1345cca68177708fc30f2cac6bbe5792b5",
+  "version": "2.0.0-preview.2",
+  "archiveSha256": "d89985c7736ecff2b5434b501a50875a6015d5d418cc62e2ad5595f6028e30c2",
+  "fullTreeDigest": "f621409011365e8b4cb2d1be6edcb99b98ea95bca79046200d5a59956396fd13",
+  "license": "MIT",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "22ef21d2bd294f271d45e729f8eae6aaceca33dc2a5941f8b19a672370af044e"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c7e6f6973fc16d957a550c99ffe015b75fbff070912c108e416bdfd05d1e3dce"
+    },
+    {
+      "path": "schemas/architecture.schema.json",
+      "sha256": "f59da7700efd26130cc1224d3a6a735e45833cbed3d8a70bc35f155a1833c4e9"
+    },
+    {
+      "path": "schemas/identity.schema.json",
+      "sha256": "cf74579846d34fd61c949b9f2e3df0c96c564896d531417e342dea86b7939130"
+    },
+    {
+      "path": "schemas/project-graph.schema.json",
+      "sha256": "e2ac2b56a8b2dbc9f9858742b2932d047d55ce84f920295418f9bdc2ef87e944"
+    },
+    {
+      "path": "schemas/protocol.schema.json",
+      "sha256": "9cb3c08aaab7c81bd23337f185a02904652551f6fcb5401f7dec9fedff694824"
+    },
+    {
+      "path": "scripts/structure.py",
+      "sha256": "ddf50fba463cd06e3e899d9d2f8fa9852c13355966a4a0713f8f3cdc3e8c4c73"
+    },
+    {
+      "path": "scripts/structure_core/__init__.py",
+      "sha256": "668c4f07fc6f96e0dcb2ffc77873a5835adc96f185e614b7b20d0ee79a163759"
+    },
+    {
+      "path": "scripts/structure_core/cli.py",
+      "sha256": "d748943e14b20a39b824acb96ea0846d9e465f3549280a0ec1b31efb4de2138c"
+    },
+    {
+      "path": "scripts/structure_core/identity.py",
+      "sha256": "96156d06635129d09bf62635b91fadb5aa07a062a8c90e84dd1784812245cf6a"
+    },
+    {
+      "path": "scripts/structure_core/legacy_cli.py",
+      "sha256": "38bc27aee1ed142203b2ae34caf3f4366dd57ce08eb3741838001c6b19ba474a"
+    },
+    {
+      "path": "scripts/structure_core/migration.py",
+      "sha256": "27880f5dfcb86fb35367782d8b8f7929001d5b4bade86248908bf190202d9917"
+    },
+    {
+      "path": "scripts/structure_core/model.py",
+      "sha256": "ca3bf05cae37a5186dd3988b8b34d5cb366ffa6aed4613fd2ab25d158e08637f"
+    },
+    {
+      "path": "scripts/structure_core/service.py",
+      "sha256": "592691e0e84a0ef50ae28cd63eff0fdf1844c0d1432f39cb482ee7ec8f75fad9"
+    },
+    {
+      "path": "scripts/structure_core/storage.py",
+      "sha256": "7149c3f95b128ba6ea048a887ca6d40b988790f0f0054c76e42b66d77561e288"
+    },
+    {
+      "path": "templates/AGENTS.md",
+      "sha256": "3c3e467208a9b62cf1f99118bef97b1b472b913b97373d4abdb0a995f92c88c0"
+    },
+    {
+      "path": "templates/INDEX.md",
+      "sha256": "cf7651e02031000e0f1ca309085ab01fe8dddc37a4b98da4a639052692b4eafb"
+    },
+    {
+      "path": "templates/STRUCTURE.md",
+      "sha256": "ba943d30e114112ee94cef162d87a5c1d0cd0220c28c97b43a9831801a3bff5f"
+    },
+    {
+      "path": "templates/adapters/AGENTS.md",
+      "sha256": "c9ecba2061c08cd6102a223ea555a0239b98a27a9f1dc63f15f4336c966cf0a3"
+    },
+    {
+      "path": "templates/adapters/CLAUDE.md",
+      "sha256": "4a19cdd61a8a623c51b9bbc68b4981b10f0f4762deb54ace7dfa877775691a9d"
+    },
+    {
+      "path": "templates/adapters/clinerules-structure.md",
+      "sha256": "c844feef727fe0892744ff27847ffd7d7ad7bececf2aa68669705dea8e52eb37"
+    },
+    {
+      "path": "templates/adapters/copilot-instructions.md",
+      "sha256": "39237a02c36614a0cb3198576c5df7d217bf6776a0f7785d1f170b34a03f8fe9"
+    },
+    {
+      "path": "templates/adapters/cursor-structure.mdc",
+      "sha256": "1333fa4f5ad2f34bcb6adb837685575b2da1d8f048539356661f766570e55309"
+    }
+  ],
+  "digest": "66134b80b4d89640dbad07c58116b0de0c3c3556e6f0246a22f8de8f0525f49b"
+}

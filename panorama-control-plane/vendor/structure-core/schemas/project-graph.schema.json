@@ -1,0 +1,16 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:structure:project-graph:2",
+  "title":"Structure project instance graph",
+  "type":"object",
+  "required":["schema_version","graph_kind","nodes","edges","policy","coupling","guarantees","leases_included"],
+  "properties":{
+    "schema_version":{"const":2},
+    "graph_kind":{"const":"project-instance"},
+    "nodes":{"type":"array","items":{"type":"object","required":["id","type","label","data"],"properties":{"id":{"type":"string","minLength":1},"type":{"enum":["project","module","work_item","event"]},"label":{"type":"string"},"data":{"type":"object"},"knowledge":{"type":"object"},"source":{"type":"string"}}}},
+    "edges":{"type":"array","items":{"type":"object","required":["id","source","target","type"],"properties":{"id":{"type":"string"},"source":{"type":"string"},"target":{"type":"string"},"type":{"enum":["contains","depends_on","tests_for","affects","records","decides"]}},"additionalProperties":false}},
+    "policy":{"type":"object"},"coupling":{"type":"object"},"guarantees":{"type":"object"},"leases_included":{"const":false}
+  },
+  "additionalProperties":false,
+  "$comment":"Consumers must also enforce unique node/edge IDs and existing source/target references; JSON Schema alone cannot express these graph constraints."
+}

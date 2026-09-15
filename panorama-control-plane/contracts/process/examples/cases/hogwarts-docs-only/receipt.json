@@ -1,0 +1,360 @@
+{
+  "formatVersion": "panorama.process-receipt.v1",
+  "purpose": "contract_example",
+  "receiptId": "fixture:hogwarts-docs-only:receipt",
+  "receiptHash": "bf02bea0ddb226fafe7e36a7e3589d236ccafa01440167e8daf1f3a5e3899517",
+  "executionId": "fixture:hogwarts-docs-only:execution",
+  "binding": {
+    "authority": "structure-core",
+    "projectId": "fixture:hogwarts:project",
+    "checkoutId": "fixture:hogwarts:checkout",
+    "panoramaProjectId": null
+  },
+  "workItemRef": {
+    "id": "fixture:hogwarts-docs-only:work",
+    "definitionDigest": "a357215c525e02c39c1974c77873ed1b864c0f118d7b1796ad395f1ebb730802"
+  },
+  "contextSnapshot": {
+    "goal": "P0 合成合同样本：hogwarts-docs-only",
+    "expectedOutcome": "用于验证合同表达能力，不证明业务执行或验收。",
+    "moduleIds": [
+      "modeling"
+    ],
+    "plannedPaths": [
+      "README.md"
+    ],
+    "changedPaths": [
+      "README.md"
+    ],
+    "criteria": [
+      {
+        "id": "AC-BEHAVIOR",
+        "version": 1,
+        "requirement": "说明与已知行为一致。",
+        "required": true,
+        "subjectIds": [
+          "SUB-SOURCE"
+        ],
+        "allowedEvidenceKinds": [
+          "document_review"
+        ],
+        "acceptedActorKinds": [
+          "system",
+          "coding_agent"
+        ]
+      }
+    ],
+    "unknowns": [],
+    "decisionRefs": [],
+    "outcome": {
+      "summary": "人工编排的合同预期；不是本次运行结果。",
+      "incomplete": [],
+      "resumeNotes": [
+        "P1 将实现样本所描述的计算与对象检查。"
+      ]
+    },
+    "baseline": {
+      "id": "fixture:hogwarts-docs-only:baseline",
+      "state": "observed",
+      "capturedAt": "2026-09-13T23:59:00Z",
+      "scope": "declared_project_scope",
+      "inputSets": [
+        {
+          "id": "INPUT-SOURCE",
+          "selectors": [
+            {
+              "rootId": "project",
+              "include": [
+                "README.md"
+              ],
+              "exclude": [],
+              "role": "config"
+            }
+          ],
+          "selectionDigest": "265c5af1f309c40c11228b313c41a99ee33dc597fbcfa38ee706bc4a0e3e0006",
+          "snapshot": {
+            "digest": "3e47601adb534ceb7747de4f3abfb4d49ace7336289baced2702467ee174ab7f",
+            "files": [
+              {
+                "rootId": "project",
+                "path": "README.md",
+                "role": "config",
+                "state": "present",
+                "digest": "07cdc5d39bab108d161574fca38f40444a20117ea8ab89e5272defdf819cba7c",
+                "bytes": 78
+              }
+            ]
+          }
+        }
+      ],
+      "unknowns": []
+    }
+  },
+  "candidateBinding": null,
+  "rulePacks": [
+    {
+      "id": "PANORAMA-PROCESS-BASE",
+      "version": "0.1.0",
+      "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+    }
+  ],
+  "sourceSnapshotId": null,
+  "producer": {
+    "id": "panorama-p0-fixtures",
+    "version": "0.1.0",
+    "kind": "contract_fixture",
+    "authority": "declared"
+  },
+  "inputSets": [
+    {
+      "id": "INPUT-SOURCE",
+      "selectors": [
+        {
+          "rootId": "project",
+          "include": [
+            "README.md"
+          ],
+          "exclude": [],
+          "role": "config"
+        }
+      ],
+      "selectionDigest": "265c5af1f309c40c11228b313c41a99ee33dc597fbcfa38ee706bc4a0e3e0006",
+      "before": {
+        "digest": "8b62aef2a4ac3c6dcbe62bdfdaef26edd459fe76e4a2d72dcaeaef6fd978c6e1",
+        "files": [
+          {
+            "rootId": "project",
+            "path": "README.md",
+            "role": "config",
+            "state": "present",
+            "digest": "f20cdac9b1967872d0dc106d3f64accec6823f04f04b44c163449aca979c1458",
+            "bytes": 33
+          }
+        ]
+      },
+      "after": {
+        "digest": "8b62aef2a4ac3c6dcbe62bdfdaef26edd459fe76e4a2d72dcaeaef6fd978c6e1",
+        "files": [
+          {
+            "rootId": "project",
+            "path": "README.md",
+            "role": "config",
+            "state": "present",
+            "digest": "f20cdac9b1967872d0dc106d3f64accec6823f04f04b44c163449aca979c1458",
+            "bytes": 33
+          }
+        ]
+      }
+    }
+  ],
+  "subjects": [
+    {
+      "id": "SUB-PROCESS",
+      "kind": "process",
+      "locator": null,
+      "identityDigest": "88f7df1da0e272bbd9f5dfe0d033985b72a3e7b74f27c8b7a433b86b591eaf99",
+      "producedByExecutionId": null
+    },
+    {
+      "id": "SUB-SOURCE",
+      "kind": "document",
+      "locator": {
+        "rootId": "project",
+        "path": "README.md"
+      },
+      "identityDigest": "f20cdac9b1967872d0dc106d3f64accec6823f04f04b44c163449aca979c1458",
+      "producedByExecutionId": null
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-PROCESS",
+      "checkerId": "fixture:process_record",
+      "kind": "record",
+      "runnerRef": null,
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": null,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "evidenceIds": [
+        "EV-CHK-PROCESS"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    },
+    {
+      "id": "CHK-EXECUTION",
+      "checkerId": "fixture:execution_record",
+      "kind": "record",
+      "runnerRef": null,
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": null,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "evidenceIds": [
+        "EV-CHK-EXECUTION"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    },
+    {
+      "id": "CHK-BEHAVIOR",
+      "checkerId": "fixture:document_review",
+      "kind": "review",
+      "runnerRef": null,
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": null,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-SOURCE"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-BEHAVIOR"
+      ],
+      "evidenceIds": [
+        "EV-CHK-BEHAVIOR"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-CHK-PROCESS",
+      "kind": "process_record",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-PROCESS",
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "summary": "合同样本中的预设证据：process_record",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "id": "EV-CHK-EXECUTION",
+      "kind": "execution_record",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-EXECUTION",
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "summary": "合同样本中的预设证据：execution_record",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "id": "EV-CHK-BEHAVIOR",
+      "kind": "document_review",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-BEHAVIOR",
+      "subjectIds": [
+        "SUB-SOURCE"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-BEHAVIOR"
+      ],
+      "summary": "合同样本中的预设证据：document_review",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    }
+  ],
+  "environment": {
+    "identityDigest": null,
+    "coverage": "declared_subset",
+    "tools": [],
+    "dependencyDigests": [],
+    "unknowns": [
+      "P0 未执行运行时；不描述本机环境已冻结。"
+    ]
+  },
+  "enforcement": [
+    {
+      "mechanism": "post_write_scan",
+      "status": "declared",
+      "evidenceIds": [
+        "EV-CHK-PROCESS"
+      ]
+    }
+  ],
+  "upstreamCompletionClaim": null,
+  "generatedAt": "2026-09-14T00:00:00Z",
+  "limitations": [
+    "ALL DATA IS SYNTHETIC. This is a contract fixture, not execution evidence."
+  ],
+  "redaction": {
+    "content": "summary_and_hash_references_only",
+    "producerDeclared": true,
+    "omittedCategories": [
+      "raw_logs",
+      "source_bodies",
+      "environment_values"
+    ]
+  },
+  "extensions": {}
+}

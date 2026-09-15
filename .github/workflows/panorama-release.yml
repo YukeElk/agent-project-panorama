@@ -1,0 +1,44 @@
+name: Panorama 1.0 distribution validation
+on:
+  push:
+    branches: ['release/v1.0.0']
+    paths: ['panorama-control-plane/**', '.github/workflows/panorama-release.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: panorama-control-plane
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Development dependencies and prebuilt browser
+        run: |
+          npm install --global pnpm@11.19.0
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Process and workbench regression
+        run: |
+          export PANORAMA_TEST_PYTHON="$(python -c 'import os, sys; print(os.path.realpath(sys.executable))')"
+          export PANORAMA_PYTHON="$PANORAMA_TEST_PYTHON"
+          pnpm test:process
+          pnpm test:standalone
+      - name: Offline bundle lifecycle without dependency installation
+        run: |
+          export PANORAMA_TEST_PYTHON="$(python -c 'import os, sys; print(os.path.realpath(sys.executable))')"
+          export PANORAMA_PYTHON="$PANORAMA_TEST_PYTHON"
+          pnpm test:offline

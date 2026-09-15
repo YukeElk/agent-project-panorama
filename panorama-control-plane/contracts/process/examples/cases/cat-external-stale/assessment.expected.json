@@ -1,0 +1,482 @@
+{
+  "formatVersion": "panorama.process-assessment.v1",
+  "purpose": "contract_example",
+  "assessmentId": "fixture:cat-external-stale:assessment",
+  "assessmentHash": "71147b3ee01b7f5392b9dee6e290fc800cbad73ded8ffcbc7e5efd2e27d5ca44",
+  "binding": {
+    "authority": "structure-core",
+    "projectId": "fixture:cat-sys:project",
+    "checkoutId": "fixture:cat-sys:checkout",
+    "panoramaProjectId": null
+  },
+  "workItemRef": {
+    "id": "fixture:cat-external-stale:work",
+    "definitionDigest": "cbe09774b80ca30c8cfc07b378099092ea59b496f08a95210d910275f013c64c"
+  },
+  "rulePacks": [
+    {
+      "id": "PANORAMA-PROCESS-BASE",
+      "version": "0.1.0",
+      "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+    }
+  ],
+  "assessor": {
+    "id": "p0-expected-result-author",
+    "version": "0.1.0",
+    "mode": "contract_example"
+  },
+  "assessedAt": "2026-09-14T00:00:00Z",
+  "receiptRefs": [
+    {
+      "receiptId": "fixture:cat-external-stale:receipt",
+      "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4"
+    }
+  ],
+  "currentInputObservations": [
+    {
+      "inputSetId": "INPUT-SOURCE",
+      "selectionDigest": "cd56186bb067f36fcb4121931d35cba10c2ee1ba2347bb482d4ac73479ceebf8",
+      "digest": "90abf75378d1fbc29e36c8b87c41238f7d4906baab5e069fcc1e1c0a41157732",
+      "state": "readable",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "inputSetId": "INPUT-EXTERNAL",
+      "selectionDigest": "fd1649722d22e2f635d9f1aededaf0b3a23aa91935456f935696e60ffce86e12",
+      "digest": "8e4585138d6176cf20ea71fa654dc49c7eed27bb9d17e67def3a04195505268b",
+      "state": "readable",
+      "observedAt": "2026-09-14T00:00:00Z"
+    }
+  ],
+  "rules": [
+    {
+      "ruleId": "BASE-01",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-02",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-03",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-04",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": {
+        "status": "stale",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [
+          "INPUT-EXTERNAL"
+        ],
+        "unknowns": []
+      },
+      "satisfaction": "insufficient",
+      "reason": "合同预期：external-stale",
+      "missing": [
+        "external-stale"
+      ]
+    },
+    {
+      "ruleId": "BASE-05",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：本例的具体业务验收项证据仍匹配，独立外部输入规则保留阻断。",
+      "missing": []
+    },
+    {
+      "ruleId": "BASE-06",
+      "ruleVersion": "0.1.0",
+      "strength": "required",
+      "applicability": {
+        "status": "applicable",
+        "reason": "基础必备要求。",
+        "basisRefs": [
+          "urn:fixture:base"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-PROCESS"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-PROCESS"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-ARTIFACT",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "applicable",
+        "reason": "delivery.retained-artifact = true（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:delivery.retained-artifact"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-ARTIFACT"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-ARTIFACT"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-EXTERNAL",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "applicable",
+        "reason": "inputs.external = true（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:inputs.external"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": {
+        "status": "stale",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [
+          "INPUT-EXTERNAL"
+        ],
+        "unknowns": []
+      },
+      "satisfaction": "insufficient",
+      "reason": "合同预期：external-stale",
+      "missing": [
+        "external-stale"
+      ]
+    },
+    {
+      "ruleId": "COND-INTERFACE",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "applicable",
+        "reason": "change.public-behavior = true（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:change.public-behavior"
+        ]
+      },
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-BEHAVIOR"
+        },
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-DOC"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-BEHAVIOR"
+        },
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-DOC"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：所需证据结构完整。",
+      "missing": []
+    },
+    {
+      "ruleId": "COND-REVIEW",
+      "ruleVersion": "0.1.0",
+      "strength": "conditional",
+      "applicability": {
+        "status": "not_applicable",
+        "reason": "acceptance.human-review = false（合成输入）",
+        "basisRefs": [
+          "urn:fixture:fact:acceptance.human-review"
+        ]
+      },
+      "checkRefs": [],
+      "evidenceRefs": [],
+      "freshness": null,
+      "satisfaction": null,
+      "reason": "本样本不触发该条件。",
+      "missing": []
+    }
+  ],
+  "criteria": [
+    {
+      "criterionId": "AC-BEHAVIOR",
+      "criterionVersion": 1,
+      "required": true,
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-BEHAVIOR"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-BEHAVIOR"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：匹配指定证据类型与对象。",
+      "missing": []
+    },
+    {
+      "criterionId": "AC-ARTIFACT",
+      "criterionVersion": 1,
+      "required": true,
+      "checkRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "checkId": "CHK-ARTIFACT"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "receiptId": "fixture:cat-external-stale:receipt",
+          "receiptHash": "2a74dc7ccc43fdf4a7306ccdf01702d49e87b71b54f46d05bdbacaeaa9609cb4",
+          "evidenceId": "EV-CHK-ARTIFACT"
+        }
+      ],
+      "freshness": {
+        "status": "current",
+        "scope": "declared_inputs_and_subjects",
+        "changedIds": [],
+        "unknowns": []
+      },
+      "satisfaction": "satisfied",
+      "reason": "合同预期：匹配指定证据类型与对象。",
+      "missing": []
+    }
+  ],
+  "overall": {
+    "status": "blocked",
+    "processReady": false,
+    "blockingRuleIds": [
+      "BASE-04",
+      "COND-EXTERNAL"
+    ],
+    "blockingCriterionIds": [],
+    "totalRules": 10,
+    "applicableRules": 9,
+    "notApplicableRules": 1,
+    "unknownRules": 0,
+    "conflictingRules": 0
+  },
+  "limitations": [
+    "Expected result authored for P0 contract conformance. P1 evaluator has not run."
+  ],
+  "extensions": {},
+  "currentSubjectObservations": [
+    {
+      "subjectId": "SUB-PROCESS",
+      "identityDigest": "c732ba3bcde98a0034f6c2dda187ac07313aa8a343778c4ae85e16047d1fdcea",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "subjectId": "SUB-SOURCE",
+      "identityDigest": "7cb84863f1d6705477e9aa146e57f393dc1dc1fe44d8872739d2d2ac04ed90f8",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "subjectId": "SUB-RETAINED",
+      "identityDigest": "9e1031838977ad2eb58e1953676bfd00372bcbf66342d480b4370cee40da9fa4",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "subjectId": "SUB-EXTERNAL",
+      "identityDigest": "db8c4a0c90cdbbbda90af1d70d35adedce6ec6fb928a309e48992f548e425cea",
+      "state": "observed",
+      "observedAt": "2026-09-14T00:00:00Z"
+    }
+  ]
+}

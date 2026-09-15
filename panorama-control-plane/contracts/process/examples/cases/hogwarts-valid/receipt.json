@@ -1,0 +1,450 @@
+{
+  "formatVersion": "panorama.process-receipt.v1",
+  "purpose": "contract_example",
+  "receiptId": "fixture:hogwarts-valid:receipt",
+  "receiptHash": "199e29e6adb6edd01fd34ffc8aa7766e53e4aed8a57af8a1c53276253cf08fa6",
+  "executionId": "fixture:hogwarts-valid:execution",
+  "binding": {
+    "authority": "structure-core",
+    "projectId": "fixture:hogwarts:project",
+    "checkoutId": "fixture:hogwarts:checkout",
+    "panoramaProjectId": null
+  },
+  "workItemRef": {
+    "id": "fixture:hogwarts-valid:work",
+    "definitionDigest": "b40e4193c3a93d6ecc4eb4e93f06d50503653e17e1317b5deea0fae0ce0a9fc4"
+  },
+  "contextSnapshot": {
+    "goal": "P0 合成合同样本：hogwarts-valid",
+    "expectedOutcome": "用于验证合同表达能力，不证明业务执行或验收。",
+    "moduleIds": [
+      "modeling"
+    ],
+    "plannedPaths": [
+      "source.txt"
+    ],
+    "changedPaths": [
+      "source.txt"
+    ],
+    "criteria": [
+      {
+        "id": "AC-BEHAVIOR",
+        "version": 1,
+        "requirement": "约定输入上的开发行为符合要求。",
+        "required": true,
+        "subjectIds": [
+          "SUB-SOURCE"
+        ],
+        "allowedEvidenceKinds": [
+          "behavior_test"
+        ],
+        "acceptedActorKinds": [
+          "system",
+          "coding_agent"
+        ]
+      },
+      {
+        "id": "AC-ARTIFACT",
+        "version": 1,
+        "requirement": "交付的留存对象有针对该对象的适当检查。",
+        "required": true,
+        "subjectIds": [
+          "SUB-RETAINED"
+        ],
+        "allowedEvidenceKinds": [
+          "artifact_integrity"
+        ],
+        "acceptedActorKinds": [
+          "system",
+          "coding_agent"
+        ]
+      }
+    ],
+    "unknowns": [],
+    "decisionRefs": [],
+    "outcome": {
+      "summary": "人工编排的合同预期；不是本次运行结果。",
+      "incomplete": [],
+      "resumeNotes": [
+        "P1 将实现样本所描述的计算与对象检查。"
+      ]
+    },
+    "baseline": {
+      "id": "fixture:hogwarts-valid:baseline",
+      "state": "observed",
+      "capturedAt": "2026-09-13T23:59:00Z",
+      "scope": "declared_project_scope",
+      "inputSets": [
+        {
+          "id": "INPUT-SOURCE",
+          "selectors": [
+            {
+              "rootId": "project",
+              "include": [
+                "source.txt"
+              ],
+              "exclude": [],
+              "role": "source"
+            }
+          ],
+          "selectionDigest": "cd56186bb067f36fcb4121931d35cba10c2ee1ba2347bb482d4ac73479ceebf8",
+          "snapshot": {
+            "digest": "1aa8d038dc551c253a3ffb92d64a0e899ef4ef7b27369fe38c377a24ce951374",
+            "files": [
+              {
+                "rootId": "project",
+                "path": "source.txt",
+                "role": "source",
+                "state": "present",
+                "digest": "a8b2cb6f3d525b6572627d73b5dee5d5969766289c0f86f6928aecef8455fd66",
+                "bytes": 74
+              }
+            ]
+          }
+        }
+      ],
+      "unknowns": []
+    }
+  },
+  "candidateBinding": {
+    "candidateId": "fixture:design",
+    "candidateVersion": 1,
+    "baselineSnapshotId": "fixture:source-snapshot"
+  },
+  "rulePacks": [
+    {
+      "id": "PANORAMA-PROCESS-BASE",
+      "version": "0.1.0",
+      "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+    }
+  ],
+  "sourceSnapshotId": null,
+  "producer": {
+    "id": "panorama-p0-fixtures",
+    "version": "0.1.0",
+    "kind": "contract_fixture",
+    "authority": "declared"
+  },
+  "inputSets": [
+    {
+      "id": "INPUT-SOURCE",
+      "selectors": [
+        {
+          "rootId": "project",
+          "include": [
+            "source.txt"
+          ],
+          "exclude": [],
+          "role": "source"
+        }
+      ],
+      "selectionDigest": "cd56186bb067f36fcb4121931d35cba10c2ee1ba2347bb482d4ac73479ceebf8",
+      "before": {
+        "digest": "90abf75378d1fbc29e36c8b87c41238f7d4906baab5e069fcc1e1c0a41157732",
+        "files": [
+          {
+            "rootId": "project",
+            "path": "source.txt",
+            "role": "source",
+            "state": "present",
+            "digest": "7cb84863f1d6705477e9aa146e57f393dc1dc1fe44d8872739d2d2ac04ed90f8",
+            "bytes": 56
+          }
+        ]
+      },
+      "after": {
+        "digest": "90abf75378d1fbc29e36c8b87c41238f7d4906baab5e069fcc1e1c0a41157732",
+        "files": [
+          {
+            "rootId": "project",
+            "path": "source.txt",
+            "role": "source",
+            "state": "present",
+            "digest": "7cb84863f1d6705477e9aa146e57f393dc1dc1fe44d8872739d2d2ac04ed90f8",
+            "bytes": 56
+          }
+        ]
+      }
+    }
+  ],
+  "subjects": [
+    {
+      "id": "SUB-PROCESS",
+      "kind": "process",
+      "locator": null,
+      "identityDigest": "11c1a6270f54a6f4a658ea750b81e52c629a8eaee209f2637b6206ab2919cf1d",
+      "producedByExecutionId": null
+    },
+    {
+      "id": "SUB-SOURCE",
+      "kind": "source_behavior",
+      "locator": {
+        "rootId": "project",
+        "path": "source.txt"
+      },
+      "identityDigest": "7cb84863f1d6705477e9aa146e57f393dc1dc1fe44d8872739d2d2ac04ed90f8",
+      "producedByExecutionId": null
+    },
+    {
+      "id": "SUB-RETAINED",
+      "kind": "retained_artifact",
+      "locator": {
+        "rootId": "retained",
+        "path": "object.bin"
+      },
+      "identityDigest": "9e1031838977ad2eb58e1953676bfd00372bcbf66342d480b4370cee40da9fa4",
+      "producedByExecutionId": null
+    }
+  ],
+  "checks": [
+    {
+      "id": "CHK-PROCESS",
+      "checkerId": "fixture:process_record",
+      "kind": "record",
+      "runnerRef": null,
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": null,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "evidenceIds": [
+        "EV-CHK-PROCESS"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    },
+    {
+      "id": "CHK-EXECUTION",
+      "checkerId": "fixture:execution_record",
+      "kind": "record",
+      "runnerRef": null,
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": null,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "evidenceIds": [
+        "EV-CHK-EXECUTION"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    },
+    {
+      "id": "CHK-BEHAVIOR",
+      "checkerId": "fixture:behavior_test",
+      "kind": "machine",
+      "runnerRef": {
+        "id": "fixture-runner",
+        "definitionDigest": "9f178aaf88f9647556b14490349669272f67eddcf3cef6d191c41379e1e59b36"
+      },
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": 0,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-SOURCE"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-BEHAVIOR"
+      ],
+      "evidenceIds": [
+        "EV-CHK-BEHAVIOR"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    },
+    {
+      "id": "CHK-ARTIFACT",
+      "checkerId": "fixture:artifact_integrity",
+      "kind": "machine",
+      "runnerRef": {
+        "id": "fixture-runner",
+        "definitionDigest": "9f178aaf88f9647556b14490349669272f67eddcf3cef6d191c41379e1e59b36"
+      },
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "execution": {
+        "result": "passed",
+        "exitCode": 0,
+        "startedAt": "2026-09-14T00:00:00Z",
+        "finishedAt": "2026-09-14T00:00:00Z"
+      },
+      "subjectIds": [
+        "SUB-RETAINED"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-ARTIFACT"
+      ],
+      "evidenceIds": [
+        "EV-CHK-ARTIFACT"
+      ],
+      "limitations": [
+        "Synthetic contract example; no command was executed."
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-CHK-PROCESS",
+      "kind": "process_record",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-PROCESS",
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "summary": "合同样本中的预设证据：process_record",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "id": "EV-CHK-EXECUTION",
+      "kind": "execution_record",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-EXECUTION",
+      "subjectIds": [
+        "SUB-PROCESS"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [],
+      "summary": "合同样本中的预设证据：execution_record",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "id": "EV-CHK-BEHAVIOR",
+      "kind": "behavior_test",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-BEHAVIOR",
+      "subjectIds": [
+        "SUB-SOURCE"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-BEHAVIOR"
+      ],
+      "summary": "合同样本中的预设证据：behavior_test",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    },
+    {
+      "id": "EV-CHK-ARTIFACT",
+      "kind": "artifact_integrity",
+      "author": {
+        "id": "fixture:author",
+        "kind": "coding_agent",
+        "authority": "declared"
+      },
+      "checkId": "CHK-ARTIFACT",
+      "subjectIds": [
+        "SUB-RETAINED"
+      ],
+      "inputSetIds": [
+        "INPUT-SOURCE"
+      ],
+      "criterionIds": [
+        "AC-ARTIFACT"
+      ],
+      "summary": "合同样本中的预设证据：artifact_integrity",
+      "objectDigest": null,
+      "generatedAt": "2026-09-14T00:00:00Z"
+    }
+  ],
+  "environment": {
+    "identityDigest": null,
+    "coverage": "declared_subset",
+    "tools": [],
+    "dependencyDigests": [],
+    "unknowns": [
+      "P0 未执行运行时；不描述本机环境已冻结。"
+    ]
+  },
+  "enforcement": [
+    {
+      "mechanism": "post_write_scan",
+      "status": "declared",
+      "evidenceIds": [
+        "EV-CHK-PROCESS"
+      ]
+    }
+  ],
+  "upstreamCompletionClaim": null,
+  "generatedAt": "2026-09-14T00:00:00Z",
+  "limitations": [
+    "ALL DATA IS SYNTHETIC. This is a contract fixture, not execution evidence."
+  ],
+  "redaction": {
+    "content": "summary_and_hash_references_only",
+    "producerDeclared": true,
+    "omittedCategories": [
+      "raw_logs",
+      "source_bodies",
+      "environment_values"
+    ]
+  },
+  "extensions": {}
+}

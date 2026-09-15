@@ -1,0 +1,45 @@
+{
+  "formatVersion": "panorama.process-contract-set.v1",
+  "contractVersion": "0.1.0",
+  "stage": "P0",
+  "schemas": [
+    {
+      "path": "schemas/common.schema.json",
+      "id": "urn:panorama:process:schema:common:1",
+      "role": "definitions"
+    },
+    {
+      "path": "schemas/project.schema.json",
+      "id": "urn:panorama:process:schema:project:1",
+      "role": "document"
+    },
+    {
+      "path": "schemas/standard-pack.schema.json",
+      "id": "urn:panorama:process:schema:standard-pack:2",
+      "role": "document"
+    },
+    {
+      "path": "schemas/receipt.schema.json",
+      "id": "urn:panorama:process:schema:receipt:1",
+      "role": "document"
+    },
+    {
+      "path": "schemas/assessment.schema.json",
+      "id": "urn:panorama:process:schema:assessment:1",
+      "role": "document"
+    }
+  ],
+  "rulePack": {
+    "path": "rules/development-process.v0.1.json",
+    "id": "PANORAMA-PROCESS-BASE",
+    "version": "0.1.0",
+    "digest": "fe3f280c5820c3432a3cb015bc58c9bb982c2b53b2634d886a9e93dcd8523c9b"
+  },
+  "limits": {
+    "maxBytes": 1048576,
+    "maxDepth": 20,
+    "maxFilesPerInputSet": 50000
+  },
+  "hashAlgorithm": "panorama-sorted-json-v1",
+  "runtimeEvaluatorImplemented": false
+}

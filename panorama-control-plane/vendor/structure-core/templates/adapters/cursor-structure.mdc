@@ -1,0 +1,6 @@
+---
+description: Persistent project state and module context
+alwaysApply: true
+---
+
+Read `.structure/AGENTS.md` for governed work. Resolve module IDs via manifest.json and keep facts in modules/*.json. Regenerate views with structure tools; honor the configured profile and user authorization.

@@ -1,0 +1,562 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:structure:protocol:2",
+  "title": "Structure protocol entity definitions",
+  "$comment": "Select a definition by $ref, e.g. #/$defs/Manifest. Core validates behavioral invariants as well as data shape.",
+  "$defs": {
+    "Strings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "Project": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "project",
+        "package_version",
+        "phase",
+        "operating_mode",
+        "lifecycle_status",
+        "discovery_status"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "project": {
+          "type": "string"
+        },
+        "package_version": {
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "PHASE_0_EMPTY",
+            "PHASE_1_REQUIREMENTS",
+            "PHASE_2_ARCHITECTURE",
+            "PHASE_3_MODULE_DESIGN",
+            "PHASE_4_IMPLEMENTATION",
+            "PHASE_5_EVOLUTION"
+          ]
+        },
+        "operating_mode": {
+          "enum": [
+            "bootstrap",
+            "active",
+            "maintenance",
+            "archived"
+          ]
+        },
+        "lifecycle_status": {
+          "enum": [
+            "ready",
+            "uninitialized"
+          ]
+        },
+        "discovery_status": {
+          "enum": [
+            "draft",
+            "reviewed"
+          ]
+        },
+        "last_transition": {
+          "type": "string"
+        }
+      }
+    },
+    "Manifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "modules",
+        "coupling",
+        "policy"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "modules": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Module"
+          }
+        },
+        "coupling": {
+          "type": "object",
+          "required": [
+            "red_lines"
+          ],
+          "properties": {
+            "red_lines": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "change",
+                  "must_also_change"
+                ],
+                "properties": {
+                  "change": {
+                    "type": "string"
+                  },
+                  "must_also_change": {
+                    "$ref": "#/$defs/Strings"
+                  },
+                  "verify": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "policy": {
+          "$ref": "#/$defs/Policy"
+        }
+      }
+    },
+    "Module": {
+      "type": "object",
+      "required": [
+        "id",
+        "path",
+        "responsibility",
+        "owns",
+        "may_touch",
+        "forbidden",
+        "depends_on",
+        "tests_for",
+        "health"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "responsibility": {
+          "type": "string"
+        },
+        "owns": {
+          "$ref": "#/$defs/Strings"
+        },
+        "may_touch": {
+          "$ref": "#/$defs/Strings"
+        },
+        "forbidden": {
+          "$ref": "#/$defs/Strings"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/Strings"
+        },
+        "tests_for": {
+          "$ref": "#/$defs/Strings"
+        },
+        "health": {
+          "enum": [
+            "unverified",
+            "stable",
+            "active",
+            "unstable",
+            "retired"
+          ]
+        }
+      }
+    },
+    "Fact": {
+      "type": "object",
+      "required": [
+        "statement"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {},
+        "verification_command": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array"
+        },
+        "verified_at": {
+          "type": "string"
+        },
+        "freshness_policy": {
+          "type": "object"
+        }
+      }
+    },
+    "ModuleKnowledge": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "module",
+        "truths",
+        "dont_assume"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "module": {
+          "type": "string"
+        },
+        "truths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Fact"
+          }
+        },
+        "dont_assume": {
+          "$ref": "#/$defs/Strings"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "legacy_definition": {
+          "type": "object"
+        },
+        "legacy_status": {
+          "type": "string"
+        }
+      }
+    },
+    "WorkItem": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "id",
+        "title",
+        "kind",
+        "impact",
+        "state",
+        "modules",
+        "scope",
+        "acceptance",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "feature",
+            "bugfix",
+            "spike",
+            "refactor",
+            "migration",
+            "incident"
+          ]
+        },
+        "impact": {
+          "enum": [
+            "mechanical",
+            "internal",
+            "behavior",
+            "interface",
+            "boundary",
+            "architecture"
+          ]
+        },
+        "state": {
+          "type": "string"
+        },
+        "modules": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance": {
+          "$ref": "#/$defs/Strings"
+        },
+        "validation": {
+          "type": "array"
+        },
+        "created_at": {
+          "type": "string"
+        }
+      }
+    },
+    "Event": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "id",
+        "sequence",
+        "type",
+        "timestamp"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "type": {
+          "enum": [
+            "initialized",
+            "rescanned",
+            "migrated",
+            "gate_requested",
+            "decision",
+            "phase_transition",
+            "work_transition"
+          ]
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "subject_revision": {
+          "type": "string"
+        },
+        "gate": {
+          "type": "string"
+        },
+        "request_id": {
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "PENDING",
+            "APPROVED",
+            "REJECTED",
+            "CONDITIONAL"
+          ]
+        },
+        "actor": {
+          "type": "string"
+        },
+        "channel": {
+          "enum": [
+            "pi-ui",
+            "human-cli"
+          ]
+        },
+        "evidence": {
+          "type": "array"
+        },
+        "conditions": {
+          "type": "array"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "decision"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "subject",
+              "subject_revision",
+              "gate",
+              "request_id",
+              "decision",
+              "actor",
+              "channel",
+              "evidence"
+            ],
+            "properties": {
+              "decision": {
+                "enum": [
+                  "APPROVED",
+                  "REJECTED",
+                  "CONDITIONAL"
+                ]
+              },
+              "evidence": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "gate_requested"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "subject",
+              "subject_revision",
+              "gate",
+              "decision"
+            ],
+            "properties": {
+              "decision": {
+                "const": "PENDING"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Lease": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "module",
+        "session",
+        "token",
+        "acquired_at",
+        "heartbeat_at",
+        "expires_at",
+        "task"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "module": {
+          "type": "string"
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "acquired_at": {
+          "type": "string"
+        },
+        "heartbeat_at": {
+          "type": "string"
+        },
+        "expires_at": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        }
+      }
+    },
+    "Policy": {
+      "type": "object",
+      "required": [
+        "profile",
+        "coordination",
+        "runtime_enforcement",
+        "hook",
+        "code_globs",
+        "workflow",
+        "gate_impacts",
+        "update_impacts",
+        "allow_mechanical_skip",
+        "phase_transitions"
+      ],
+      "properties": {
+        "profile": {
+          "type": "string"
+        },
+        "coordination": {
+          "type": "object",
+          "required": [
+            "mode",
+            "lease_seconds"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "none",
+                "advisory",
+                "enforced"
+              ]
+            },
+            "lease_seconds": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 86400
+            }
+          }
+        },
+        "runtime_enforcement": {
+          "type": "boolean"
+        },
+        "hook": {
+          "enum": [
+            "advisory",
+            "enforced"
+          ]
+        },
+        "code_globs": {
+          "$ref": "#/$defs/Strings"
+        },
+        "workflow": {
+          "type": "object",
+          "required": [
+            "states",
+            "transitions"
+          ],
+          "properties": {
+            "states": {
+              "$ref": "#/$defs/Strings"
+            },
+            "transitions": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Strings"
+              }
+            }
+          }
+        },
+        "gate_impacts": {
+          "$ref": "#/$defs/Strings"
+        },
+        "update_impacts": {
+          "$ref": "#/$defs/Strings"
+        },
+        "allow_mechanical_skip": {
+          "type": "boolean"
+        },
+        "phase_transitions": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

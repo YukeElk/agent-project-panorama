@@ -1,0 +1,12 @@
+{
+  "purpose": "contract_example",
+  "facts": {
+    "delivery.retained-artifact": true,
+    "inputs.external": false,
+    "change.public-behavior": false,
+    "acceptance.human-review": false
+  },
+  "notes": [
+    "Missing/null facts are unknown, not false. These are authored fixture inputs."
+  ]
+}

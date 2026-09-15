@@ -1,0 +1,83 @@
+{
+  "purpose": "contract_examples_only",
+  "fixturesAreNotRuntimeEvidence": true,
+  "cases": [
+    {
+      "id": "cat-valid",
+      "project": "examples/projects/cat-sys.json",
+      "receipt": "examples/cases/cat-valid/receipt.json",
+      "assessment": "examples/cases/cat-valid/assessment.expected.json",
+      "facts": "examples/cases/cat-valid/facts.json",
+      "inputRoot": "examples/cases/cat-valid/inputs",
+      "expectedStatus": "satisfied",
+      "mode": "normal",
+      "baselineInputRoot": "examples/cases/cat-valid/baseline-inputs"
+    },
+    {
+      "id": "cat-external-stale",
+      "project": "examples/projects/cat-sys.json",
+      "receipt": "examples/cases/cat-external-stale/receipt.json",
+      "assessment": "examples/cases/cat-external-stale/assessment.expected.json",
+      "facts": "examples/cases/cat-external-stale/facts.json",
+      "inputRoot": "examples/cases/cat-external-stale/inputs",
+      "expectedStatus": "blocked",
+      "mode": "external-stale",
+      "baselineInputRoot": "examples/cases/cat-external-stale/baseline-inputs"
+    },
+    {
+      "id": "cat-review-missing",
+      "project": "examples/projects/cat-sys.json",
+      "receipt": "examples/cases/cat-review-missing/receipt.json",
+      "assessment": "examples/cases/cat-review-missing/assessment.expected.json",
+      "facts": "examples/cases/cat-review-missing/facts.json",
+      "inputRoot": "examples/cases/cat-review-missing/inputs",
+      "expectedStatus": "blocked",
+      "mode": "review-missing",
+      "baselineInputRoot": "examples/cases/cat-review-missing/baseline-inputs"
+    },
+    {
+      "id": "hogwarts-valid",
+      "project": "examples/projects/hogwarts.json",
+      "receipt": "examples/cases/hogwarts-valid/receipt.json",
+      "assessment": "examples/cases/hogwarts-valid/assessment.expected.json",
+      "facts": "examples/cases/hogwarts-valid/facts.json",
+      "inputRoot": "examples/cases/hogwarts-valid/inputs",
+      "expectedStatus": "satisfied",
+      "mode": "normal",
+      "baselineInputRoot": "examples/cases/hogwarts-valid/baseline-inputs"
+    },
+    {
+      "id": "hogwarts-retained-uncovered",
+      "project": "examples/projects/hogwarts.json",
+      "receipt": "examples/cases/hogwarts-retained-uncovered/receipt.json",
+      "assessment": "examples/cases/hogwarts-retained-uncovered/assessment.expected.json",
+      "facts": "examples/cases/hogwarts-retained-uncovered/facts.json",
+      "inputRoot": "examples/cases/hogwarts-retained-uncovered/inputs",
+      "expectedStatus": "blocked",
+      "mode": "artifact-uncovered",
+      "baselineInputRoot": "examples/cases/hogwarts-retained-uncovered/baseline-inputs"
+    },
+    {
+      "id": "hogwarts-docs-only",
+      "project": "examples/projects/hogwarts.json",
+      "receipt": "examples/cases/hogwarts-docs-only/receipt.json",
+      "assessment": "examples/cases/hogwarts-docs-only/assessment.expected.json",
+      "facts": "examples/cases/hogwarts-docs-only/facts.json",
+      "inputRoot": "examples/cases/hogwarts-docs-only/inputs",
+      "expectedStatus": "satisfied",
+      "mode": "docs",
+      "baselineInputRoot": "examples/cases/hogwarts-docs-only/baseline-inputs"
+    },
+    {
+      "id": "hogwarts-impact-unknown",
+      "project": "examples/projects/hogwarts.json",
+      "receipt": "examples/cases/hogwarts-impact-unknown/receipt.json",
+      "assessment": "examples/cases/hogwarts-impact-unknown/assessment.expected.json",
+      "facts": "examples/cases/hogwarts-impact-unknown/facts.json",
+      "inputRoot": "examples/cases/hogwarts-impact-unknown/inputs",
+      "expectedStatus": "unknown",
+      "mode": "impact-unknown",
+      "baselineInputRoot": "examples/cases/hogwarts-impact-unknown/baseline-inputs"
+    }
+  ]
+}

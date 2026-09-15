@@ -1,0 +1,29 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"urn:structure:architecture:1",
+  "title":"Implementation architecture and optimization traceability",
+  "type":"object",
+  "required":["document_schema_version","metadata","layers","nodes","edges","entities","workflows","interfaces","profiles","recommendations","limitations","view_presets","visualization_contract","file_inventory"],
+  "properties":{
+    "document_schema_version":{"const":"1.0.0"},
+    "metadata":{"type":"object","required":["id","title","package_version","protocol_schema_version","source_thread","maturity"],"properties":{"protocol_schema_version":{"const":2},"source_thread":{"type":"string"},"maturity":{"const":"preview"}}},
+    "layers":{"type":"array","items":{"type":"object","required":["id","label","order"],"properties":{"id":{"type":"string"},"label":{"type":"string"},"order":{"type":"integer"}}}},
+    "nodes":{"type":"array","items":{"type":"object","required":["id","type","layer","label","summary","responsibilities","sources"],"properties":{"id":{"type":"string"},"layer":{"type":"string"},"type":{"enum":["guidance","adapter","component","store"]},"sources":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/source"}},"responsibilities":{"$ref":"#/$defs/strings"}}}},
+    "edges":{"type":"array","items":{"type":"object","required":["id","source","target","type"],"properties":{"id":{"type":"string"},"source":{"type":"string"},"target":{"type":"string"},"type":{"type":"string"}}}},
+    "entities":{"type":"array","items":{"type":"object","required":["id","storage","identity","authority","fields","relations","notes"],"properties":{"fields":{"$ref":"#/$defs/strings"},"relations":{"type":"array","items":{"type":"object","required":["field","target","cardinality"]}}}}},
+    "workflows":{"type":"array","items":{"type":"object","required":["id","label","entrypoint","steps","branches"],"properties":{"steps":{"type":"array","minItems":1,"items":{"type":"object","required":["id","actor","action"]}},"branches":{"type":"array","items":{"type":"object","required":["from","condition","outcome"]}}}}},
+    "interfaces":{"type":"array","items":{"type":"object","required":["id","operation","transports","actions","fields","implementation"]}},
+    "profiles":{"type":"object","required":["solo-light","team-standard","multi-agent","regulated"]},
+    "recommendations":{"type":"array","items":{"type":"object","required":["id","priority","title","status","components","tests","resolution"],"properties":{"status":{"enum":["implemented","implemented_with_limits"]},"components":{"$ref":"#/$defs/strings"},"tests":{"$ref":"#/$defs/strings"},"limitations":{"$ref":"#/$defs/strings"}}}},
+    "limitations":{"type":"array","items":{"type":"object","required":["id","title","detail","follow_up","status"],"properties":{"status":{"enum":["explicit_boundary","integration_pending"]}}}},
+    "view_presets":{"type":"array","items":{"type":"object","required":["id","label","node_source","edge_source","group_by","details"]}},
+    "visualization_contract":{"type":"object"},
+    "file_inventory":{"type":"array","items":{"type":"object","required":["path","sha256","bytes"],"properties":{"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"bytes":{"type":"integer","minimum":0}}}},
+    "validation":{"type":"object"}
+  },
+  "additionalProperties":false,
+  "$defs":{
+    "strings":{"type":"array","items":{"type":"string"}},
+    "source":{"type":"object","required":["path","line"],"properties":{"path":{"type":"string"},"symbol":{"type":"string"},"line":{"type":"integer","minimum":1},"sha256":{"type":"string"}}}
+  }
+}
