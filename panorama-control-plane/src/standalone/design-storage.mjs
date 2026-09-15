@@ -48,7 +48,17 @@ export async function acquireLock(file, depth = 0) {
     catch (error) {
       if (error.code !== 'EEXIST') throw error;
       let previous;
-      try { previous = await readLock(file); } catch (readError) { if (readError.code === 'ENOENT') continue; throw readError; }
+      try { previous = await readLock(file); }
+      catch (readError) {
+        if (readError.code === 'ENOENT') continue;
+        // An exclusive creator may still be writing its owner record. Wait
+        // briefly, but never remove or acquire a lock with unproved ownership.
+        if (readError.code === 'WORKSPACE_LOCK_INVALID' && attempt < 5) {
+          await new Promise(resolve => setTimeout(resolve, 25));
+          continue;
+        }
+        throw readError;
+      }
       assert(!alive(previous.pid), 'Workspace data directory is already open in an active process', 409, 'WORKSPACE_LOCKED');
       // A token-specific recovery lock serializes stale-owner removal. Every
       // contender re-reads the original owner under that lock, so it cannot

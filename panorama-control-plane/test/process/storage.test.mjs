@@ -68,8 +68,8 @@ test('separate writers using one expected revision produce exactly one commit', 
   const results = workers.map(child => message(child,item => item.result || item.error));
   workers.forEach(child => child.send('go'));
   const completed = await Promise.all(results);
-  assert.equal(completed.filter(item => item.result).length,1);
-  assert.equal(completed.filter(item => item.error === 'STORE_REVISION_CONFLICT').length,1);
+  assert.equal(completed.filter(item => item.result).length,1,JSON.stringify(completed));
+  assert.equal(completed.filter(item => item.error === 'STORE_REVISION_CONFLICT').length,1,JSON.stringify(completed));
   assert.equal((await store.list()).revision,1); assert.equal((await store.list()).records.length,1);
   await Promise.all(workers.filter(child => child.exitCode === null).map(child => once(child,'exit')));
 });
