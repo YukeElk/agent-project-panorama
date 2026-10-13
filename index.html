@@ -205,11 +205,14 @@ if(state.isSample){
  const unmodified=Number(state.requirementRevision||1)===1&&Array.isArray(state.projectRequirements)&&state.projectRequirements.length===legacyTitles.length&&state.projectRequirements.every((r,i)=>r.id==='PR-0'+(i+1)&&r.title===legacyTitles[i]);
  if(unmodified)state.projectRequirements=DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r}));
 }
-// Preserve valid browser drafts while repairing incompatible or damaged flow-state fields.
-if(!state.flowEdits || typeof state.flowEdits!=='object' || Array.isArray(state.flowEdits))state.flowEdits={};
-if(!Array.isArray(state.extraSteps))state.extraSteps=[];
-else state.extraSteps=state.extraSteps.filter(step=>step && typeof step==='object' && typeof step.id==='string' && typeof step.title==='string');
-if(!['flow','architecture','prototype','proposal'].includes(state.designTab))state.designTab='flow';
+// Validate only render-critical state. Keep intact drafts; recover malformed legacy fields.
+function normalizeViewState(){
+ if(!state.flowEdits || typeof state.flowEdits!=='object' || Array.isArray(state.flowEdits))state.flowEdits={};
+ if(!Array.isArray(state.extraSteps))state.extraSteps=[];
+ else state.extraSteps=state.extraSteps.filter(step=>step && typeof step==='object' && !Array.isArray(step) && typeof step.id==='string' && step.id.length>0 && typeof step.title==='string' && step.title.length>0);
+ if(!['flow','architecture','prototype','proposal'].includes(state.designTab))state.designTab='flow';
+}
+normalizeViewState();
 const save=()=>{try{const st={...state,drawer:null,modal:null,toast:'',tour:null};localStorage.setItem('panorama-prototype-v05',JSON.stringify(st));}catch(_e){}};
 const NOTICE={};let toastTimer=0;let taskTimer=0;
 function notice(msg){document.getElementById('toast-root').innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>document.getElementById('toast-root').innerHTML='',3800);}
@@ -364,7 +367,21 @@ function navRender(){
  document.title=state.projectName+' · 项目研发工作台（交互原型）';
  document.getElementById('top-location').textContent=(state.page==='project'?({'home':'项目概览','requirements':'项目需求','progress':'项目进度',})[state.projectSub]||'项目概览':({'design':'设计','development':'开发','verification':'验证'})[state.page]);
 }
-function render(){navRender();document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));document.getElementById('main').innerHTML=state.page==='project'?renderProject():state.page==='design'?renderDesign():state.page==='development'?renderDevelopment():renderVerification();renderModal();renderDrawer();renderTour();save();}
+function render(){
+ // Calculate the next page before touching the navigation: no more active tab + stale page.
+ normalizeViewState();
+ let pageHtml;
+ try{
+  pageHtml=state.page==='project'?renderProject():state.page==='design'?renderDesign():state.page==='development'?renderDevelopment():renderVerification();
+ }catch(error){
+  console.error('Panorama page rendering failed',error);
+  pageHtml='<section class="panel" role="alert"><h2>当前页面暂时无法显示</h2><p class="blurb">页面内容出现异常。原有项目数据没有被清空，可以返回项目概览后重试。</p><div style="margin-top:18px"><button type="button" class="btn" data-action="go-dashboard">返回项目概览</button></div></section>';
+ }
+ document.getElementById('main').innerHTML=pageHtml;
+ navRender();
+ document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));
+ renderModal();renderDrawer();renderTour();save();
+}
 function setPage(page,opts={}){state.page=page;state.mobileProjectMenuOpen=false;if(page==='project')state.projectNavExpanded=true; if(opts.projectSub)state.projectSub=opts.projectSub;if(page==='project'&&!PROJECT_SUBPAGES.some(([id])=>id===state.projectSub))state.projectSub='home';if(opts.designTab)state.designTab=opts.designTab;if(opts.selectedStep)state.selectedStep=opts.selectedStep;if(opts.scene)state.scene=opts.scene;state.drawer=null;state.modal=null;render();window.scrollTo({top:0,behavior:'auto'});}
 function showDrawer(type,id){state.drawer={type,id};renderDrawer();}
 function showModal(type){state.modal={type};renderModal();}
