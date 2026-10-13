@@ -148,7 +148,7 @@ const DEFAULT_PROJECT_REQUIREMENTS=[
 ];
 const makeDefault=()=>({projectName:'AI-Wiki',projectGoal:'个人知识智能体：跨工具采集、持续研究、可信知识治理与行动支持',projectRequirements:DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r})),requirementRevision:1,editingRequirements:false,isSample:true,page:'project',projectSub:'home',projectNavExpanded:true,mobileProjectMenuOpen:false,designTab:'flow',scene:'paper',query:DEFAULT_QUERY,customQuery:'',selectedStep:'compare',selectedArch:'knowledge',previewView:'research',components:components.map(c=>c[0]),savedScenes:['paper'],proposal:false,proposalChoice:'B',designConfirmed:false,designRevision:3,flowEdits:{},extraSteps:[],taskStatus:'ready',lastTaskDesignRevision:null,attempts:[],validationRun:false,reviewOpen:false,drawer:null,modal:null,toast:'',tour:null,settingsSource:'',exploreCount:0,history:[]});
 let state=makeDefault();
-try{const saved=JSON.parse(localStorage.getItem('panorama-prototype-v05')||localStorage.getItem('panorama-prototype-v04')||'null');if(saved && saved.projectName && saved.page){state={...makeDefault(),...saved,page:saved.page==='dashboard'?'project':saved.page,projectSub:saved.page==='dashboard'?'home':(saved.page==='project'&&saved.projectSub==='home'?'scene':saved.projectSub),drawer:null,modal:null,toast:'',tour:null,editingRequirements:false, mobileProjectMenuOpen:false};}}catch(_e){}
+try{const saved=JSON.parse(localStorage.getItem('panorama-prototype-v05')||localStorage.getItem('panorama-prototype-v04')||'null');if(saved && saved.projectName && saved.page){state={...makeDefault(),...saved,page:'project',projectSub:'home',projectNavExpanded:true,drawer:null,modal:null,toast:'',tour:null,editingRequirements:false, mobileProjectMenuOpen:false};}}catch(_e){}
 const save=()=>{try{const st={...state,drawer:null,modal:null,toast:'',tour:null};localStorage.setItem('panorama-prototype-v05',JSON.stringify(st));}catch(_e){}};
 const NOTICE={};let toastTimer=0;let taskTimer=0;
 function notice(msg){document.getElementById('toast-root').innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>document.getElementById('toast-root').innerHTML='',3800);}
@@ -194,7 +194,6 @@ const baseSteps=[
 const tours=[
 {id:'J1',title:'从想法创建项目',desc:'立项 → 选择组成 → 进入需求',page:'project',sub:'home',action:'open-new'},
 {id:'J2',title:'理解一个已有项目',desc:'项目概览 → 能力架构 → 查看来源',page:'design',tab:'architecture'},
-{id:'J3',title:'动态场景支持度分析',desc:'输入想法 → 能力映射 → 查看缺口',page:'project',sub:'explore'},
 {id:'J4',title:'人工与 AI 协同设计',desc:'流程 → 编辑 → 方案 → 确认',page:'design',tab:'flow'},
 {id:'J5',title:'Coding Agent 交接',desc:'任务 → 执行模拟 → 结果回读',page:'development'},
 {id:'J6',title:'验证失败与设计回流',desc:'证据 → 诊断 → 方案 → 复验',page:'verification'}
@@ -228,7 +227,7 @@ function homePhaseState(){
 }
 function homeAttentionItems(){
  if(!state.isSample)return [
-  {id:'define-scenario',title:'确认第一个业务场景',summary:'明确希望用户完成的任务与成功标准。',status:'待梳理',detail:'当前演示项目已建立基本目标与组成，但没有真实的需求映射。应先形成业务场景及验收目标，不自动生成虚构架构。',target:'project-home',actionText:'进入场景探索'},
+  {id:'define-scenario',title:'确认第一个业务场景',summary:'明确希望用户完成的任务与成功标准。',status:'待梳理',detail:'当前演示项目已建立基本目标与组成，但没有真实的需求映射。应先形成业务场景及验收目标，不自动生成虚构架构。',target:'project-home',actionText:'查看项目需求'},
   {id:'define-design',title:'建立初步业务设计',summary:'从业务过程开始梳理功能职责。',status:'待设计',detail:'立项组成只表达产品需要哪些部分，下一步仍需确定用户流程、核心能力与数据边界。',target:'design-flow',actionText:'进入业务设计'}
  ];
  if(!state.designConfirmed)return [
@@ -270,9 +269,9 @@ function renderDashboard(){
     <p class="home-demo-note">原型演示数据，尚未连接实际项目运行环境。</p>
  </div>`;
 }
-const PROJECT_SUBPAGES=[['home','项目概览'],['requirements','项目需求'],['progress','项目进度'],['scene','场景探索']];
+const PROJECT_SUBPAGES=[['home','项目概览'],['requirements','项目需求'],['progress','项目进度']];
 function navRender(){
- const activeSub=state.projectSub==='explore'?'scene':state.projectSub;
+ const activeSub=state.projectSub;
  const entries=PROJECT_SUBPAGES.map(([id,label])=>`<button type="button" class="project-subnav-btn ${state.page==='project'&&activeSub===id?'selected':''}" data-action="project-${id}" ${state.page==='project'&&activeSub===id?'aria-current="page"':''}>${label}</button>`).join('');
  const items=NAV.map(([id,title,ico])=>{
    if(id!=='project')return `<button class="nav-btn ${state.page===id?'active':''}" data-action="nav-${id}" aria-current="${state.page===id?'page':'false'}" title="${title}">${icon(ico)}<span>${title}</span></button>`;
@@ -285,16 +284,16 @@ function navRender(){
  document.getElementById('brand-project').textContent=state.projectName;
  document.getElementById('brand-mark').textContent=state.projectName.trim().slice(0,1).toUpperCase()||'项';
  document.title=state.projectName+' · 项目研发工作台（交互原型）';
- document.getElementById('top-location').textContent=(state.page==='project'?({'home':'项目概览','requirements':'项目需求','progress':'项目进度','scene':'场景探索','explore':'场景分析'})[state.projectSub]||'项目概览':({'design':'设计','development':'开发','verification':'验证'})[state.page]);
+ document.getElementById('top-location').textContent=(state.page==='project'?({'home':'项目概览','requirements':'项目需求','progress':'项目进度',})[state.projectSub]||'项目概览':({'design':'设计','development':'开发','verification':'验证'})[state.page]);
 }
 function render(){navRender();document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));document.getElementById('main').innerHTML=state.page==='project'?renderProject():state.page==='design'?renderDesign():state.page==='development'?renderDevelopment():renderVerification();renderModal();renderDrawer();renderTour();save();}
-function setPage(page,opts={}){state.page=page;state.mobileProjectMenuOpen=false;if(page==='project')state.projectNavExpanded=true; if(opts.projectSub)state.projectSub=opts.projectSub;if(opts.designTab)state.designTab=opts.designTab;if(opts.selectedStep)state.selectedStep=opts.selectedStep;if(opts.scene)state.scene=opts.scene;state.drawer=null;state.modal=null;render();window.scrollTo({top:0,behavior:'auto'});}
+function setPage(page,opts={}){state.page=page;state.mobileProjectMenuOpen=false;if(page==='project')state.projectNavExpanded=true; if(opts.projectSub)state.projectSub=opts.projectSub;if(page==='project'&&!PROJECT_SUBPAGES.some(([id])=>id===state.projectSub))state.projectSub='home';if(opts.designTab)state.designTab=opts.designTab;if(opts.selectedStep)state.selectedStep=opts.selectedStep;if(opts.scene)state.scene=opts.scene;state.drawer=null;state.modal=null;render();window.scrollTo({top:0,behavior:'auto'});}
 function showDrawer(type,id){state.drawer={type,id};renderDrawer();}
 function showModal(type){state.modal={type};renderModal();}
 function log(msg){state.history.unshift({stamp:new Date().toLocaleTimeString('zh-CN',{hour12:false}),message:msg});state.history=state.history.slice(0,25)}
 function renderProject(){
  const sub=state.projectSub;
- return sub==='requirements'?renderRequirements():sub==='progress'?renderProjectProgress():sub==='scene'?renderHome():sub==='explore'?renderExplore():renderDashboard();
+ return sub==='requirements'?renderRequirements():sub==='progress'?renderProjectProgress():renderDashboard();
 }
 function renderProjectProgress(){
  const phase=homePhaseState();
@@ -366,7 +365,7 @@ function renderVerification(){if(!state.isSample)return `${header('VERIFICATION 
 function renderModal(){const root=document.getElementById('modal-root');if(!state.modal){root.innerHTML='';return;}const type=state.modal.type;let title='',subtitle='',body='',footer='',large=false;
 const close=`<button class="btn" data-action="close-modal">返回</button>`;
 if(type==='tour'){title='选择一条演示旅程';subtitle='六条主要路径均为可点击交互，演示状态与真实证据分离。';large=true;body=`<div class="threecol">${tours.map(t=>`<button class="proposal-card" data-action="tour-start-${t.id}" style="min-height:140px"><div class="eyebrow">${t.id}</div><h3>${t.title}</h3><p>${t.desc}</p></button>`).join('')}</div>`;footer=close;}
-else if(type==='search'){title='快速定位';subtitle='检索页面、场景及设计对象（离线示意）。';body=`<form id="search-form"><div class="field"><label for="global-search">输入关键词</label><input id="global-search" autofocus placeholder="场景 / 设计 / 开发 / 验证 / 证据" /></div><div class="stack"><button class="support-row" data-action="project-explore"><span class="main-text"><strong>论文追踪场景</strong><small>支持度分析 · EXP-001</small></span>${icon('chevron')}</button><button class="support-row" data-action="design-flow"><span class="main-text"><strong>目标设计</strong><small>知识追踪与冲突处理业务流程</small></span>${icon('chevron')}</button><button class="support-row" data-action="nav-verification"><span class="main-text"><strong>质量与验收</strong><small>测试记录和偏差诊断</small></span>${icon('chevron')}</button></div></form>`;footer=close;}
+else if(type==='search'){title='快速定位';subtitle='检索页面、场景及设计对象（离线示意）。';body=`<form id="search-form"><div class="field"><label for="global-search">输入关键词</label><input id="global-search" autofocus placeholder="场景 / 设计 / 开发 / 验证 / 证据" /></div><div class="stack"><button class="support-row" data-action="design-flow"><span class="main-text"><strong>目标设计</strong><small>知识追踪与冲突处理业务流程</small></span>${icon('chevron')}</button><button class="support-row" data-action="nav-verification"><span class="main-text"><strong>质量与验收</strong><small>测试记录和偏差诊断</small></span>${icon('chevron')}</button></div></form>`;footer=close;}
 else if(type==='new'){title='建立项目工作空间';subtitle='立项阶段只定义目标和组成，不要求选择技术栈。此原型仅建立浏览器内的演示项目。';body=`<form id="new-form"><div class="field"><label for="new-name">项目名称</label><input id="new-name" maxlength="60" value="新项目" required /></div><div class="field"><label for="new-goal">你希望完成什么？</label><textarea id="new-goal" rows="3" maxlength="500" placeholder="例如：开发一个面向个人研究的 Web 应用" required></textarea></div><div class="field"><label>项目组成（可稍后修改）</label><div class="workspace-settings">${components.map(([id,label])=>`<label><input type="checkbox" class="new-component" value="${id}" ${['frontend','backend'].includes(id)?'checked':''}/><span>${label}</span></label>`).join('')}</div></div><div class="muted-note">不会选择 React、PostgreSQL、模型等具体技术。项目中的真实文件将在正式系统中创建，而非此离线原型。</div></form>`;footer=`${close}<button class="btn primary" type="submit" form="new-form">创建演示工作空间</button>`;}
 else if(type==='project-requirements'){title='编辑项目需求';subtitle='修改项目整体目标和已有需求。只保存本浏览器内的演示草案。';
  body=`<form id="project-requirements-form"><div class="field"><label for="edit-project-goal">项目整体目标</label><textarea id="edit-project-goal" maxlength="800" rows="3" required>${esc(state.projectGoal)}</textarea></div>
@@ -399,7 +398,6 @@ root.innerHTML=`<div class="backdrop" data-action="close-drawer"></div><aside cl
 const tourSteps={
 J1:[['创建项目','为新项目定义目标，不需要选择技术栈。','project','home'],['选择组成','只选择前端、后端等构成部分；可以以后修改。','project','requirements'],['进入设计','根据需求形成业务流程与能力划分。','design','flow']],
 J2:[['理解目标','先看项目关注的业务场景。','project','home'],['聚焦架构','只看当前层级的相关能力与责任。','design','architecture'],['核对来源','通过模块上下文查看固定版本源码，区别声明与事实。','design','architecture']],
-J3:[['提出场景','从自然语言业务目标开始。','project','scene'],['场景分析','查看已找到的能力与证据缺口。','project','explore'],['转入设计','把关键缺口与方案绑定到目标设计。','design','proposal']],
 J4:[['查看流程','先验证业务处理方向。','design','flow'],['修改步骤','选择任意步骤，通过编辑形成设计草案。','design','flow'],['方案对比','比较修改范围、风险与替代路径。','design','proposal'],['确认目标','确认后才进入有边界的开发任务。','design','proposal']],
 J5:[['选择设计版本','将已确认设计与执行任务绑定。','design','proposal'],['任务交接','选择 Codex / Claude Code，模拟执行。','development',null],['结果回读','执行结束仍需独立验证。','verification',null]],
 J6:[['检查验收','查看缺少哪些真实证据。','verification',null],['诊断偏差','区分需求、设计和实现层次。','verification',null],['提出变更','比较多个方案并保存设计基线。','design','proposal'],['重新验收','复验新版本，历史失败记录仍保留。','verification',null]]};
@@ -416,7 +414,7 @@ if(op.startsWith('home-attention-go-')){
  const a=homeAttentionItems().find(x=>x.id===op.slice('home-attention-go-'.length));if(!a)return;
  state.drawer=null;renderDrawer();
  if(a.target==='decision'){showModal('decision');return;}
- if(a.target==='project-home'){setPage('project',{projectSub:'scene'});return;}
+ if(a.target==='project-home'){setPage('project',{projectSub:'requirements'});return;}
  if(a.target==='design-flow'){if(a.selectedStep)state.selectedStep=a.selectedStep;setPage('design',{designTab:'flow'});return;}
  if(a.target==='design-proposal'){setPage('design',{designTab:'proposal'});return;}
  if(a.target==='development'||a.target==='verification'){setPage(a.target);return;}
@@ -425,7 +423,7 @@ if(op.startsWith('home-attention-')){showDrawer('attention',op.slice('home-atten
 if(op==='close-modal'){state.modal=null;renderModal();return;}
 if(op==='close-drawer'){state.drawer=null;renderDrawer();return;}
 if(op.startsWith('nav-')){if(op==='nav-project')state.projectSub='home';setPage(op.slice(4));return;}
-if(op.startsWith('project-')){state.projectSub=op.slice(8);setPage('project');return;}
+if(op.startsWith('project-')){state.projectSub=PROJECT_SUBPAGES.some(([id])=>id===op.slice(8))?op.slice(8):'home';setPage('project');return;}
 if(op.startsWith('quick-')){const id=op.slice(6);state.scene=id;state.query=scenarioData[id].prompt;state.projectSub='explore';setPage('project',{projectSub:'explore'});return;}
 if(op.startsWith('switch-scene-')){state.scene=op.slice(13);state.query=state.scene==='custom'?state.customQuery:scenarioData[state.scene]?.prompt||'';setPage('project',{projectSub:'explore'});return;}
 if(op.startsWith('design-')){const tab=op.slice(7);if(tab==='approve'){const ck=document.getElementById('confirm-check');if(!ck?.checked){notice('请先确认这是模拟设计审批。');return;}state.designConfirmed=true;state.proposal=true;state.modal=null;log('设计草案 v'+state.designRevision+' 已在本地原型中确认');setPage('design',{designTab:'proposal'});notice('目标设计已模拟确认。可进入开发页检查任务契约。');return;}state.designTab=tab;render();return;}
@@ -474,7 +472,7 @@ if(e.target.id==='project-requirements-form'){
 if(e.target.id==='components-form'){e.preventDefault();const next=[...document.querySelectorAll('.project-component:checked')].map(el=>el.value),before=state.components;state.components=next;state.modal=null;state.designConfirmed=false;state.designRevision++;state.taskStatus='ready';state.validationRun=false;log('项目组成发生演示变更：'+next.join(', '));render();notice(`已保存组成变更（增加 ${next.filter(x=>!before.includes(x)).length}，移除 ${before.filter(x=>!next.includes(x)).length}）。相关设计需要影响核对。`);return;}
 if(e.target.id==='edit-step-form'){e.preventDefault();const title=document.getElementById('step-title')?.value.trim(),desc=document.getElementById('step-desc')?.value.trim();if(!title||!desc)return;const s=currentSteps().find(x=>x.id===state.selectedStep);if(!s)return; if(state.extraSteps.some(x=>x.id===s.id)){const x=state.extraSteps.find(x=>x.id===s.id);x.title=title;x.desc=desc;}else state.flowEdits[s.id]={title,desc};state.designRevision++;state.designConfirmed=false;state.taskStatus='ready';state.validationRun=false;state.modal=null;log('编辑目标设计步骤 '+s.id);render();notice('设计草案已更新。既有确认失效，需要重新评审。');return;}
 if(e.target.id==='add-step-form'){e.preventDefault();const title=document.getElementById('step-title')?.value.trim(),desc=document.getElementById('step-desc')?.value.trim();if(!title||!desc)return;const id='extra-'+(Date.now().toString(36));state.extraSteps.push({id,title,desc,caption:'新增业务步骤',owner:'待定义',in:'待定义',out:'待定义',evidence:'E-106'});state.selectedStep=id;state.designRevision++;state.designConfirmed=false;state.taskStatus='ready';state.validationRun=false;state.modal=null;log('新增目标设计步骤 '+title);render();notice('业务步骤已添加到设计草案。');return;}
-if(e.target.id==='search-form'){e.preventDefault();let val=document.getElementById('global-search')?.value||'';state.modal=null;if(/开发|任务|agent|coding/i.test(val))setPage('development');else if(/设计|架构|流程/i.test(val))setPage('design');else if(/验收|验证|测试|证据/i.test(val))setPage('verification');else setPage('project',{projectSub:'explore'});return;}
+if(e.target.id==='search-form'){e.preventDefault();let val=document.getElementById('global-search')?.value||'';state.modal=null;if(/开发|任务|agent|coding/i.test(val))setPage('development');else if(/设计|架构|流程/i.test(val))setPage('design');else if(/验收|验证|测试|证据/i.test(val))setPage('verification');else setPage('project',{projectSub:'home'});return;}
 }
 document.addEventListener('click',act);document.addEventListener('submit',onSubmit);document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(state.modal){state.modal=null;renderModal();return;}if(state.drawer){state.drawer=null;renderDrawer();return;}if(state.tour){state.tour=null;renderTour();return;}}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();showModal('search');setTimeout(()=>document.getElementById('global-search')?.focus(),0);}});
 // Optional embedded client-side workspace preview mode: unrecognized projects have generic target questions, never falsely mapped to AI-Wiki source.
