@@ -205,6 +205,11 @@ if(state.isSample){
  const unmodified=Number(state.requirementRevision||1)===1&&Array.isArray(state.projectRequirements)&&state.projectRequirements.length===legacyTitles.length&&state.projectRequirements.every((r,i)=>r.id==='PR-0'+(i+1)&&r.title===legacyTitles[i]);
  if(unmodified)state.projectRequirements=DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r}));
 }
+// Preserve valid browser drafts while repairing incompatible or damaged flow-state fields.
+if(!state.flowEdits || typeof state.flowEdits!=='object' || Array.isArray(state.flowEdits))state.flowEdits={};
+if(!Array.isArray(state.extraSteps))state.extraSteps=[];
+else state.extraSteps=state.extraSteps.filter(step=>step && typeof step==='object' && typeof step.id==='string' && typeof step.title==='string');
+if(!['flow','architecture','prototype','proposal'].includes(state.designTab))state.designTab='flow';
 const save=()=>{try{const st={...state,drawer:null,modal:null,toast:'',tour:null};localStorage.setItem('panorama-prototype-v05',JSON.stringify(st));}catch(_e){}};
 const NOTICE={};let toastTimer=0;let taskTimer=0;
 function notice(msg){document.getElementById('toast-root').innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>document.getElementById('toast-root').innerHTML='',3800);}
