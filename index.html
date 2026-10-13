@@ -253,10 +253,9 @@ function homeAttentionItems(){
 }
 function renderPhasePanel(){
  const phase=homePhaseState();
- const general=state.isSample?'已有代码与设计资料 · 处于持续迭代（仅仓库观察）':'新建项目 · 仅浏览器中的草案';
  return `   <section class="home-phase-panel panel" aria-label="项目整体进度">
-      <div class="row between wrap"><h2>项目整体进度</h2><span class="status unknown">演示状态 · 非实时</span></div>
-      <div class="home-progress-head"><div><div class="home-progress-label">当前迭代所处阶段</div><div class="home-progress-title">${esc(phase.title)}</div><p class="home-progress-detail">${esc(phase.detail)}</p></div><div class="home-project-condition"><span>项目整体</span><strong>${esc(general)}</strong></div></div>
+      <h2>项目整体进度</h2>
+      <div class="home-progress-head"><div><div class="home-progress-label">当前迭代所处阶段</div><div class="home-progress-title">${esc(phase.title)}</div><p class="home-progress-detail">${esc(phase.detail)}</p></div></div>
        <ol class="home-stage-track" aria-label="项目研发阶段">${phase.phases.map((p,i)=>`<li class="home-stage ${p.phase}"><span class="home-stage-indicator">${p.phase==='covered'?icon('check'):String(i+1)}</span><span class="home-stage-copy"><strong>${esc(p.title)}</strong><small>${esc(p.phaseText)}</small></span></li>`).join('')}</ol>
    </section>`;
 }
@@ -264,7 +263,7 @@ function renderDashboard(){
  const attention=homeAttentionItems();
  return `<div class="home-dashboard">
     <div class="home-heading"><div><div class="eyebrow">项目概览</div><h1>${esc(state.projectName)}</h1><p class="lead">项目当前进展和需要关注的事情。</p></div>
-    ${action(`探索场景 ${icon('arrow')}`,'project-scene','btn sm')}</div>
+    </div>
     ${renderPhasePanel()}
     <section class="home-attention-section" aria-labelledby="attention-section-title"><div class="section-head"><h2 id="attention-section-title">现阶段需要关注的事情</h2><span class="muted">${attention.length} 项 · 点击查看详情</span></div>
     <div class="home-attention-panel panel">${attention.map(a=>`<button class="home-attention-item" type="button" data-action="home-attention-${esc(a.id)}"><span class="home-attention-icon">${icon(a.status==='执行中'?'clock':'info')}</span><span class="home-attention-copy"><strong>${esc(a.title)}</strong><small>${esc(a.summary)}</small></span><span class="home-attention-side"><span class="home-attention-tag">${esc(a.status)}</span>${icon('chevron')}</span></button>`).join('')}</div></section>
