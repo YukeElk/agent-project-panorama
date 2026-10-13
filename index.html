@@ -108,6 +108,55 @@
  .mobile-project-subnav .project-subnav-btn{border:1px solid var(--line);padding:11px 12px;font-size:13px}
  .mobile-project-subnav .project-subnav-btn.selected{border-color:#e4cab9}
 }
+
+/* v0.8 – project goal, business needs, and non-interactive component topology. */
+.project-requirements-page{max-width:1060px;margin:0 auto}
+.project-requirements-label{font-size:12px;font-weight:650;letter-spacing:.04em;color:var(--muted);margin-bottom:17px}
+.project-goal-hero{padding:34px 36px 37px;background:var(--paper);border:1px solid var(--line);border-radius:18px}
+.project-goal-caption{font-size:12px;color:var(--accent-strong);font-weight:690;margin-bottom:17px}
+.project-goal-statement{font-size:clamp(32px,3.2vw,42px);font-weight:720;letter-spacing:-.048em;line-height:1.42;max-width:950px;color:var(--ink);overflow-wrap:anywhere}
+.project-goal-explain{font-size:15px;line-height:1.9;color:#626961;margin-top:20px;max-width:910px}
+.project-business-section{margin-top:37px}
+.project-business-heading{margin-bottom:18px}
+.project-business-heading h2{font-size:23px;letter-spacing:-.025em}
+.project-business-heading p{font-size:13px;color:var(--muted);margin-top:6px}
+.project-business-list{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:2px 28px}
+.project-business-item{display:grid;grid-template-columns:64px minmax(0,1fr);gap:18px;padding:22px 2px 23px;border-bottom:1px solid var(--line)}
+.project-business-item:last-child{border-bottom:0}
+.project-business-item .business-id{color:#9d826d;font-size:12px;padding-top:4px}
+.project-business-item h3{font-size:17px;line-height:1.45;font-weight:670}
+.project-business-item p{font-size:14px;color:#606760;line-height:1.82;margin-top:9px;max-width:900px}
+.project-business-source{font-size:11px;line-height:1.7;color:var(--quiet);margin-top:19px}
+.project-topology-section{margin-top:31px;padding:23px 28px 22px;box-shadow:none}
+.project-topology-heading{display:flex;gap:15px;align-items:start;justify-content:space-between}
+.project-topology-heading h2{font-size:20px}
+.project-topology-heading p{font-size:12px;color:var(--muted);margin-top:5px}
+.project-topology-heading .detail-link{white-space:nowrap;margin-top:3px}
+.project-topology-stage{margin-top:8px}
+.project-topology-svg{width:100%;height:auto;display:block;max-height:366px}
+.project-topology-svg .node rect{fill:#fffefa;stroke:#d9ded7;stroke-width:1.4}
+.project-topology-svg .node text{fill:#4a514b;font-size:15px;font-weight:610}
+.project-topology-svg .core rect{fill:#f8eee7;stroke:#c9a794;stroke-width:1.5}
+.project-topology-svg .core .core-title{fill:#553d33;font-size:19px;font-weight:710}
+.project-topology-svg .core .core-caption{fill:#967566;font-size:11px}
+.project-topology-mobile{display:none}
+.project-topology-note{font-size:11px;color:var(--quiet);line-height:1.65}
+@media(max-width:700px){
+ .project-goal-hero{padding:23px 20px 27px}
+ .project-goal-statement{font-size:clamp(28px,6vw,34px);line-height:1.47}
+ .project-goal-explain{font-size:14px}
+ .project-business-list{padding:0 17px}
+ .project-business-item{grid-template-columns:1fr;gap:5px;padding:19px 0 21px}
+ .project-business-item .business-id{padding-top:0}
+ .project-business-item h3{font-size:16px}
+ .project-topology-section{padding:19px 18px}
+ .project-topology-svg{display:none}
+ .project-topology-mobile{display:block;padding:15px 0 19px}
+ .project-topology-mobile-core{border:1px solid #c9a794;background:#f8eee7;color:#5b4035;text-align:center;font-size:15px;font-weight:700;border-radius:11px;padding:13px 16px;max-width:240px;margin:0 auto}
+ .project-topology-mobile-stem{height:20px;width:1px;background:#c9d0c9;margin:0 auto}
+ .project-topology-mobile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;border-top:1px solid #c9d0c9;padding-top:15px}
+ .project-topology-mobile-grid span{display:block;background:#fff;border:1px solid #e0e5df;padding:11px 8px;border-radius:8px;font-size:12px;text-align:center;min-width:0}
+}
 </style>
 </head>
 <body>
@@ -139,16 +188,23 @@ const REPO='https://github.com/YukeElk/AI-Wiki/blob/'+BASE_SHA+'/';
 const components=[['frontend','前端界面'],['backend','后端服务'],['storage','数据存储'],['llm','LLM'],['automation','Agent / 自动化'],['external','外部系统接入'],['job','后台任务']];
 const NAV=[['project','项目','project'],['design','设计','design'],['development','开发','dev'],['verification','验证','verify']];
 const DEFAULT_PROJECT_REQUIREMENTS=[
- {id:'PR-01',title:'跨工具知识采集',detail:'将 Obsidian、Zotero 和其他明确授权的来源接入统一知识流程，保留原始材料和来源。'},
- {id:'PR-02',title:'持续研究与知识生产',detail:'按关注主题研究新资料，将可靠结论转化为可复用的知识，并尽量减少重复操作。'},
- {id:'PR-03',title:'知识治理与人工决策',detail:'管理知识证据、关系、冲突和版本；只有重要异常及高风险变更需要人工判断。'},
- {id:'PR-04',title:'可信检索与知识复用',detail:'提供基于现有知识的检索与问答，能够追溯来源，证据不足时明确说明。'},
- {id:'PR-05',title:'知识辅助规划与行动',detail:'基于知识和项目目标辅助制定计划，在明确授权边界内协同外部任务工具。'},
- {id:'PR-06',title:'本地安全与持续可用',detail:'保护本地个人资料，保留权限与操作审计，支持任务恢复、备份和可靠的版本演进。'}
+ {id:"PR-01",title:"跨工具资料与想法采集",detail:"支持从 Obsidian 笔记、Zotero 文献、网页与随手记录等来源采集材料；保留原始内容、来源与版本，让用户继续使用熟悉的工具，而不必重复整理。"},
+ {id:"PR-02",title:"持续研究与新资料发现",detail:"用户设定关注主题、研究问题及周期后，系统持续发现相关资料，识别新增、重复和变化，形成带有原始来源的研究简报及后续研究线索。"},
+ {id:"PR-03",title:"可信知识提炼与沉淀",detail:"从新材料中提炼观点、适用条件和证据，与已有知识建立关联；在符合已验证质量规则时自动沉淀可靠结论，证据不足的内容保留待核实状态。"},
+ {id:"PR-04",title:"知识冲突与版本治理",detail:"比较新旧结论的研究条件、证据和适用范围，识别可能冲突、重复或需要修订的知识；重大冲突与高风险变更才提交人工审核，并保留历史记录。"},
+ {id:"PR-05",title:"知识检索与行动支持",detail:"让用户通过自然语言查找已有知识，回答时提供可追溯的证据与来源；进一步利用可靠知识支持研究判断、项目规划与经过授权的任务建议。"},
+ {id:"PR-06",title:"个人数据与持续运行",detail:"保护本地知识资料和外部工具的访问权限，支持后台任务恢复、备份、版本追溯与必要的操作审计；执行失败时保留真实状态，不静默覆盖用户内容。"}
 ];
-const makeDefault=()=>({projectName:'AI-Wiki',projectGoal:'个人知识智能体：跨工具采集、持续研究、可信知识治理与行动支持',projectRequirements:DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r})),requirementRevision:1,editingRequirements:false,isSample:true,page:'project',projectSub:'home',projectNavExpanded:true,mobileProjectMenuOpen:false,designTab:'flow',scene:'paper',query:DEFAULT_QUERY,customQuery:'',selectedStep:'compare',selectedArch:'knowledge',previewView:'research',components:components.map(c=>c[0]),savedScenes:['paper'],proposal:false,proposalChoice:'B',designConfirmed:false,designRevision:3,flowEdits:{},extraSteps:[],taskStatus:'ready',lastTaskDesignRevision:null,attempts:[],validationRun:false,reviewOpen:false,drawer:null,modal:null,toast:'',tour:null,settingsSource:'',exploreCount:0,history:[]});
+const makeDefault=()=>({projectName:'AI-Wiki',projectGoal:'让分散的资料、研究和想法，自动成为可信、可复用的个人知识。',projectRequirements:DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r})),requirementRevision:1,editingRequirements:false,isSample:true,page:'project',projectSub:'home',projectNavExpanded:true,mobileProjectMenuOpen:false,designTab:'flow',scene:'paper',query:DEFAULT_QUERY,customQuery:'',selectedStep:'compare',selectedArch:'knowledge',previewView:'research',components:components.map(c=>c[0]),savedScenes:['paper'],proposal:false,proposalChoice:'B',designConfirmed:false,designRevision:3,flowEdits:{},extraSteps:[],taskStatus:'ready',lastTaskDesignRevision:null,attempts:[],validationRun:false,reviewOpen:false,drawer:null,modal:null,toast:'',tour:null,settingsSource:'',exploreCount:0,history:[]});
 let state=makeDefault();
 try{const saved=JSON.parse(localStorage.getItem('panorama-prototype-v05')||localStorage.getItem('panorama-prototype-v04')||'null');if(saved && saved.projectName && saved.page){state={...makeDefault(),...saved,page:'project',projectSub:'home',projectNavExpanded:true,drawer:null,modal:null,toast:'',tour:null,editingRequirements:false, mobileProjectMenuOpen:false};}}catch(_e){}
+// Migrate only untouched built-in sample copy; retain user-edited drafts.
+if(state.isSample){
+ if(["个人知识智能体：跨工具采集、持续研究、可信知识治理与行动支持","个人知识智能体：从持续研究到可复用知识与行动"].includes(state.projectGoal))state.projectGoal="让分散的资料、研究和想法，自动成为可信、可复用的个人知识。";
+ const legacyTitles=['跨工具知识采集','持续研究与知识生产','知识治理与人工决策','可信检索与知识复用','知识辅助规划与行动','本地安全与持续可用'];
+ const unmodified=Number(state.requirementRevision||1)===1&&Array.isArray(state.projectRequirements)&&state.projectRequirements.length===legacyTitles.length&&state.projectRequirements.every((r,i)=>r.id==='PR-0'+(i+1)&&r.title===legacyTitles[i]);
+ if(unmodified)state.projectRequirements=DEFAULT_PROJECT_REQUIREMENTS.map(r=>({...r}));
+}
 const save=()=>{try{const st={...state,drawer:null,modal:null,toast:'',tour:null};localStorage.setItem('panorama-prototype-v05',JSON.stringify(st));}catch(_e){}};
 const NOTICE={};let toastTimer=0;let taskTimer=0;
 function notice(msg){document.getElementById('toast-root').innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>document.getElementById('toast-root').innerHTML='',3800);}
@@ -258,6 +314,22 @@ function renderPhasePanel(){
        <ol class="home-stage-track" aria-label="项目研发阶段">${phase.phases.map((p,i)=>`<li class="home-stage ${p.phase}"><span class="home-stage-indicator">${p.phase==='covered'?icon('check'):String(i+1)}</span><span class="home-stage-copy"><strong>${esc(p.title)}</strong><small>${esc(p.phaseText)}</small></span></li>`).join('')}</ol>
    </section>`;
 }
+
+function renderProjectComposition(){
+ const chosen=components.filter(c=>state.components.includes(c[0]));
+ const count=chosen.length;
+ const nodes=chosen.map((part,index)=>{
+   const angle=-Math.PI/2+(2*Math.PI*index/Math.max(1,count));
+   return {id:part[0],label:part[1],x:Math.round(480+336*Math.cos(angle)),y:Math.round(188+136*Math.sin(angle))};
+ });
+ const links=nodes.map(n=>'<line x1="480" y1="188" x2="'+n.x+'" y2="'+n.y+'" stroke="#c5cbc4" stroke-width="1.6"/>').join('');
+ const items=nodes.map(n=>'<g class="node"><rect x="'+(n.x-82)+'" y="'+(n.y-28)+'" width="164" height="56" rx="12"/><text x="'+n.x+'" y="'+(n.y+5)+'" text-anchor="middle">'+esc(n.label)+'</text></g>').join('');
+ const shortName=state.projectName.length>18?state.projectName.slice(0,17)+'…':state.projectName;
+ const graphic=count?'<svg class="project-topology-svg" viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="'+esc(state.projectName)+' 的项目组成示意图"><title>项目组成网络示意图</title><desc>中心是当前项目，周围是立项选择的组成部分。连线仅表示包含关系，不代表技术依赖或调用方向。</desc><g>'+links+'</g><g class="core"><rect x="367" y="147" width="226" height="82" rx="17"/><text class="core-title" x="480" y="186" text-anchor="middle">'+esc(shortName)+'</text><text class="core-caption" x="480" y="204" text-anchor="middle">当前项目</text></g>'+items+'</svg>'
+  :'<p class="empty">尚未选择项目组成。</p>';
+ const mobile=count?'<div class="project-topology-mobile" aria-label="项目组成"><div class="project-topology-mobile-core">'+esc(state.projectName)+'</div><div class="project-topology-mobile-stem"></div><div class="project-topology-mobile-grid">'+chosen.map(c=>'<span>'+esc(c[1])+'</span>').join('')+'</div></div>':'';
+ return '<section class="panel project-topology-section" aria-labelledby="project-topology-heading"><div class="project-topology-heading"><div><h2 id="project-topology-heading">项目组成</h2><p>项目包含的主要组成部分，具体实现技术在设计阶段确定。</p></div>'+action('调整组成','open-components','detail-link')+'</div><div class="project-topology-stage">'+graphic+mobile+'</div><p class="project-topology-note">连线仅表示项目的组成关系，不代表模块依赖或运行调用。</p></section>';
+}
 function renderDashboard(){
  const attention=homeAttentionItems();
  return `<div class="home-dashboard">
@@ -266,6 +338,7 @@ function renderDashboard(){
     ${renderPhasePanel()}
     <section class="home-attention-section" aria-labelledby="attention-section-title"><div class="section-head"><h2 id="attention-section-title">现阶段需要关注的事情</h2><span class="muted">${attention.length} 项 · 点击查看详情</span></div>
     <div class="home-attention-panel panel">${attention.map(a=>`<button class="home-attention-item" type="button" data-action="home-attention-${esc(a.id)}"><span class="home-attention-icon">${icon(a.status==='执行中'?'clock':'info')}</span><span class="home-attention-copy"><strong>${esc(a.title)}</strong><small>${esc(a.summary)}</small></span><span class="home-attention-side"><span class="home-attention-tag">${esc(a.status)}</span>${icon('chevron')}</span></button>`).join('')}</div></section>
+    ${renderProjectComposition()}
     <p class="home-demo-note">原型演示数据，尚未连接实际项目运行环境。</p>
  </div>`;
 }
@@ -327,16 +400,22 @@ ${header('SCENARIO / 动态探索',sc.title,sc.goal||sc.prompt,action(`${icon('b
 <div class="section"><div class="panel" style="background:#fcfbf8"><div class="row between start"><div><div class="eyebrow">下一步建议</div><h3 style="margin-top:8px">${fresh?'保留探索记录，进行真实项目映射':'补齐关键设计，避免直接开始重构'}</h3><p class="blurb">${fresh?'需要通过项目分析服务解析目标、确认所需能力、读取版本化工程证据，再产生支持度判断。':'建议先补充论文身份、研究价值评价和语义冲突自动识别，并验证风险驱动发布策略。'}</p></div>${icon('arrow')}</div><div style="margin-top:16px">${action(fresh?'查看工作台设计':'将缺口带入设计','create-proposal','btn primary sm')}</div></div></div>`;}
 function renderRequirements(){
  const items=Array.isArray(state.projectRequirements)?state.projectRequirements:[];
- return `<div class="home-dashboard">
- ${header('PROJECT / REQUIREMENTS','项目需求','说明本项目整体要解决什么问题以及要具备哪些主要能力。',action(`${icon('edit')} 编辑项目需求`,'edit-project-requirements','btn sm'))}
- <section class="panel project-requirements" aria-labelledby="project-goal-title">
-   <div class="eyebrow" id="project-goal-title">整体目标</div><p class="project-goal">${esc(state.projectGoal)}</p>
-   <div class="rule"></div><div class="row between"><h2>项目整体需求</h2><span class="small muted">草案 v${Number(state.requirementRevision)||1}</span></div>
-   <div class="project-req-list">${items.map(x=>`<div class="project-req-item"><span class="project-req-id mono">${esc(x.id)}</span><div><strong>${esc(x.title)}</strong><p class="blurb">${esc(x.detail)}</p></div></div>`).join('')}</div>
-   <p class="small muted" style="margin-top:18px">${state.isSample?'根据 AI-Wiki 目标归纳的演示需求草案，不代表正式仓库需求已批准。':'当前项目需求为浏览器中的草案，尚未接入正式项目文件。'} 编辑仅更新当前浏览器中的原型数据。</p>
- </section>
- <details class="panel compact project-composition"><summary>项目组成（立项配置）</summary><p class="blurb">${components.filter(c=>state.components.includes(c[0])).map(c=>esc(c[1])).join(' · ')||'暂未选择'}</p><div style="margin-top:12px">${action('调整项目组成','open-components','btn sm')}</div></details>
- </div>`;
+ const sampleDescription=state.isSample?'AI-Wiki 是本地优先的个人知识智能协作系统。用户提供资料、关注主题和目标，系统在 Obsidian、Zotero 等专业工具之间完成采集、持续研究、知识提炼、关系维护与检索复用。可靠的日常处理尽量自动完成，只有重要冲突、风险或不确定情况才要求人工决策。':'';
+ return '<div class="project-requirements-page">'+
+  '<div class="project-requirements-label">项目需求</div>'+
+  '<section class="project-goal-hero" aria-labelledby="project-goal-title">'+
+    '<div class="project-goal-caption">整体目标</div>'+
+    '<h1 class="project-goal-statement" id="project-goal-title">'+esc(state.projectGoal)+'</h1>'+
+    (sampleDescription?'<p class="project-goal-explain">'+esc(sampleDescription)+'</p>':'')+
+  '</section>'+
+  '<section class="project-business-section" aria-labelledby="project-business-title">'+
+    '<div class="project-business-heading"><h2 id="project-business-title">业务需求</h2><p>为了实现整体目标，系统需要具备以下业务功能。</p></div>'+
+    '<div class="project-business-list">'+items.map(item=>
+      '<article class="project-business-item"><span class="business-id mono">'+esc(item.id)+'</span><div><h3>'+esc(item.title)+'</h3><p>'+esc(item.detail)+'</p></div></article>'
+    ).join('')+'</div>'+
+  '</section>'+
+  '<p class="project-business-source">'+(state.isSample?'根据 AI-Wiki 项目目标整理的原型需求说明，并非已核准的正式项目需求。':'当前为浏览器内演示项目的需求说明。')+'</p>'+
+ '</div>';
 }
 function renderDesign(){const sc=scenario();const tabs=[['flow','业务流程'],['architecture','能力与架构'],['prototype','交互原型'],['proposal','方案与变更']];return `${header('DESIGN / 人机协同设计',sc.title,'先理解业务，再调整目标设计。图形交互只修改演示设计草案，不改变 AI-Wiki 的真实代码。',action(`${icon('spark')} 生成候选方案`,'generate-proposal','btn secondary sm'))}
 <div class="row between wrap" style="margin-bottom:17px"><div class="segment" role="tablist" aria-label="设计视角">${tabs.map(([k,l])=>`<button role="tab" class="${state.designTab===k?'active':''}" data-action="design-${k}" aria-selected="${state.designTab===k}">${l}</button>`).join('')}</div><span class="status unknown">目标设计草案 v${state.designRevision} · ${state.designConfirmed?'演示已确认':'待确认'}</span></div>
@@ -367,10 +446,6 @@ const close=`<button class="btn" data-action="close-modal">返回</button>`;
 if(type==='tour'){title='选择一条演示旅程';subtitle='六条主要路径均为可点击交互，演示状态与真实证据分离。';large=true;body=`<div class="threecol">${tours.map(t=>`<button class="proposal-card" data-action="tour-start-${t.id}" style="min-height:140px"><div class="eyebrow">${t.id}</div><h3>${t.title}</h3><p>${t.desc}</p></button>`).join('')}</div>`;footer=close;}
 else if(type==='search'){title='快速定位';subtitle='检索页面、场景及设计对象（离线示意）。';body=`<form id="search-form"><div class="field"><label for="global-search">输入关键词</label><input id="global-search" autofocus placeholder="场景 / 设计 / 开发 / 验证 / 证据" /></div><div class="stack"><button class="support-row" data-action="design-flow"><span class="main-text"><strong>目标设计</strong><small>知识追踪与冲突处理业务流程</small></span>${icon('chevron')}</button><button class="support-row" data-action="nav-verification"><span class="main-text"><strong>质量与验收</strong><small>测试记录和偏差诊断</small></span>${icon('chevron')}</button></div></form>`;footer=close;}
 else if(type==='new'){title='建立项目工作空间';subtitle='立项阶段只定义目标和组成，不要求选择技术栈。此原型仅建立浏览器内的演示项目。';body=`<form id="new-form"><div class="field"><label for="new-name">项目名称</label><input id="new-name" maxlength="60" value="新项目" required /></div><div class="field"><label for="new-goal">你希望完成什么？</label><textarea id="new-goal" rows="3" maxlength="500" placeholder="例如：开发一个面向个人研究的 Web 应用" required></textarea></div><div class="field"><label>项目组成（可稍后修改）</label><div class="workspace-settings">${components.map(([id,label])=>`<label><input type="checkbox" class="new-component" value="${id}" ${['frontend','backend'].includes(id)?'checked':''}/><span>${label}</span></label>`).join('')}</div></div><div class="muted-note">不会选择 React、PostgreSQL、模型等具体技术。项目中的真实文件将在正式系统中创建，而非此离线原型。</div></form>`;footer=`${close}<button class="btn primary" type="submit" form="new-form">创建演示工作空间</button>`;}
-else if(type==='project-requirements'){title='编辑项目需求';subtitle='修改项目整体目标和已有需求。只保存本浏览器内的演示草案。';
- body=`<form id="project-requirements-form"><div class="field"><label for="edit-project-goal">项目整体目标</label><textarea id="edit-project-goal" maxlength="800" rows="3" required>${esc(state.projectGoal)}</textarea></div>
- <div class="field"><label>整体需求</label>${(state.projectRequirements||[]).map((r,i)=>`<div class="project-edit-item"><span class="small muted">${esc(r.id)}</span><input class="edit-requirement-title" data-requirement-index="${i}" maxlength="100" value="${esc(r.title)}" aria-label="${esc(r.id)} 名称" required/><textarea class="edit-requirement-detail" data-requirement-index="${i}" maxlength="800" rows="2" aria-label="${esc(r.id)} 具体需求" required>${esc(r.detail)}</textarea></div>`).join('')}</div></form>`;
- footer=`${close}<button class="btn primary" type="submit" form="project-requirements-form">保存需求</button>`;}
 else if(type==='components'){title='调整项目组成';subtitle='只定义项目需要哪些部分；技术实现将在设计阶段确定。';body=`<form id="components-form"><div class="workspace-settings">${components.map(([id,label])=>`<label><input type="checkbox" class="project-component" value="${id}" ${state.components.includes(id)?'checked':''}/><span>${label}</span></label>`).join('')}</div><p class="blurb" style="margin-top:14px">保存后形成一次演示配置变更。正式工作台应检查受影响的需求、接口、设计和测试。</p></form>`;footer=`${close}<button class="btn primary" type="submit" form="components-form">保存组成变更</button>`;}
 else if(type==='edit-step'){const step=currentSteps().find(s=>s.id===state.selectedStep)||currentSteps()[0];title='修改业务流程步骤';subtitle='这只会修改目标设计草案，不会直接修改项目实现。';body=`<form id="edit-step-form"><div class="field"><label for="step-title">步骤名称</label><input id="step-title" maxlength="80" required value="${esc(step.title)}" /></div><div class="field"><label for="step-desc">预期业务行为</label><textarea id="step-desc" rows="5" maxlength="800" required>${esc(step.desc)}</textarea></div><div class="muted-note">原型将版本递增并要求重新评审。真实系统还应检查任务、接口和验证证据是否受影响。</div></form>`;footer=`${close}<button class="btn primary" type="submit" form="edit-step-form">保存目标草案</button>`;}
 else if(type==='add-step'){title='添加流程步骤';subtitle='为当前目标业务流程增加一个步骤，不会自动生成代码。';body=`<form id="add-step-form"><div class="field"><label for="step-title">步骤名称</label><input id="step-title" maxlength="80" placeholder="例如：人工复核特殊来源" required /></div><div class="field"><label for="step-desc">业务行为和预期结果</label><textarea id="step-desc" rows="4" maxlength="800" required></textarea></div></form>`;footer=`${close}<button class="btn primary" type="submit" form="add-step-form">添加到设计草案</button>`;}
@@ -409,7 +484,6 @@ function act(e){const btn=e.target.closest('[data-action]');if(!btn||btn.disable
 if(op==='go-dashboard'){setPage('project',{projectSub:'home'});return;}
 if(op==='toggle-project-nav'){state.projectNavExpanded=!state.projectNavExpanded;render();return;}
 if(op==='toggle-mobile-project'){state.mobileProjectMenuOpen=!state.mobileProjectMenuOpen;render();return;}
-if(op==='edit-project-requirements'){showModal('project-requirements');return;}
 if(op.startsWith('home-attention-go-')){
  const a=homeAttentionItems().find(x=>x.id===op.slice('home-attention-go-'.length));if(!a)return;
  state.drawer=null;renderDrawer();
@@ -459,16 +533,6 @@ if(op==='open-evidence'){showDrawer('evidence','E-106');return;}
 }
 function onSubmit(e){if(e.target.id==='scenario-form'){e.preventDefault();setScenarioFromQuery(document.getElementById('scenario-input')?.value||'');return;}
 if(e.target.id==='new-form'){e.preventDefault();const name=document.getElementById('new-name')?.value.trim(),goal=document.getElementById('new-goal')?.value.trim();if(!name||!goal){notice('项目名称与目标必填。');return;}state={...makeDefault(),projectName:name,projectGoal:goal,isSample:false,projectRequirements:[{id:'PR-01',title:'核心业务需求',detail:goal}],requirementRevision:1,editingRequirements:false,components:[...document.querySelectorAll('.new-component:checked')].map(el=>el.value),scene:'custom',query:goal,customQuery:goal,savedScenes:[],designConfirmed:false,page:'project',projectSub:'home',tour:state.tour};log('创建演示项目 '+name);render();notice('已建立浏览器内项目草案；没有创建真实文件。');return;}
-if(e.target.id==='project-requirements-form'){
- e.preventDefault();const goal=document.getElementById('edit-project-goal')?.value.trim();
- const originals=state.projectRequirements||[];const titles=[...document.querySelectorAll('.edit-requirement-title')];const descriptions=[...document.querySelectorAll('.edit-requirement-detail')];
- if(!goal||titles.length!==originals.length||descriptions.length!==originals.length){notice('请填写完整项目目标与需求。');return;}
- const updated=originals.map((r,i)=>({...r,title:(titles[i]?.value||'').trim(),detail:(descriptions[i]?.value||'').trim()}));
- if(updated.some(r=>!r.title||!r.detail)){notice('需求名称和内容不能为空。');return;}
- const changed=goal!==state.projectGoal||updated.some((r,i)=>r.title!==originals[i].title||r.detail!==originals[i].detail);
- if(changed){state.projectGoal=goal;state.projectRequirements=updated;state.requirementRevision=(Number(state.requirementRevision)||1)+1;log('编辑项目需求草案 v'+state.requirementRevision);}
- state.modal=null;setPage('project',{projectSub:'requirements'});notice(changed?'项目需求草案已保存在本浏览器中。':'需求未变化。');return;
- }
 if(e.target.id==='components-form'){e.preventDefault();const next=[...document.querySelectorAll('.project-component:checked')].map(el=>el.value),before=state.components;state.components=next;state.modal=null;state.designConfirmed=false;state.designRevision++;state.taskStatus='ready';state.validationRun=false;log('项目组成发生演示变更：'+next.join(', '));render();notice(`已保存组成变更（增加 ${next.filter(x=>!before.includes(x)).length}，移除 ${before.filter(x=>!next.includes(x)).length}）。相关设计需要影响核对。`);return;}
 if(e.target.id==='edit-step-form'){e.preventDefault();const title=document.getElementById('step-title')?.value.trim(),desc=document.getElementById('step-desc')?.value.trim();if(!title||!desc)return;const s=currentSteps().find(x=>x.id===state.selectedStep);if(!s)return; if(state.extraSteps.some(x=>x.id===s.id)){const x=state.extraSteps.find(x=>x.id===s.id);x.title=title;x.desc=desc;}else state.flowEdits[s.id]={title,desc};state.designRevision++;state.designConfirmed=false;state.taskStatus='ready';state.validationRun=false;state.modal=null;log('编辑目标设计步骤 '+s.id);render();notice('设计草案已更新。既有确认失效，需要重新评审。');return;}
 if(e.target.id==='add-step-form'){e.preventDefault();const title=document.getElementById('step-title')?.value.trim(),desc=document.getElementById('step-desc')?.value.trim();if(!title||!desc)return;const id='extra-'+(Date.now().toString(36));state.extraSteps.push({id,title,desc,caption:'新增业务步骤',owner:'待定义',in:'待定义',out:'待定义',evidence:'E-106'});state.selectedStep=id;state.designRevision++;state.designConfirmed=false;state.taskStatus='ready';state.validationRun=false;state.modal=null;log('新增目标设计步骤 '+title);render();notice('业务步骤已添加到设计草案。');return;}
